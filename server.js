@@ -391,7 +391,11 @@ async function executeFFmpegRender(job, items, bgm, config) {
         finalAudioTag = '[a_mixed]';
     }
 
-    args.push('-filter_complex', filterComplex.join('; '));
+    // Write complex filter to a temporary script file to avoid Windows command line length limit (ENAMETOOLONG)
+    const filterScriptPath = path.join(OUTPUTS_DIR, `filter_${job.id}.txt`);
+    fs.writeFileSync(filterScriptPath, filterComplex.join(';\n'), 'utf8');
+
+    args.push('-filter_complex_script', filterScriptPath);
     args.push('-map', '[v_concat]');
     args.push('-map', finalAudioTag);
     args.push('-c:v', 'libx264', '-preset', 'fast', '-crf', '22', '-pix_fmt', 'yuv420p');
@@ -399,9 +403,19 @@ async function executeFFmpegRender(job, items, bgm, config) {
     args.push('-progress', 'pipe:1');
     args.push(outputPath);
 
-    console.log('Spawning FFmpeg with args:', args.join(' '));
-    const ffmpegProc = spawn('ffmpeg', args);
-    job.process = ffmpegProc;
+    console.log(`Starting FFmpeg for job ${job.id} with ${items.length} clips...`);
+    let ffmpegProc;
+    try {
+        ffmpegProc = spawn('ffmpeg', args);
+        job.process = ffmpegProc;
+    } catch (spawnErr) {
+        console.error('Spawn error:', spawnErr);
+        job.status = 'failed';
+        job.error = spawnErr.message;
+        if (fs.existsSync(filterScriptPath)) fs.unlinkSync(filterScriptPath);
+        sendJobUpdate(job);
+        return;
+    }
 
     ffmpegProc.stdout.on('data', (data) => {
         const lines = data.toString().split('\n');
@@ -429,6 +443,9 @@ async function executeFFmpegRender(job, items, bgm, config) {
 
     ffmpegProc.on('close', (code) => {
         job.process = null;
+        if (fs.existsSync(filterScriptPath)) {
+            try { fs.unlinkSync(filterScriptPath); } catch (e) {}
+        }
         if (code === 0) {
             job.status = 'completed';
             job.progress = 100;
@@ -445,6 +462,9 @@ async function executeFFmpegRender(job, items, bgm, config) {
     ffmpegProc.on('error', (err) => {
         job.status = 'failed';
         job.error = err.message;
+        if (fs.existsSync(filterScriptPath)) {
+            try { fs.unlinkSync(filterScriptPath); } catch (e) {}
+        }
         sendJobUpdate(job);
     });
 }
