@@ -209,25 +209,25 @@ async function executeFFmpegRender(job, items, bgm, config) {
             let yExpr = 'ih/2-(ih/zoom/2)';
 
             if (motion === 'zoom_in') {
-                zExpr = '1.0+(0.3*(on/d))';
+                zExpr = `1.0+(0.3*(on/${frames}))`;
                 xExpr = 'iw/2-(iw/zoom/2)';
                 yExpr = 'ih/2-(ih/zoom/2)';
             } else if (motion === 'zoom_out') {
-                zExpr = '1.3-(0.3*(on/d))';
+                zExpr = `1.3-(0.3*(on/${frames}))`;
                 xExpr = 'iw/2-(iw/zoom/2)';
                 yExpr = 'ih/2-(ih/zoom/2)';
             } else if (motion === 'pan_left') {
                 zExpr = '1.2';
-                xExpr = '(iw-iw/zoom)*(1-(on/d))';
+                xExpr = `(iw-iw/zoom)*(1-(on/${frames}))`;
                 yExpr = 'ih/2-(ih/zoom/2)';
             } else if (motion === 'pan_right') {
                 zExpr = '1.2';
-                xExpr = '(iw-iw/zoom)*(on/d)';
+                xExpr = `(iw-iw/zoom)*(on/${frames})`;
                 yExpr = 'ih/2-(ih/zoom/2)';
             } else if (motion === 'zoom_pan') {
-                zExpr = '1.0+(0.25*(on/d))';
-                xExpr = '(iw-iw/zoom)*(on/d)';
-                yExpr = '(ih-ih/zoom)*(on/d)';
+                zExpr = `1.0+(0.25*(on/${frames}))`;
+                xExpr = `(iw-iw/zoom)*(on/${frames})`;
+                yExpr = `(ih-ih/zoom)*(on/${frames})`;
             }
 
             // High-res pre-scale to avoid zoompan jitter
