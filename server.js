@@ -117,7 +117,43 @@ app.post('/api/upload', upload.array('files'), async (req, res) => {
     }
 });
 
-// AI Script Matching API
+// Helper to generate ultra-lightweight thumbnail base64 for Gemini vision
+function getThumbnailBase64(filePath) {
+    return new Promise((resolve) => {
+        const proc = spawn('ffmpeg', [
+            '-y', '-i', filePath,
+            '-vf', 'scale=400:-1',
+            '-q:v', '5',
+            '-f', 'image2pipe',
+            '-vcodec', 'mjpeg',
+            'pipe:1'
+        ]);
+        const chunks = [];
+        proc.stdout.on('data', d => chunks.push(d));
+        proc.on('close', (code) => {
+            if (code === 0 && chunks.length > 0) {
+                resolve(Buffer.concat(chunks).toString('base64'));
+            } else {
+                // Fallback to reading file directly
+                try {
+                    const data = fs.readFileSync(filePath).toString('base64');
+                    resolve(data);
+                } catch (e) {
+                    resolve(null);
+                }
+            }
+        });
+        proc.on('error', () => {
+            try {
+                resolve(fs.readFileSync(filePath).toString('base64'));
+            } catch (e) {
+                resolve(null);
+            }
+        });
+    });
+}
+
+// AI Script Matching API (Ultra-Fast Optimized)
 app.post('/api/ai/match-script', async (req, res) => {
     try {
         const { scriptText, items, customApiKey } = req.body;
@@ -133,56 +169,50 @@ app.post('/api/ai/match-script', async (req, res) => {
         const ai = new GoogleGenAI({ apiKey });
         const contents = [];
 
-        // Attach image parts
-        for (let i = 0; i < items.length; i++) {
-            const item = items[i];
+        // Generate lightweight thumbnails in parallel (Direction 1)
+        const thumbPromises = items.map(async (item, i) => {
             const filePath = path.join(UPLOADS_DIR, item.filename);
             if (fs.existsSync(filePath) && item.type === 'image') {
-                const ext = path.extname(filePath).toLowerCase().replace('.', '');
-                const mimeType = ext === 'png' ? 'image/png' : (ext === 'webp' ? 'image/webp' : 'image/jpeg');
-                const imgBuffer = fs.readFileSync(filePath);
-                const base64Data = imgBuffer.toString('base64');
-                
-                contents.push({
-                    text: `[ẢNH SỐ ${i}] Tên tệp: ${item.originalName}`
-                });
+                const base64Data = await getThumbnailBase64(filePath);
+                return { index: i, name: item.originalName, base64Data };
+            }
+            return null;
+        });
+
+        const thumbResults = await Promise.all(thumbPromises);
+
+        thumbResults.forEach(r => {
+            if (r && r.base64Data) {
+                contents.push({ text: `[IMAGE ${r.index}]` });
                 contents.push({
                     inlineData: {
-                        mimeType,
-                        data: base64Data
+                        mimeType: 'image/jpeg',
+                        data: r.base64Data
                     }
                 });
             }
-        }
+        });
 
+        // Compact Prompt for lightning-fast token generation (Direction 2)
         const promptText = `
-Bạn là chuyên gia đạo diễn phim tài liệu và biên tập video chuyên nghiệp.
-Nhiệm vụ của bạn là đọc kịch bản dưới đây và khớp các [ẢNH SỐ X] đã được cung cấp vào từng phân đoạn của kịch bản theo thứ tự câu chuyện logic và cảm xúc nhất.
-
---- NỘI DUNG KỊCH BẢN ---
+Khớp kịch bản sau với các [IMAGE X] đã cung cấp (tổng ${items.length} ảnh):
+---
 ${scriptText.trim()}
---- HẾT KỊCH BẢN ---
-
-Yêu cầu phân tích:
-1. Chia kịch bản thành các phân cảnh (scenes) tương ứng với các ảnh có sẵn (tổng cộng ${items.length} phân cảnh).
-2. Khớp từng phân cảnh với "imageIndex" tương ứng từ 0 đến ${items.length - 1}.
-3. Đề xuất hiệu ứng chuyển động "suggestedMotion" ('zoom_in', 'zoom_out', 'pan_left', 'pan_right', 'zoom_pan', 'none') phù hợp với nội dung đoạn văn.
-4. Đề xuất thời lượng "suggestedDuration" (từ 3.0 đến 6.0 giây), "fadeIn" (0.5 đến 1.0 giây), "fadeOut" (0.5 đến 1.0 giây).
-
-Trả về JSON thuần túy theo cấu trúc:
+---
+Trả về JSON ngắn gọn nhất có thể:
 {
   "scenes": [
     {
-      "imageIndex": 0,
-      "sceneText": "Đoạn lời thoại hoặc mô tả cảnh",
-      "suggestedMotion": "zoom_in",
-      "suggestedDuration": 4.0,
-      "fadeIn": 0.8,
-      "fadeOut": 0.8,
-      "reason": "Lý do chọn ảnh và hiệu ứng"
+      "i": 0,
+      "t": "tóm tắt câu thoại cảnh này",
+      "m": "zoom_in",
+      "d": 4.0,
+      "fi": 0.8,
+      "fo": 0.8
     }
   ]
 }
+m: 'zoom_in' (cận cảnh/tâm trạng), 'zoom_out' (bao quát/rộng), 'pan_left', 'pan_right', 'zoom_pan', 'none'.
 `;
         contents.push({ text: promptText });
 
@@ -195,16 +225,26 @@ Trả về JSON thuần túy theo cấu trúc:
         });
 
         const rawText = response.text || '';
-        let resultJson;
+        let parsed;
         try {
             const cleanJson = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-            resultJson = JSON.parse(cleanJson);
+            parsed = JSON.parse(cleanJson);
         } catch (parseErr) {
             console.error('Failed to parse Gemini JSON:', rawText);
-            return res.status(500).json({ error: 'Không thể phân tích dữ liệu JSON từ Gemini AI', raw: rawText });
+            return res.status(500).json({ error: 'Không thể phân tích dữ liệu từ Gemini AI', raw: rawText });
         }
 
-        res.json({ success: true, result: resultJson });
+        // Map compact format to full scene structure for frontend
+        const scenes = (parsed.scenes || parsed || []).map((s, idx) => ({
+            imageIndex: s.i !== undefined ? s.i : (s.imageIndex !== undefined ? s.imageIndex : idx % items.length),
+            sceneText: s.t || s.sceneText || `Phân cảnh ${idx + 1}`,
+            suggestedMotion: s.m || s.suggestedMotion || 'zoom_in',
+            suggestedDuration: parseFloat(s.d || s.suggestedDuration || 4.0),
+            fadeIn: parseFloat(s.fi || s.fadeIn || 0.8),
+            fadeOut: parseFloat(s.fo || s.fadeOut || 0.8)
+        }));
+
+        res.json({ success: true, result: { scenes } });
     } catch (err) {
         console.error('Gemini match error:', err);
         res.status(500).json({ error: err.message || 'Lỗi khi gọi Gemini AI' });
@@ -361,10 +401,7 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
         }
         filterComplex.push(`${concatSegments}concat=n=${chunkItems.length}:v=1:a=1[v_concat][a_concat]`);
 
-        const filterScriptPath = path.join(OUTPUTS_DIR, `filter_${job.id}_chunk_${chunkIndex}.txt`);
-        fs.writeFileSync(filterScriptPath, filterComplex.join(';\n'), 'utf8');
-
-        args.push('-filter_complex_script', filterScriptPath);
+        args.push('-filter_complex', filterComplex.join('; '));
         args.push('-map', '[v_concat]');
         args.push('-map', '[a_concat]');
         args.push('-c:v', 'libx264', '-preset', 'fast', '-crf', '22', '-pix_fmt', 'yuv420p');
@@ -372,14 +409,16 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
         args.push(chunkOutputPath);
 
         const proc = spawn('ffmpeg', args);
+        let stderrLog = '';
+        proc.stderr.on('data', d => {
+            stderrLog += d.toString();
+        });
 
         proc.on('close', (code) => {
-            if (fs.existsSync(filterScriptPath)) {
-                try { fs.unlinkSync(filterScriptPath); } catch (e) {}
-            }
             if (code === 0) {
                 resolve();
             } else {
+                console.error(`Chunk ${chunkIndex + 1} FFmpeg stderr:`, stderrLog.slice(-500));
                 reject(new Error(`Chunk ${chunkIndex + 1} failed with exit code ${code}`));
             }
         });
