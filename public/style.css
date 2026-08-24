@@ -876,6 +876,15 @@ body {
     letter-spacing: 0.5px;
 }
 
+.script-stats-bar {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 4px;
+}
+
+.text-dim { color: var(--text-dim); }
+.text-xs { font-size: 11px; }
+
 .section-title-row {
     display: flex;
     justify-content: space-between;

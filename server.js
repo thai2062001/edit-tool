@@ -169,10 +169,13 @@ app.post('/api/ai/match-script', async (req, res) => {
         const ai = new GoogleGenAI({ apiKey });
         const contents = [];
 
-        // Generate lightweight thumbnails in parallel (Direction 1)
-        const thumbPromises = items.map(async (item, i) => {
+        // Attach top lightweight thumbnails (max 15 vision parts to maintain ultra-fast speed)
+        const imageItems = items.filter(i => i.type === 'image');
+        const maxVisionThumbs = Math.min(15, imageItems.length);
+
+        const thumbPromises = imageItems.slice(0, maxVisionThumbs).map(async (item, i) => {
             const filePath = path.join(UPLOADS_DIR, item.filename);
-            if (fs.existsSync(filePath) && item.type === 'image') {
+            if (fs.existsSync(filePath)) {
                 const base64Data = await getThumbnailBase64(filePath);
                 return { index: i, name: item.originalName, base64Data };
             }
@@ -183,7 +186,7 @@ app.post('/api/ai/match-script', async (req, res) => {
 
         thumbResults.forEach(r => {
             if (r && r.base64Data) {
-                contents.push({ text: `[IMAGE ${r.index}]` });
+                contents.push({ text: `[IMAGE ${r.index}] ${r.name}` });
                 contents.push({
                     inlineData: {
                         mimeType: 'image/jpeg',
@@ -193,26 +196,17 @@ app.post('/api/ai/match-script', async (req, res) => {
             }
         });
 
-        // Compact Prompt for lightning-fast token generation (Direction 2)
+        // Ultra-compact array prompt for 4-second lightning generation
         const promptText = `
-Khớp kịch bản sau với các [IMAGE X] đã cung cấp (tổng ${items.length} ảnh):
+Đóng vai đạo diễn phim. Khớp kịch bản sau thành đúng ${items.length} phân cảnh tương ứng với ${items.length} ảnh (index 0 đến ${items.length - 1}):
+--- KỊCH BẢN ---
+${scriptText.trim().slice(0, 15000)}
 ---
-${scriptText.trim()}
----
-Trả về JSON ngắn gọn nhất có thể:
-{
-  "scenes": [
-    {
-      "i": 0,
-      "t": "tóm tắt câu thoại cảnh này",
-      "m": "zoom_in",
-      "d": 4.0,
-      "fi": 0.8,
-      "fo": 0.8
-    }
-  ]
-}
-m: 'zoom_in' (cận cảnh/tâm trạng), 'zoom_out' (bao quát/rộng), 'pan_left', 'pan_right', 'zoom_pan', 'none'.
+Yêu cầu: Trả về JSON mảng các mảng [imageIndex, "tóm tắt câu thoại cảnh", "motion", duration, fadeIn, fadeOut]:
+[
+  [0, "Tóm tắt cảnh 1", "zoom_in", 4.0, 0.8, 0.8]
+]
+Motion gồm: 'zoom_in', 'zoom_out', 'pan_left', 'pan_right', 'zoom_pan', 'none'.
 `;
         contents.push({ text: promptText });
 
@@ -234,15 +228,29 @@ m: 'zoom_in' (cận cảnh/tâm trạng), 'zoom_out' (bao quát/rộng), 'pan_le
             return res.status(500).json({ error: 'Không thể phân tích dữ liệu từ Gemini AI', raw: rawText });
         }
 
-        // Map compact format to full scene structure for frontend
-        const scenes = (parsed.scenes || parsed || []).map((s, idx) => ({
-            imageIndex: s.i !== undefined ? s.i : (s.imageIndex !== undefined ? s.imageIndex : idx % items.length),
-            sceneText: s.t || s.sceneText || `Phân cảnh ${idx + 1}`,
-            suggestedMotion: s.m || s.suggestedMotion || 'zoom_in',
-            suggestedDuration: parseFloat(s.d || s.suggestedDuration || 4.0),
-            fadeIn: parseFloat(s.fi || s.fadeIn || 0.8),
-            fadeOut: parseFloat(s.fo || s.fadeOut || 0.8)
-        }));
+        // Map compact array or object format to standard scenes
+        let rawScenes = Array.isArray(parsed) ? parsed : (parsed.scenes || Object.values(parsed)[0] || []);
+        
+        const scenes = rawScenes.map((s, idx) => {
+            if (Array.isArray(s)) {
+                return {
+                    imageIndex: typeof s[0] === 'number' ? s[0] : (idx % items.length),
+                    sceneText: s[1] || `Phân cảnh ${idx + 1}`,
+                    suggestedMotion: s[2] || 'zoom_in',
+                    suggestedDuration: parseFloat(s[3] || 4.0),
+                    fadeIn: parseFloat(s[4] || 0.8),
+                    fadeOut: parseFloat(s[5] || 0.8)
+                };
+            }
+            return {
+                imageIndex: s.i !== undefined ? s.i : (s.imageIndex !== undefined ? s.imageIndex : idx % items.length),
+                sceneText: s.t || s.sceneText || `Phân cảnh ${idx + 1}`,
+                suggestedMotion: s.m || s.suggestedMotion || 'zoom_in',
+                suggestedDuration: parseFloat(s.d || s.suggestedDuration || 4.0),
+                fadeIn: parseFloat(s.fi || s.fadeIn || 0.8),
+                fadeOut: parseFloat(s.fo || s.fadeOut || 0.8)
+            };
+        });
 
         res.json({ success: true, result: { scenes } });
     } catch (err) {

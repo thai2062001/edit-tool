@@ -224,12 +224,18 @@
                             <button type="button" class="btn btn-small btn-outline" onclick="document.getElementById('script-file-input').click()">
                                 📁 Tải file .MD / .TXT
                             </button>
+                            <button type="button" id="btn-clean-script" class="btn btn-small btn-secondary" title="Xóa dòng trống và gộp các câu ngắn thành đoạn hoàn chỉnh">
+                                🧹 Chuẩn Hóa Đoạn
+                            </button>
                             <button type="button" id="btn-load-sample-script" class="btn btn-small btn-ghost">
                                 📑 Nạp mẫu Seoul Winter
                             </button>
                         </div>
                     </div>
                     <textarea id="script-textarea" class="custom-textarea mt-2" rows="7" placeholder="Dán nội dung kịch bản vào đây hoặc tải file .md lên..."></textarea>
+                    <div class="script-stats-bar mt-1">
+                        <span id="script-stats-text" class="text-dim text-xs">Chưa có kịch bản</span>
+                    </div>
                 </div>
 
                 <!-- Info notice about current images -->

@@ -624,13 +624,64 @@ btnToggleKeyVisibility.addEventListener('click', () => {
     }
 });
 
-// Upload script file
+const scriptStatsText = document.getElementById('script-stats-text');
+const btnCleanScript = document.getElementById('btn-clean-script');
+
+// Function to clean blank lines and group short sentences into complete scenes
+function cleanAndGroupScript(raw) {
+    if (!raw) return '';
+    const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0 && l !== '---');
+    const paragraphs = [];
+    let current = '';
+
+    for (const line of lines) {
+        if (line.startsWith('#')) {
+            if (current) { paragraphs.push(current); current = ''; }
+            paragraphs.push(line);
+        } else {
+            if (!current) {
+                current = line;
+            } else if (current.length + line.length < 240) {
+                current += ' ' + line;
+            } else {
+                paragraphs.push(current);
+                current = line;
+            }
+        }
+    }
+    if (current) paragraphs.push(current);
+    return paragraphs.join('\n\n');
+}
+
+function updateScriptStats() {
+    const raw = scriptTextarea.value.trim();
+    if (!raw) {
+        scriptStatsText.innerText = 'Chưa có kịch bản';
+        return;
+    }
+    const lines = raw.split(/\r?\n/).filter(l => l.trim().length > 0).length;
+    const paragraphs = raw.split(/\n\n+/).filter(p => p.trim().length > 0).length;
+    scriptStatsText.innerHTML = `📊 Trạng thái: <strong>${lines} dòng</strong> | <strong>${paragraphs} phân đoạn</strong> (${raw.length} ký tự)`;
+}
+
+scriptTextarea.addEventListener('input', updateScriptStats);
+
+// Manual clean script button
+btnCleanScript.addEventListener('click', () => {
+    const raw = scriptTextarea.value;
+    if (!raw.trim()) return;
+    scriptTextarea.value = cleanAndGroupScript(raw);
+    updateScriptStats();
+});
+
+// Upload script file (with auto-clean)
 scriptFileInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (file) {
         const reader = new FileReader();
         reader.onload = (event) => {
-            scriptTextarea.value = event.target.result;
+            scriptTextarea.value = cleanAndGroupScript(event.target.result);
+            updateScriptStats();
         };
         reader.readAsText(file);
     }
@@ -638,22 +689,13 @@ scriptFileInput.addEventListener('change', (e) => {
 
 // Load sample script (Seoul Winter)
 btnLoadSampleScript.addEventListener('click', () => {
-    scriptTextarea.value = `Hãy tưởng tượng...
-Một buổi sáng, bạn thức dậy tại Seoul.
-Nhưng hôm nay có điều gì đó không đúng.
-Không còn tiếng xe cộ chen chúc trên những con đường đông đúc.
-Không còn ánh sáng từ những màn hình LED khổng lồ ở Myeongdong.
-Không còn tiếng người gọi nhau trong những con phố vốn chưa bao giờ thực sự ngủ.
-Chỉ có tuyết. Tuyết phủ kín đường phố.
-Phủ lên những chiếc xe đang nằm bất động.
-Phủ lên những biển hiệu rực rỡ của Seoul.
-Và bên ngoài cửa sổ... không có một bóng người.
-Nhiệt độ đã giảm xuống âm 40 độ C.
-Nhưng điều đáng sợ nhất không phải là cái lạnh.
-Mà là việc... nó không hề có dấu hiệu kết thúc.
-Ngày mai vẫn lạnh như hôm nay.
-Năm sau vẫn lạnh như năm nay.
-Và 100 năm sau... mùa đông vẫn chưa kết thúc.`;
+    const sample = `Hãy tưởng tượng... Một buổi sáng, bạn thức dậy tại Seoul. Nhưng hôm nay có điều gì đó không đúng. Không còn tiếng xe cộ chen chúc trên những con đường đông đúc. Không còn ánh sáng từ những màn hình LED khổng lồ ở Myeongdong.
+
+Không còn tiếng người gọi nhau trong những con phố vốn chưa bao giờ thực sự ngủ. Chỉ có tuyết. Tuyết phủ kín đường phố, phủ lên những chiếc xe đang nằm bất động, phủ lên những biển hiệu rực rỡ của Seoul.
+
+Và bên ngoài cửa sổ... không có một bóng người. Nhiệt độ đã giảm xuống âm 40 độ C. Nhưng điều đáng sợ nhất không phải là cái lạnh, mà là việc nó không hề có dấu hiệu kết thúc. Ngày mai vẫn lạnh như hôm nay. Năm sau vẫn lạnh như năm nay. Và 100 năm sau... mùa đông vẫn chưa kết thúc.`;
+    scriptTextarea.value = sample;
+    updateScriptStats();
 });
 
 // Run AI Match
