@@ -1,0 +1,14 @@
+{
+  "name": "ffmpeg-video-editor-ui",
+  "version": "1.0.0",
+  "description": "Web UI for creating videos from images and video clips with Zoom/Fade effects using FFmpeg",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1"
+  }
+}

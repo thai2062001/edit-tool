@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Uploaded and Rendered temporary media files
+uploads/*
+!uploads/.gitkeep
+outputs/*
+!outputs/.gitkeep
+
+# Environment & logs
+.env
+*.log
+.DS_Store
+Thumbs.db

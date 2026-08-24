@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FFmpeg Studio - Trình Ghép Video & Hiệu Ứng Chuyên Nghiệp</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Navigation -->
+        <header class="top-nav">
+            <div class="nav-brand">
+                <div class="brand-icon">🎬</div>
+                <div class="brand-text">
+                    <h1>FFmpeg <span>Studio</span></h1>
+                    <p>Trình Ghép Video từ Ảnh & Clip với Hiệu Ứng Zoom / Fade</p>
+                </div>
+            </div>
+            <div class="nav-actions">
+                <button id="btn-sample-demo" class="btn btn-secondary">
+                    <span class="icon">✨</span> Nạp Mẫu Thử Nghiệm
+                </button>
+                <button id="btn-render-all" class="btn btn-primary" disabled>
+                    <span class="icon">⚡</span> Xuất Video (Render)
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="workspace-grid">
+            <!-- Left & Center: Media Timeline & Configuration -->
+            <section class="media-timeline-section">
+                <!-- Dropzone for Upload -->
+                <div class="upload-zone" id="upload-zone">
+                    <input type="file" id="file-input" multiple accept="image/*,video/*,audio/*" hidden>
+                    <div class="upload-content">
+                        <div class="upload-icon-pulse">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                        </div>
+                        <h3>Kéo & thả Ảnh, Video hoặc Nhạc vào đây</h3>
+                        <p>Hỗ trợ ảnh (JPG, PNG, WEBP), video (MP4, MOV, MKV) và nhạc nền (MP3, WAV)</p>
+                        <button class="btn btn-outline" onclick="document.getElementById('file-input').click()">
+                            Chọn Tệp Từ Máy Tính
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Media Item List / Timeline Header -->
+                <div class="timeline-header">
+                    <div class="timeline-title-area">
+                        <h2>Danh Sách Phân Đoạn Video (<span id="item-count">0</span>)</h2>
+                        <span class="badge-total-duration">Tổng thời lượng: <strong id="total-est-duration">0.0s</strong></span>
+                    </div>
+                    <div class="timeline-controls">
+                        <button id="btn-clear-all" class="btn btn-small btn-ghost" title="Xóa tất cả">
+                            🗑️ Xóa hết
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Media Item Container -->
+                <div id="media-list" class="media-list">
+                    <div class="empty-state" id="empty-state">
+                        <div class="empty-icon">🎞️</div>
+                        <h4>Chưa có ảnh hoặc video nào</h4>
+                        <p>Kéo thả tệp vào khung bên trên hoặc nhấn "Nạp Mẫu Thử Nghiệm" để bắt đầu.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Sidebar: Settings & Audio -->
+            <aside class="sidebar-settings">
+                <!-- Aspect Ratio & Resolution -->
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h3>📐 Tỉ Lệ Khung Hình & Chất Lượng</h3>
+                    </div>
+                    <div class="aspect-ratio-selector">
+                        <label class="ratio-option active" data-ratio="16:9" data-width="1920" data-height="1080">
+                            <input type="radio" name="aspect-ratio" value="16:9" checked hidden>
+                            <div class="ratio-box landscape"></div>
+                            <div class="ratio-meta">
+                                <strong>16:9 (Ngang)</strong>
+                                <span>1920x1080 (YouTube/HD)</span>
+                            </div>
+                        </label>
+                        <label class="ratio-option" data-ratio="9:16" data-width="1080" data-height="1920">
+                            <input type="radio" name="aspect-ratio" value="9:16" hidden>
+                            <div class="ratio-box portrait"></div>
+                            <div class="ratio-meta">
+                                <strong>9:16 (Dọc)</strong>
+                                <span>1080x1920 (TikTok/Reels)</span>
+                            </div>
+                        </label>
+                        <label class="ratio-option" data-ratio="1:1" data-width="1080" data-height="1080">
+                            <input type="radio" name="aspect-ratio" value="1:1" hidden>
+                            <div class="ratio-box square"></div>
+                            <div class="ratio-meta">
+                                <strong>1:1 (Vuông)</strong>
+                                <span>1080x1080 (Instagram)</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="setting-row mt-3">
+                        <label for="select-fps">Tốc độ khung hình:</label>
+                        <select id="select-fps" class="custom-select">
+                            <option value="30" selected>30 FPS (Khuyên dùng)</option>
+                            <option value="60">60 FPS (Siêu mượt)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Background Music Settings -->
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h3>🎵 Nhạc Nền (BGM)</h3>
+                    </div>
+                    <div class="bgm-panel" id="bgm-panel">
+                        <div id="bgm-empty-state">
+                            <p>Chưa có nhạc nền</p>
+                            <button class="btn btn-small btn-outline mt-2" onclick="document.getElementById('bgm-file-input').click()">
+                                ➕ Thêm file MP3 / WAV
+                            </button>
+                            <input type="file" id="bgm-file-input" accept="audio/*" hidden>
+                        </div>
+                        <div id="bgm-active-state" class="hidden">
+                            <div class="bgm-info">
+                                <span class="bgm-icon">🎶</span>
+                                <div class="bgm-details">
+                                    <strong id="bgm-title">audio.mp3</strong>
+                                    <span id="bgm-duration">00:00</span>
+                                </div>
+                                <button id="btn-remove-bgm" class="btn btn-icon btn-ghost" title="Xóa nhạc">✕</button>
+                            </div>
+                            <div class="slider-group mt-3">
+                                <div class="slider-label">
+                                    <span>Âm lượng nhạc nền</span>
+                                    <strong id="bgm-volume-val">60%</strong>
+                                </div>
+                                <input type="range" id="bgm-volume" min="0" max="1" step="0.05" value="0.6" class="custom-range">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Tips Card -->
+                <div class="settings-card tips-card">
+                    <h4>💡 Mẹo hiệu ứng:</h4>
+                    <ul>
+                        <li><strong>Zoom In:</strong> Máy quay phóng to từ từ vào tâm ảnh.</li>
+                        <li><strong>Zoom Out:</strong> Máy quay thu nhỏ dần từ cận cảnh ra toàn cảnh.</li>
+                        <li><strong>Fade In/Out:</strong> Độ mờ ảo khi bắt đầu và kết thúc ảnh (không ảnh hưởng đến video tiếp nối).</li>
+                    </ul>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <!-- Live Preview Modal -->
+    <div id="preview-modal" class="modal hidden">
+        <div class="modal-backdrop" onclick="closePreviewModal()"></div>
+        <div class="modal-dialog preview-dialog">
+            <div class="modal-header">
+                <h3>🔍 Xem Trước Hiệu Ứng Chuyển Động</h3>
+                <button class="btn-close" onclick="closePreviewModal()">✕</button>
+            </div>
+            <div class="modal-body preview-body">
+                <div class="canvas-container">
+                    <canvas id="preview-canvas" width="1920" height="1080"></canvas>
+                    <div class="preview-overlay-info">
+                        <span id="preview-effect-name">Zoom In</span> | <span id="preview-time-display">0.0s / 3.5s</span>
+                    </div>
+                </div>
+                <div class="preview-controls">
+                    <button id="btn-play-preview" class="btn btn-primary btn-small">▶ Phát Lại</button>
+                    <button class="btn btn-secondary btn-small" onclick="closePreviewModal()">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Render Progress & Result Modal -->
+    <div id="render-modal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-dialog render-dialog">
+            <div class="modal-header">
+                <h3 id="render-modal-title">⚡ Đang Xuất Video với FFmpeg</h3>
+            </div>
+            <div class="modal-body render-body">
+                <!-- State: Processing -->
+                <div id="render-state-processing">
+                    <div class="progress-ring-container">
+                        <div class="spinner-neon"></div>
+                        <div class="progress-percent" id="render-percent">0%</div>
+                    </div>
+                    <div class="progress-bar-wrapper mt-4">
+                        <div class="progress-bar-fill" id="render-progress-bar" style="width: 0%;"></div>
+                    </div>
+                    <p class="render-status-text" id="render-status-text">Đang tổng hợp các bộ lọc Zoompan, Fade và Concat...</p>
+                </div>
+
+                <!-- State: Completed -->
+                <div id="render-state-completed" class="hidden">
+                    <div class="success-banner">
+                        <span class="success-icon">🎉</span>
+                        <h4>Xuất Video Thành Công!</h4>
+                    </div>
+                    <div class="rendered-video-wrapper mt-3">
+                        <video id="rendered-video-player" controls autoplay loop playsinline></video>
+                    </div>
+                    <div class="action-buttons-group mt-3">
+                        <a id="btn-download-video" class="btn btn-primary" download="video_output.mp4">
+                            💾 Tải Video Về Máy (.MP4)
+                        </a>
+                        <button class="btn btn-secondary" onclick="closeRenderModal()">
+                            Tiếp Tục Chỉnh Sửa
+                        </button>
+                    </div>
+                </div>
+
+                <!-- State: Error -->
+                <div id="render-state-error" class="hidden">
+                    <div class="error-banner">
+                        <span class="error-icon">⚠️</span>
+                        <h4>Đã xảy ra lỗi khi Render</h4>
+                        <p id="render-error-msg">Không thể xuất video</p>
+                    </div>
+                    <button class="btn btn-secondary mt-3" onclick="closeRenderModal()">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
