@@ -170,12 +170,7 @@ async function executeFFmpegRender(job, items, bgm, config) {
     const inputIndices = [];
     items.forEach((item, index) => {
         const filePath = path.join(UPLOADS_DIR, item.filename);
-        if (item.type === 'image') {
-            // Loop image input
-            args.push('-loop', '1', '-t', String(item.settings?.duration || 3.5), '-i', filePath);
-        } else {
-            args.push('-i', filePath);
-        }
+        args.push('-i', filePath);
         inputIndices.push(index);
     });
 
@@ -301,7 +296,7 @@ async function executeFFmpegRender(job, items, bgm, config) {
     args.push('-filter_complex', filterComplex.join('; '));
     args.push('-map', '[v_concat]');
     args.push('-map', finalAudioTag);
-    args.push('-c:v', 'libx264', '-preset', 'medium', '-crf', '22', '-pix_fmt', 'yuv420p');
+    args.push('-c:v', 'libx264', '-preset', 'fast', '-crf', '22', '-pix_fmt', 'yuv420p');
     args.push('-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart');
     args.push('-progress', 'pipe:1');
     args.push(outputPath);
