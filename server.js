@@ -4,9 +4,13 @@ const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
 const cors = require('cors');
+const { GoogleGenAI } = require('@google/genai');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Default API Key
+const DEFAULT_GEMINI_API_KEY = 'AQ.Ab8RN6JMEe8jCjohN1xaI2N70KtihaOv6Jd_Q-Ke2baWI6n-nA';
 
 // Directories
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
@@ -110,6 +114,100 @@ app.post('/api/upload', upload.array('files'), async (req, res) => {
     } catch (err) {
         console.error('Upload error:', err);
         res.status(500).json({ error: err.message });
+    }
+});
+
+// AI Script Matching API
+app.post('/api/ai/match-script', async (req, res) => {
+    try {
+        const { scriptText, items, customApiKey } = req.body;
+        const apiKey = (customApiKey && customApiKey.trim()) ? customApiKey.trim() : DEFAULT_GEMINI_API_KEY;
+
+        if (!scriptText || !scriptText.trim()) {
+            return res.status(400).json({ error: 'Vui lòng cung cấp nội dung kịch bản' });
+        }
+        if (!items || items.length === 0) {
+            return res.status(400).json({ error: 'Vui lòng tải lên ít nhất một ảnh để khớp kịch bản' });
+        }
+
+        const ai = new GoogleGenAI({ apiKey });
+        const contents = [];
+
+        // Attach image parts
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            const filePath = path.join(UPLOADS_DIR, item.filename);
+            if (fs.existsSync(filePath) && item.type === 'image') {
+                const ext = path.extname(filePath).toLowerCase().replace('.', '');
+                const mimeType = ext === 'png' ? 'image/png' : (ext === 'webp' ? 'image/webp' : 'image/jpeg');
+                const imgBuffer = fs.readFileSync(filePath);
+                const base64Data = imgBuffer.toString('base64');
+                
+                contents.push({
+                    text: `[ẢNH SỐ ${i}] Tên tệp: ${item.originalName}`
+                });
+                contents.push({
+                    inlineData: {
+                        mimeType,
+                        data: base64Data
+                    }
+                });
+            }
+        }
+
+        const promptText = `
+Bạn là chuyên gia đạo diễn phim tài liệu và biên tập video chuyên nghiệp.
+Nhiệm vụ của bạn là đọc kịch bản dưới đây và khớp các [ẢNH SỐ X] đã được cung cấp vào từng phân đoạn của kịch bản theo thứ tự câu chuyện logic và cảm xúc nhất.
+
+--- NỘI DUNG KỊCH BẢN ---
+${scriptText.trim()}
+--- HẾT KỊCH BẢN ---
+
+Yêu cầu phân tích:
+1. Chia kịch bản thành các phân cảnh (scenes) tương ứng với các ảnh có sẵn (tổng cộng ${items.length} phân cảnh).
+2. Khớp từng phân cảnh với "imageIndex" tương ứng từ 0 đến ${items.length - 1}.
+3. Đề xuất hiệu ứng chuyển động "suggestedMotion" ('zoom_in', 'zoom_out', 'pan_left', 'pan_right', 'zoom_pan', 'none') phù hợp với nội dung đoạn văn.
+4. Đề xuất thời lượng "suggestedDuration" (từ 3.0 đến 6.0 giây), "fadeIn" (0.5 đến 1.0 giây), "fadeOut" (0.5 đến 1.0 giây).
+
+Trả về JSON thuần túy theo cấu trúc:
+{
+  "scenes": [
+    {
+      "imageIndex": 0,
+      "sceneText": "Đoạn lời thoại hoặc mô tả cảnh",
+      "suggestedMotion": "zoom_in",
+      "suggestedDuration": 4.0,
+      "fadeIn": 0.8,
+      "fadeOut": 0.8,
+      "reason": "Lý do chọn ảnh và hiệu ứng"
+    }
+  ]
+}
+`;
+        contents.push({ text: promptText });
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-3.6-flash',
+            contents: contents,
+            config: {
+                responseMimeType: 'application/json'
+            }
+        });
+
+        const rawText = response.text || '';
+        let resultJson;
+        try {
+            const cleanJson = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+            resultJson = JSON.parse(cleanJson);
+        } catch (parseErr) {
+            console.error('Failed to parse Gemini JSON:', rawText);
+            return res.status(500).json({ error: 'Không thể phân tích dữ liệu JSON từ Gemini AI', raw: rawText });
+        }
+
+        res.json({ success: true, result: resultJson });
+    } catch (err) {
+        console.error('Gemini match error:', err);
+        res.status(500).json({ error: err.message || 'Lỗi khi gọi Gemini AI' });
     }
 });
 

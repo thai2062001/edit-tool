@@ -567,3 +567,175 @@ btnSampleDemo.addEventListener('click', async () => {
         btnSampleDemo.innerHTML = '<span class="icon">✨</span> Nạp Mẫu Thử Nghiệm';
     }
 });
+
+// ==========================================
+// GEMINI AI SCRIPT MATCHING LOGIC
+// ==========================================
+const btnOpenAiModal = document.getElementById('btn-open-ai-modal');
+const aiModal = document.getElementById('ai-modal');
+const inputGeminiKey = document.getElementById('input-gemini-key');
+const btnToggleKeyVisibility = document.getElementById('btn-toggle-key-visibility');
+const scriptFileInput = document.getElementById('script-file-input');
+const scriptTextarea = document.getElementById('script-textarea');
+const btnLoadSampleScript = document.getElementById('btn-load-sample-script');
+const aiImageCount = document.getElementById('ai-image-count');
+const btnRunAiMatch = document.getElementById('btn-run-ai-match');
+const aiResultsContainer = document.getElementById('ai-results-container');
+const aiScenesList = document.getElementById('ai-scenes-list');
+const aiScenesCountBadge = document.getElementById('ai-scenes-count-badge');
+const btnApplyAiTimeline = document.getElementById('btn-apply-ai-timeline');
+
+let currentAiMatchedScenes = [];
+
+btnOpenAiModal.addEventListener('click', () => {
+    const imgCount = mediaItems.filter(i => i.type === 'image').length;
+    aiImageCount.innerText = `${imgCount} ảnh`;
+    aiModal.classList.remove('hidden');
+});
+
+function closeAiModal() {
+    aiModal.classList.add('hidden');
+}
+
+// Toggle key visibility
+btnToggleKeyVisibility.addEventListener('click', () => {
+    if (inputGeminiKey.type === 'password') {
+        inputGeminiKey.type = 'text';
+        btnToggleKeyVisibility.innerText = '🙈';
+    } else {
+        inputGeminiKey.type = 'password';
+        btnToggleKeyVisibility.innerText = '👁️';
+    }
+});
+
+// Upload script file
+scriptFileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            scriptTextarea.value = event.target.result;
+        };
+        reader.readAsText(file);
+    }
+});
+
+// Load sample script (Seoul Winter)
+btnLoadSampleScript.addEventListener('click', () => {
+    scriptTextarea.value = `Hãy tưởng tượng...
+Một buổi sáng, bạn thức dậy tại Seoul.
+Nhưng hôm nay có điều gì đó không đúng.
+Không còn tiếng xe cộ chen chúc trên những con đường đông đúc.
+Không còn ánh sáng từ những màn hình LED khổng lồ ở Myeongdong.
+Không còn tiếng người gọi nhau trong những con phố vốn chưa bao giờ thực sự ngủ.
+Chỉ có tuyết. Tuyết phủ kín đường phố.
+Phủ lên những chiếc xe đang nằm bất động.
+Phủ lên những biển hiệu rực rỡ của Seoul.
+Và bên ngoài cửa sổ... không có một bóng người.
+Nhiệt độ đã giảm xuống âm 40 độ C.
+Nhưng điều đáng sợ nhất không phải là cái lạnh.
+Mà là việc... nó không hề có dấu hiệu kết thúc.
+Ngày mai vẫn lạnh như hôm nay.
+Năm sau vẫn lạnh như năm nay.
+Và 100 năm sau... mùa đông vẫn chưa kết thúc.`;
+});
+
+// Run AI Match
+btnRunAiMatch.addEventListener('click', async () => {
+    const script = scriptTextarea.value.trim();
+    if (!script) {
+        alert('Vui lòng nhập hoặc tải lên nội dung kịch bản!');
+        return;
+    }
+
+    const images = mediaItems.filter(i => i.type === 'image');
+    if (images.length === 0) {
+        alert('Bạn chưa có ảnh nào trên timeline! Vui lòng tải ảnh lên trước hoặc nhấn "Nạp Mẫu Thử Nghiệm".');
+        return;
+    }
+
+    const key = inputGeminiKey.value.trim();
+
+    btnRunAiMatch.disabled = true;
+    btnRunAiMatch.innerHTML = '<span class="icon">⏳</span> Gemini AI Đang Phân Tích...';
+
+    try {
+        const res = await fetch('/api/ai/match-script', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                scriptText: script,
+                items: mediaItems,
+                customApiKey: key
+            })
+        });
+
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+
+        if (data.result && data.result.scenes) {
+            currentAiMatchedScenes = data.result.scenes;
+            renderAiScenesResult(currentAiMatchedScenes);
+        } else {
+            throw new Error('Dữ liệu trả về không đúng cấu trúc');
+        }
+
+    } catch (err) {
+        alert('Lỗi phân tích AI: ' + err.message);
+    } finally {
+        btnRunAiMatch.disabled = false;
+        btnRunAiMatch.innerHTML = '✨ Phân Tích & Khớp Ảnh Tự Động';
+    }
+});
+
+function renderAiScenesResult(scenes) {
+    aiResultsContainer.classList.remove('hidden');
+    aiScenesCountBadge.innerText = `${scenes.length} phân cảnh`;
+    aiScenesList.innerHTML = '';
+
+    scenes.forEach((scene, index) => {
+        const imgItem = mediaItems[scene.imageIndex] || mediaItems[index % mediaItems.length];
+        const card = document.createElement('div');
+        card.className = 'ai-scene-card';
+        card.innerHTML = `
+            <img src="${imgItem ? imgItem.url : ''}" class="ai-scene-thumb" alt="Scene ${index + 1}">
+            <div class="ai-scene-info">
+                <h5>Cảnh ${index + 1}: ${imgItem ? imgItem.originalName : ''}</h5>
+                <p class="ai-scene-text">${scene.sceneText || scene.reason || ''}</p>
+            </div>
+            <div class="ai-scene-meta">
+                <span class="badge-motion">${(scene.suggestedMotion || 'zoom_in').replace('_', ' ')}</span>
+                <span class="ai-scene-dur">${scene.suggestedDuration || 4.0}s | Fade ${scene.fadeIn || 0.8}s</span>
+            </div>
+        `;
+        aiScenesList.appendChild(card);
+    });
+}
+
+// Apply AI Match to Timeline
+btnApplyAiTimeline.addEventListener('click', () => {
+    if (!currentAiMatchedScenes || currentAiMatchedScenes.length === 0) return;
+
+    const newTimeline = [];
+
+    currentAiMatchedScenes.forEach((scene) => {
+        const originalItem = mediaItems[scene.imageIndex];
+        if (originalItem) {
+            // Clone item with new AI settings
+            const cloned = JSON.parse(JSON.stringify(originalItem));
+            cloned.settings.motion = scene.suggestedMotion || 'zoom_in';
+            cloned.settings.duration = parseFloat(scene.suggestedDuration || 4.0);
+            cloned.settings.fadeIn = parseFloat(scene.fadeIn || 0.8);
+            cloned.settings.fadeOut = parseFloat(scene.fadeOut || 0.8);
+            newTimeline.push(cloned);
+        }
+    });
+
+    if (newTimeline.length > 0) {
+        mediaItems = newTimeline;
+        renderMediaList();
+        closeAiModal();
+        alert('🎉 Đã áp dụng thành công kịch bản và tự động sắp xếp lại Timeline theo gợi ý của Gemini AI!');
+    }
+});
+

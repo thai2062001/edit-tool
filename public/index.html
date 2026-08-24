@@ -21,6 +21,9 @@
                 </div>
             </div>
             <div class="nav-actions">
+                <button id="btn-open-ai-modal" class="btn btn-ai">
+                    <span class="icon">🤖</span> Khớp Kịch Bản (Gemini AI)
+                </button>
                 <button id="btn-sample-demo" class="btn btn-secondary">
                     <span class="icon">✨</span> Nạp Mẫu Thử Nghiệm
                 </button>
@@ -183,6 +186,74 @@
                 <div class="preview-controls">
                     <button id="btn-play-preview" class="btn btn-primary btn-small">▶ Phát Lại</button>
                     <button class="btn btn-secondary btn-small" onclick="closePreviewModal()">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gemini AI Script Matching Modal -->
+    <div id="ai-modal" class="modal hidden">
+        <div class="modal-backdrop" onclick="closeAiModal()"></div>
+        <div class="modal-dialog ai-dialog">
+            <div class="modal-header">
+                <div class="modal-header-title">
+                    <span class="ai-badge">Google Gemini 3.6 Flash</span>
+                    <h3>🤖 Tự Động Khớp Kịch Bản & Ảnh Bằng AI</h3>
+                </div>
+                <button class="btn-close" onclick="closeAiModal()">✕</button>
+            </div>
+            <div class="modal-body ai-body">
+                <!-- API Key Config (Pre-filled + Editable) -->
+                <div class="api-key-box">
+                    <div class="api-key-label">
+                        <label for="input-gemini-key">🔑 Gemini API Key (Đã cấu hình sẵn):</label>
+                        <span class="api-key-hint">Bạn có thể đổi key khác bất cứ lúc nào</span>
+                    </div>
+                    <div class="api-key-input-wrapper">
+                        <input type="password" id="input-gemini-key" class="form-control font-mono" value="AQ.Ab8RN6JMEe8jCjohN1xaI2N70KtihaOv6Jd_Q-Ke2baWI6n-nA" placeholder="Nhập API Key...">
+                        <button type="button" id="btn-toggle-key-visibility" class="btn btn-small btn-secondary" title="Ẩn/Hiện Key">👁️</button>
+                    </div>
+                </div>
+
+                <!-- Step 1: Input Script -->
+                <div class="script-input-section mt-3">
+                    <div class="section-title-row">
+                        <label for="script-textarea"><strong>📜 Nội dung Kịch bản (Script):</strong></label>
+                        <div class="script-actions-quick">
+                            <input type="file" id="script-file-input" accept=".md,.txt" hidden>
+                            <button type="button" class="btn btn-small btn-outline" onclick="document.getElementById('script-file-input').click()">
+                                📁 Tải file .MD / .TXT
+                            </button>
+                            <button type="button" id="btn-load-sample-script" class="btn btn-small btn-ghost">
+                                📑 Nạp mẫu Seoul Winter
+                            </button>
+                        </div>
+                    </div>
+                    <textarea id="script-textarea" class="custom-textarea mt-2" rows="7" placeholder="Dán nội dung kịch bản vào đây hoặc tải file .md lên..."></textarea>
+                </div>
+
+                <!-- Info notice about current images -->
+                <div class="ai-status-bar mt-2">
+                    <span>🖼️ Số lượng ảnh hiện có trên Timeline: <strong id="ai-image-count">0 ảnh</strong></span>
+                    <button id="btn-run-ai-match" class="btn btn-ai-action">
+                        ✨ Phân Tích & Khớp Ảnh Tự Động
+                    </button>
+                </div>
+
+                <!-- Step 2: AI Matching Results -->
+                <div id="ai-results-container" class="ai-results-container mt-3 hidden">
+                    <div class="results-header">
+                        <h4>🎯 Kết Quả Phân Tích Kịch Bản & Khớp Phân Cảnh</h4>
+                        <span id="ai-scenes-count-badge" class="badge-accent">0 cảnh</span>
+                    </div>
+                    <div id="ai-scenes-list" class="ai-scenes-list custom-scrollbar"></div>
+
+                    <div class="ai-apply-footer mt-3">
+                        <button id="btn-apply-ai-timeline" class="btn btn-primary">
+                            ✅ Áp Dụng Toàn Bộ Vào Timeline Video
+                        </button>
+                        <button class="btn btn-secondary" onclick="closeAiModal()">Hủy</button>
+                    </div>
                 </div>
             </div>
         </div>
