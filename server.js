@@ -259,214 +259,260 @@ app.post('/api/render', async (req, res) => {
     executeFFmpegRender(job, items, bgm, { width, height, fps, outputPath });
 });
 
-// Function to construct and run FFmpeg command
-async function executeFFmpegRender(job, items, bgm, config) {
-    const { width, height, fps, outputPath } = config;
-    const args = ['-y'];
+// Function to render a single batch/chunk of items
+function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, config) {
+    return new Promise((resolve, reject) => {
+        const { width, height, fps } = config;
+        const args = ['-y'];
 
-    // Add input files
-    const inputIndices = [];
-    items.forEach((item, index) => {
-        const filePath = path.join(UPLOADS_DIR, item.filename);
-        args.push('-i', filePath);
-        inputIndices.push(index);
-    });
+        chunkItems.forEach((item) => {
+            const filePath = path.join(UPLOADS_DIR, item.filename);
+            args.push('-i', filePath);
+        });
 
-    let bgmIndex = -1;
-    if (bgm && bgm.filename) {
-        const bgmPath = path.join(UPLOADS_DIR, bgm.filename);
-        if (fs.existsSync(bgmPath)) {
-            bgmIndex = items.length;
-            args.push('-i', bgmPath);
-        }
-    }
+        const filterComplex = [];
+        const videoStreamTags = [];
+        const audioStreamTags = [];
 
-    // Build filter complex
-    const filterComplex = [];
-    const videoStreamTags = [];
-    const audioStreamTags = [];
+        chunkItems.forEach((item, idx) => {
+            const vTag = `v_${idx}`;
+            const aTag = `a_${idx}`;
+            const dur = Number(item.settings?.duration || 3.5);
+            const frames = Math.round(dur * fps);
+            const fadeIn = Number(item.settings?.fadeIn || 0);
+            const fadeOut = Number(item.settings?.fadeOut || 0);
+            const motion = item.settings?.motion || 'zoom_in';
 
-    items.forEach((item, idx) => {
-        const vTag = `v_${idx}`;
-        const aTag = `a_${idx}`;
-        const dur = Number(item.settings?.duration || 3.5);
-        const frames = Math.round(dur * fps);
-        const fadeIn = Number(item.settings?.fadeIn || 0);
-        const fadeOut = Number(item.settings?.fadeOut || 0);
-        const motion = item.settings?.motion || 'zoom_in';
+            if (item.type === 'image') {
+                let zExpr = '1.0';
+                let xExpr = 'iw/2-(iw/zoom/2)';
+                let yExpr = 'ih/2-(ih/zoom/2)';
 
-        if (item.type === 'image') {
-            // Zoompan expressions using 'on' (output frame index from 0 to frames-1)
-            let zExpr = '1.0';
-            let xExpr = 'iw/2-(iw/zoom/2)';
-            let yExpr = 'ih/2-(ih/zoom/2)';
-
-            if (motion === 'zoom_in') {
-                zExpr = `1.0+(0.3*(on/${frames}))`;
-                xExpr = 'iw/2-(iw/zoom/2)';
-                yExpr = 'ih/2-(ih/zoom/2)';
-            } else if (motion === 'zoom_out') {
-                zExpr = `1.3-(0.3*(on/${frames}))`;
-                xExpr = 'iw/2-(iw/zoom/2)';
-                yExpr = 'ih/2-(ih/zoom/2)';
-            } else if (motion === 'pan_left') {
-                zExpr = '1.2';
-                xExpr = `(iw-iw/zoom)*(1-(on/${frames}))`;
-                yExpr = 'ih/2-(ih/zoom/2)';
-            } else if (motion === 'pan_right') {
-                zExpr = '1.2';
-                xExpr = `(iw-iw/zoom)*(on/${frames})`;
-                yExpr = 'ih/2-(ih/zoom/2)';
-            } else if (motion === 'zoom_pan') {
-                zExpr = `1.0+(0.25*(on/${frames}))`;
-                xExpr = `(iw-iw/zoom)*(on/${frames})`;
-                yExpr = `(ih-ih/zoom)*(on/${frames})`;
-            }
-
-            // High-res pre-scale to avoid zoompan jitter
-            const preScale = `scale=w=${width * 2}:h=${height * 2}:force_original_aspect_ratio=increase,crop=${width * 2}:${height * 2}`;
-            const zoompan = `zoompan=z='${zExpr}':x='${xExpr}':y='${yExpr}':d=${frames}:s=${width}x${height}:fps=${fps}`;
-
-            let vFilters = `${preScale},${zoompan},format=yuv420p,setsar=1`;
-
-            if (fadeIn > 0) {
-                vFilters += `,fade=t=in:st=0:d=${fadeIn}`;
-            }
-            if (fadeOut > 0) {
-                const fadeStart = Math.max(0, dur - fadeOut);
-                vFilters += `,fade=t=out:st=${fadeStart}:d=${fadeOut}`;
-            }
-
-            filterComplex.push(`[${idx}:v]${vFilters}[${vTag}]`);
-            videoStreamTags.push(`[${vTag}]`);
-
-            // Generate silent audio matching image duration
-            filterComplex.push(`anullsrc=r=44100:cl=stereo:d=${dur}[${aTag}]`);
-            audioStreamTags.push(`[${aTag}]`);
-        } else {
-            // Video item
-            const trimStart = Number(item.settings?.trimStart || 0);
-            const trimEnd = Number(item.settings?.trimEnd || item.duration || 5);
-            const videoDur = Math.max(0.5, trimEnd - trimStart);
-            const vol = Number(item.settings?.videoVolume ?? 1.0);
-
-            let vFilters = `trim=start=${trimStart}:end=${trimEnd},setpts=PTS-STARTPTS,scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:black,setsar=1,fps=${fps},format=yuv420p`;
-
-            if (fadeIn > 0) {
-                vFilters += `,fade=t=in:st=0:d=${fadeIn}`;
-            }
-            if (fadeOut > 0) {
-                const fadeStart = Math.max(0, videoDur - fadeOut);
-                vFilters += `,fade=t=out:st=${fadeStart}:d=${fadeOut}`;
-            }
-
-            filterComplex.push(`[${idx}:v]${vFilters}[${vTag}]`);
-            videoStreamTags.push(`[${vTag}]`);
-
-            // Process video audio
-            if (vol > 0) {
-                filterComplex.push(`[${idx}:a]atrim=start=${trimStart}:end=${trimEnd},asetpts=PTS-STARTPTS,volume=${vol},aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo[${aTag}]`);
-            } else {
-                filterComplex.push(`anullsrc=r=44100:cl=stereo:d=${videoDur}[${aTag}]`);
-            }
-            audioStreamTags.push(`[${aTag}]`);
-        }
-    });
-
-    // Concat all segments
-    let concatSegments = '';
-    for (let i = 0; i < items.length; i++) {
-        concatSegments += `${videoStreamTags[i]}${audioStreamTags[i]}`;
-    }
-    filterComplex.push(`${concatSegments}concat=n=${items.length}:v=1:a=1[v_concat][a_concat]`);
-
-    // Handle BGM mixing if present
-    let finalAudioTag = '[a_concat]';
-    if (bgmIndex !== -1) {
-        const bgmVol = Number(bgm.volume ?? 0.6);
-        const bgmFadeOut = Math.max(0, job.totalDuration - 2);
-        // Loop BGM to cover total duration, adjust volume, fade out
-        filterComplex.push(`[${bgmIndex}:a]aloop=loop=-1:size=2e+09,atrim=0:${job.totalDuration},asetpts=PTS-STARTPTS,volume=${bgmVol},afade=t=out:st=${bgmFadeOut}:d=2,aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo[bgm_proc]`);
-        filterComplex.push(`[a_concat][bgm_proc]amix=inputs=2:duration=first:dropout_transition=2[a_mixed]`);
-        finalAudioTag = '[a_mixed]';
-    }
-
-    // Write complex filter to a temporary script file to avoid Windows command line length limit (ENAMETOOLONG)
-    const filterScriptPath = path.join(OUTPUTS_DIR, `filter_${job.id}.txt`);
-    fs.writeFileSync(filterScriptPath, filterComplex.join(';\n'), 'utf8');
-
-    args.push('-filter_complex_script', filterScriptPath);
-    args.push('-map', '[v_concat]');
-    args.push('-map', finalAudioTag);
-    args.push('-c:v', 'libx264', '-preset', 'fast', '-crf', '22', '-pix_fmt', 'yuv420p');
-    args.push('-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart');
-    args.push('-progress', 'pipe:1');
-    args.push(outputPath);
-
-    console.log(`Starting FFmpeg for job ${job.id} with ${items.length} clips...`);
-    let ffmpegProc;
-    try {
-        ffmpegProc = spawn('ffmpeg', args);
-        job.process = ffmpegProc;
-    } catch (spawnErr) {
-        console.error('Spawn error:', spawnErr);
-        job.status = 'failed';
-        job.error = spawnErr.message;
-        if (fs.existsSync(filterScriptPath)) fs.unlinkSync(filterScriptPath);
-        sendJobUpdate(job);
-        return;
-    }
-
-    ffmpegProc.stdout.on('data', (data) => {
-        const lines = data.toString().split('\n');
-        lines.forEach(line => {
-            if (line.startsWith('out_time_us=')) {
-                const us = parseInt(line.split('=')[1]);
-                if (!isNaN(us) && job.totalDuration > 0) {
-                    const currentSec = us / 1000000;
-                    const percent = Math.min(99, Math.round((currentSec / job.totalDuration) * 100));
-                    job.progress = percent;
-                    sendJobUpdate(job);
+                if (motion === 'zoom_in') {
+                    zExpr = `1.0+(0.3*(on/${frames}))`;
+                    xExpr = 'iw/2-(iw/zoom/2)';
+                    yExpr = 'ih/2-(ih/zoom/2)';
+                } else if (motion === 'zoom_out') {
+                    zExpr = `1.3-(0.3*(on/${frames}))`;
+                    xExpr = 'iw/2-(iw/zoom/2)';
+                    yExpr = 'ih/2-(ih/zoom/2)';
+                } else if (motion === 'pan_left') {
+                    zExpr = '1.2';
+                    xExpr = `(iw-iw/zoom)*(1-(on/${frames}))`;
+                    yExpr = 'ih/2-(ih/zoom/2)';
+                } else if (motion === 'pan_right') {
+                    zExpr = '1.2';
+                    xExpr = `(iw-iw/zoom)*(on/${frames})`;
+                    yExpr = 'ih/2-(ih/zoom/2)';
+                } else if (motion === 'zoom_pan') {
+                    zExpr = `1.0+(0.25*(on/${frames}))`;
+                    xExpr = `(iw-iw/zoom)*(on/${frames})`;
+                    yExpr = `(ih-ih/zoom)*(on/${frames})`;
                 }
-            } else if (line.startsWith('progress=end')) {
-                job.progress = 100;
-                sendJobUpdate(job);
+
+                const preScale = `scale=w=${width * 2}:h=${height * 2}:force_original_aspect_ratio=increase,crop=${width * 2}:${height * 2}`;
+                const zoompan = `zoompan=z='${zExpr}':x='${xExpr}':y='${yExpr}':d=${frames}:s=${width}x${height}:fps=${fps}`;
+
+                let vFilters = `${preScale},${zoompan},format=yuv420p,setsar=1`;
+
+                if (fadeIn > 0) {
+                    vFilters += `,fade=t=in:st=0:d=${fadeIn}`;
+                }
+                if (fadeOut > 0) {
+                    const fadeStart = Math.max(0, dur - fadeOut);
+                    vFilters += `,fade=t=out:st=${fadeStart}:d=${fadeOut}`;
+                }
+
+                filterComplex.push(`[${idx}:v]${vFilters}[${vTag}]`);
+                videoStreamTags.push(`[${vTag}]`);
+                filterComplex.push(`anullsrc=r=44100:cl=stereo:d=${dur}[${aTag}]`);
+                audioStreamTags.push(`[${aTag}]`);
+            } else {
+                const trimStart = Number(item.settings?.trimStart || 0);
+                const trimEnd = Number(item.settings?.trimEnd || item.duration || 5);
+                const videoDur = Math.max(0.5, trimEnd - trimStart);
+                const vol = Number(item.settings?.videoVolume ?? 1.0);
+
+                let vFilters = `trim=start=${trimStart}:end=${trimEnd},setpts=PTS-STARTPTS,scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:black,setsar=1,fps=${fps},format=yuv420p`;
+
+                if (fadeIn > 0) {
+                    vFilters += `,fade=t=in:st=0:d=${fadeIn}`;
+                }
+                if (fadeOut > 0) {
+                    const fadeStart = Math.max(0, videoDur - fadeOut);
+                    vFilters += `,fade=t=out:st=${fadeStart}:d=${fadeOut}`;
+                }
+
+                filterComplex.push(`[${idx}:v]${vFilters}[${vTag}]`);
+                videoStreamTags.push(`[${vTag}]`);
+
+                if (vol > 0) {
+                    filterComplex.push(`[${idx}:a]atrim=start=${trimStart}:end=${trimEnd},asetpts=PTS-STARTPTS,volume=${vol},aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo[${aTag}]`);
+                } else {
+                    filterComplex.push(`anullsrc=r=44100:cl=stereo:d=${videoDur}[${aTag}]`);
+                }
+                audioStreamTags.push(`[${aTag}]`);
             }
         });
-    });
 
-    ffmpegProc.stderr.on('data', (data) => {
-        const str = data.toString();
-        job.logs.push(str);
-        if (job.logs.length > 50) job.logs.shift();
-    });
-
-    ffmpegProc.on('close', (code) => {
-        job.process = null;
-        if (fs.existsSync(filterScriptPath)) {
-            try { fs.unlinkSync(filterScriptPath); } catch (e) {}
+        let concatSegments = '';
+        for (let i = 0; i < chunkItems.length; i++) {
+            concatSegments += `${videoStreamTags[i]}${audioStreamTags[i]}`;
         }
-        if (code === 0) {
+        filterComplex.push(`${concatSegments}concat=n=${chunkItems.length}:v=1:a=1[v_concat][a_concat]`);
+
+        const filterScriptPath = path.join(OUTPUTS_DIR, `filter_${job.id}_chunk_${chunkIndex}.txt`);
+        fs.writeFileSync(filterScriptPath, filterComplex.join(';\n'), 'utf8');
+
+        args.push('-filter_complex_script', filterScriptPath);
+        args.push('-map', '[v_concat]');
+        args.push('-map', '[a_concat]');
+        args.push('-c:v', 'libx264', '-preset', 'fast', '-crf', '22', '-pix_fmt', 'yuv420p');
+        args.push('-c:a', 'aac', '-b:a', '192k', '-ar', '44100', '-ac', '2', '-movflags', '+faststart');
+        args.push(chunkOutputPath);
+
+        const proc = spawn('ffmpeg', args);
+
+        proc.on('close', (code) => {
+            if (fs.existsSync(filterScriptPath)) {
+                try { fs.unlinkSync(filterScriptPath); } catch (e) {}
+            }
+            if (code === 0) {
+                resolve();
+            } else {
+                reject(new Error(`Chunk ${chunkIndex + 1} failed with exit code ${code}`));
+            }
+        });
+
+        proc.on('error', (err) => {
+            if (fs.existsSync(filterScriptPath)) {
+                try { fs.unlinkSync(filterScriptPath); } catch (e) {}
+            }
+            reject(err);
+        });
+    });
+}
+
+// Master execution with chunking for large jobs
+async function executeFFmpegRender(job, items, bgm, config) {
+    const { outputPath } = config;
+    const CHUNK_SIZE = 6;
+    const tempFiles = [];
+
+    try {
+        if (items.length <= CHUNK_SIZE && (!bgm || !bgm.filename)) {
+            // Direct single render
+            await renderChunk(job, items, outputPath, 0, 1, config);
             job.status = 'completed';
             job.progress = 100;
             job.outputUrl = `/outputs/${job.outputFilename}`;
-            console.log(`Job ${job.id} completed successfully: ${job.outputUrl}`);
-        } else {
-            job.status = 'failed';
-            job.error = `FFmpeg process exited with code ${code}`;
-            console.error(`Job ${job.id} failed with code ${code}`);
+            sendJobUpdate(job);
+            return;
         }
-        sendJobUpdate(job);
-    });
 
-    ffmpegProc.on('error', (err) => {
+        // Split into chunks of CHUNK_SIZE
+        const chunks = [];
+        for (let i = 0; i < items.length; i += CHUNK_SIZE) {
+            chunks.push(items.slice(i, i + CHUNK_SIZE));
+        }
+
+        console.log(`Job ${job.id}: Processing in ${chunks.length} chunks (Parallel workers: 2)...`);
+        const chunkOutputPaths = [];
+
+        // Run chunks with controlled concurrency (2 workers)
+        const concurrency = 2;
+        let completedChunks = 0;
+
+        for (let i = 0; i < chunks.length; i += concurrency) {
+            const batch = chunks.slice(i, i + concurrency);
+            const promises = batch.map((chunk, batchIdx) => {
+                const chunkIdx = i + batchIdx;
+                const chunkFile = path.join(OUTPUTS_DIR, `temp_chunk_${job.id}_${chunkIdx}.mp4`);
+                tempFiles.push(chunkFile);
+                chunkOutputPaths[chunkIdx] = chunkFile;
+                return renderChunk(job, chunk, chunkFile, chunkIdx, chunks.length, config).then(() => {
+                    completedChunks++;
+                    const pct = Math.min(88, Math.round((completedChunks / chunks.length) * 88));
+                    job.progress = pct;
+                    sendJobUpdate(job);
+                });
+            });
+
+            await Promise.all(promises);
+        }
+
+        // Create concat list file
+        const listFilePath = path.join(OUTPUTS_DIR, `list_${job.id}.txt`);
+        tempFiles.push(listFilePath);
+        const listContent = chunkOutputPaths.map(p => `file '${p.replace(/\\/g, '/')}'`).join('\n');
+        fs.writeFileSync(listFilePath, listContent, 'utf8');
+
+        job.progress = 92;
+        sendJobUpdate(job);
+
+        // Final fast concat with stream copy (-c copy) and BGM mix if present
+        await new Promise((resolve, reject) => {
+            const finalArgs = ['-y', '-f', 'concat', '-safe', '0', '-i', listFilePath];
+
+            let bgmPath = null;
+            if (bgm && bgm.filename) {
+                const bp = path.join(UPLOADS_DIR, bgm.filename);
+                if (fs.existsSync(bp)) bgmPath = bp;
+            }
+
+            if (bgmPath) {
+                const bgmVol = Number(bgm.volume ?? 0.6);
+                const bgmFadeOut = Math.max(0, job.totalDuration - 2);
+                finalArgs.push(
+                    '-i', bgmPath,
+                    '-filter_complex', `[1:a]aloop=loop=-1:size=2e+09,atrim=0:${job.totalDuration},asetpts=PTS-STARTPTS,volume=${bgmVol},afade=t=out:st=${bgmFadeOut}:d=2,aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo[bgm_proc]; [0:a][bgm_proc]amix=inputs=2:duration=first:dropout_transition=2[a_mixed]`,
+                    '-map', '0:v',
+                    '-map', '[a_mixed]',
+                    '-c:v', 'copy',
+                    '-c:a', 'aac',
+                    '-b:a', '192k',
+                    '-movflags', '+faststart',
+                    outputPath
+                );
+            } else {
+                finalArgs.push('-c', 'copy', '-movflags', '+faststart', outputPath);
+            }
+
+            console.log(`Job ${job.id}: Final stream-copy concat...`);
+            const concatProc = spawn('ffmpeg', finalArgs);
+
+            concatProc.on('close', (code) => {
+                if (code === 0) resolve();
+                else reject(new Error(`Final concat failed with code ${code}`));
+            });
+
+            concatProc.on('error', reject);
+        });
+
+        // Clean up temporary chunk files
+        tempFiles.forEach(f => {
+            if (fs.existsSync(f)) {
+                try { fs.unlinkSync(f); } catch (e) {}
+            }
+        });
+
+        job.status = 'completed';
+        job.progress = 100;
+        job.outputUrl = `/outputs/${job.outputFilename}`;
+        console.log(`Job ${job.id} completed successfully in multi-chunk mode!`);
+        sendJobUpdate(job);
+
+    } catch (err) {
+        console.error(`Job ${job.id} failed:`, err);
+        tempFiles.forEach(f => {
+            if (fs.existsSync(f)) {
+                try { fs.unlinkSync(f); } catch (e) {}
+            }
+        });
         job.status = 'failed';
         job.error = err.message;
-        if (fs.existsSync(filterScriptPath)) {
-            try { fs.unlinkSync(filterScriptPath); } catch (e) {}
-        }
         sendJobUpdate(job);
-    });
+    }
 }
 
 function sendJobUpdate(job) {

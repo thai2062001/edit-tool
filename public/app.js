@@ -252,8 +252,10 @@ function renderMediaList() {
                 </div>
             </div>
             <div class="card-actions">
-                <button class="btn btn-icon btn-secondary" onclick="moveItem(${index}, -1)" ${index === 0 ? 'disabled' : ''} title="Di chuyển lên">▲</button>
-                <button class="btn btn-icon btn-secondary" onclick="moveItem(${index}, 1)" ${index === mediaItems.length - 1 ? 'disabled' : ''} title="Di chuyển xuống">▼</button>
+                <button class="btn btn-icon btn-secondary" onclick="moveToTop(${index})" ${index === 0 ? 'disabled' : ''} title="Đưa lên đầu danh sách">⏫</button>
+                <button class="btn btn-icon btn-secondary" onclick="moveItem(${index}, -1)" ${index === 0 ? 'disabled' : ''} title="Di chuyển lên một bậc">▲</button>
+                <button class="btn btn-icon btn-secondary" onclick="moveItem(${index}, 1)" ${index === mediaItems.length - 1 ? 'disabled' : ''} title="Di chuyển xuống một bậc">▼</button>
+                <button class="btn btn-icon btn-secondary" onclick="moveToBottom(${index})" ${index === mediaItems.length - 1 ? 'disabled' : ''} title="Đưa xuống cuối danh sách">⏬</button>
                 <button class="btn btn-icon btn-ghost" onclick="removeItem(${index})" title="Xóa">✕</button>
             </div>
         `;
@@ -261,6 +263,20 @@ function renderMediaList() {
     });
 
     totalDurationEl.innerText = `${totalDur.toFixed(1)}s`;
+}
+
+function moveToTop(index) {
+    if (index <= 0 || index >= mediaItems.length) return;
+    const item = mediaItems.splice(index, 1)[0];
+    mediaItems.unshift(item);
+    renderMediaList();
+}
+
+function moveToBottom(index) {
+    if (index < 0 || index >= mediaItems.length - 1) return;
+    const item = mediaItems.splice(index, 1)[0];
+    mediaItems.push(item);
+    renderMediaList();
 }
 
 function updateItemSetting(index, key, val) {
