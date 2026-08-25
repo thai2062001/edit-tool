@@ -1290,8 +1290,10 @@
         }
         dom.subCaptionBox.style.fontFamily = `'${SubState.style.fontFamily}', sans-serif`;
         dom.subCaptionBox.style.fontSize = `${SubState.style.fontSize * 0.58}px`;
-        dom.subCaptionBox.style.webkitTextStroke = `${SubState.style.outlineWidth * 0.8}px ${SubState.style.outlineColor}`;
-        dom.subCaptionBox.style.textShadow = `0 2px 8px ${SubState.style.outlineColor}`;
+        dom.subCaptionBox.style.color = SubState.style.primaryColor;
+        dom.subCaptionBox.style.paintOrder = 'stroke fill';
+        dom.subCaptionBox.style.webkitTextStroke = `${SubState.style.outlineWidth * 0.45}px ${SubState.style.outlineColor}`;
+        dom.subCaptionBox.style.textShadow = `0 2px 4px rgba(0,0,0,0.8), 0 0 ${SubState.style.outlineWidth}px ${SubState.style.outlineColor}`;
     }
 
     // Export Subtitles Files (.ASS, .SRT)
