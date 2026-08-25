@@ -1359,7 +1359,15 @@
                 })
             });
 
-            const data = await res.json();
+            const text = await res.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (jsonErr) {
+                showBurnError(`Lỗi server (${res.status}): ${text.substring(0, 150)}`);
+                return;
+            }
+
             if (data.success && data.jobId) {
                 trackBurnProgress(data.jobId);
             } else {
