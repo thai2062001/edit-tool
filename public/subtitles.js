@@ -116,6 +116,109 @@
         }
     };
 
+    // Curated Multilingual Font Catalog (Grouped by Language with On-Demand Import URLs)
+    const FontCatalog = {
+        vi: [
+            { name: 'Arial', label: 'Arial (Quốc dân / Không lỗi font)', googleFont: false },
+            { name: 'Montserrat', label: 'Montserrat (Điện ảnh / Cao cấp)', googleQuery: 'Montserrat:wght@600;700;800;900' },
+            { name: 'Outfit', label: 'Outfit (Bo tròn hiện đại)', googleQuery: 'Outfit:wght@600;700;800' },
+            { name: 'Inter', label: 'Inter (Rõ nét / Tinh tế)', googleQuery: 'Inter:wght@600;700;800' },
+            { name: 'Roboto', label: 'Roboto (Google / YouTube)', googleQuery: 'Roboto:wght@500;700;900' },
+            { name: 'Poppins', label: 'Poppins (Trẻ trung / Viral)', googleQuery: 'Poppins:wght@600;700;800' },
+            { name: 'Oswald', label: 'Oswald (Cao gọn / Tài liệu)', googleQuery: 'Oswald:wght@600;700' },
+            { name: 'Bebas Neue', label: 'Bebas Neue (In hoa mạnh mẽ)', googleQuery: 'Bebas+Neue' },
+            { name: 'Anton', label: 'Anton (Dày đậm / Nổi bật)', googleQuery: 'Anton' },
+            { name: 'JetBrains Mono', label: 'JetBrains Mono (Code / Tech)', googleQuery: 'JetBrains+Mono:wght@600;700' }
+        ],
+        en: [
+            { name: 'Arial', label: 'Arial (Standard / Clean)', googleFont: false },
+            { name: 'Impact', label: 'Impact (Meme / Bold punchy)', googleFont: false },
+            { name: 'Montserrat', label: 'Montserrat (Modern Editorial)', googleQuery: 'Montserrat:wght@700;800;900' },
+            { name: 'Poppins', label: 'Poppins (Trendy TikTok/Reels)', googleQuery: 'Poppins:wght@700;800;900' },
+            { name: 'Bebas Neue', label: 'Bebas Neue (Heavy All-Caps)', googleQuery: 'Bebas+Neue' },
+            { name: 'Anton', label: 'Anton (Big Bold Display)', googleQuery: 'Anton' },
+            { name: 'Righteous', label: 'Righteous (Retro / Neon)', googleQuery: 'Righteous' },
+            { name: 'Cinzel', label: 'Cinzel (Cinematic Luxury / Cổ điển)', googleQuery: 'Cinzel:wght@700;900' },
+            { name: 'Rubik', label: 'Rubik (Smooth Rounded)', googleQuery: 'Rubik:wght@700;900' },
+            { name: 'Bungee', label: 'Bungee (Urban Street / Gamers)', googleQuery: 'Bungee' }
+        ],
+        ko: [
+            { name: 'Noto Sans KR', label: 'Noto Sans KR (노토 산스 - Chuẩn Hàn)', googleQuery: 'Noto+Sans+KR:wght@500;700;900' },
+            { name: 'Gowun Dodum', label: 'Gowun Dodum (고운 돋움 - Thanh lịch)', googleQuery: 'Gowun+Dodum' },
+            { name: 'Nanum Gothic', label: 'Nanum Gothic (나눔고딕 - Truyền thống)', googleQuery: 'Nanum+Gothic:wght@700;800' },
+            { name: 'Black Han Sans', label: 'Black Han Sans (블랙한산스 - Đậm nét/Tiêu đề)', googleQuery: 'Black+Han+Sans' },
+            { name: 'Do Hyeon', label: 'Do Hyeon (도현 - Trẻ trung/Vlog)', googleQuery: 'Do+Hyeon' },
+            { name: 'Jua', label: 'Jua (주아 - Dễ thương/Hoạt hình)', googleQuery: 'Jua' }
+        ],
+        ja: [
+            { name: 'Noto Sans JP', label: 'Noto Sans JP (Chuẩn Nhật hiện đại)', googleQuery: 'Noto+Sans+JP:wght@500;700;900' },
+            { name: 'M PLUS Rounded 1c', label: 'M PLUS Rounded 1c (Bo tròn Anime)', googleQuery: 'M+PLUS+Rounded+1c:wght@700;800' },
+            { name: 'Yuji Boku', label: 'Yuji Boku (Thư pháp truyền thống)', googleQuery: 'Yuji+Boku' },
+            { name: 'Dela Gothic One', label: 'Dela Gothic One (Dày đậm / Manga / Poster)', googleQuery: 'Dela+Gothic+One' },
+            { name: 'Shippori Mincho', label: 'Shippori Mincho (Mincho Điện ảnh / Cổ điển)', googleQuery: 'Shippori+Mincho:wght@700;800' }
+        ],
+        zh: [
+            { name: 'Noto Sans SC', label: 'Noto Sans SC (Chữ Giản Thể Chuẩn)', googleQuery: 'Noto+Sans+SC:wght@500;700;900' },
+            { name: 'Noto Serif SC', label: 'Noto Serif SC (Kiểu Tống / Cổ phong)', googleQuery: 'Noto+Serif+SC:wght@600;700;900' },
+            { name: 'ZCOOL QingKe HuangYou', label: 'ZCOOL HuangYou (Hình khối / Độc đáo)', googleQuery: 'ZCOOL+QingKe+HuangYou' },
+            { name: 'Ma Shan Zheng', label: 'Ma Shan Zheng (Thư pháp nét cọ)', googleQuery: 'Ma+Shan+Zheng' }
+        ]
+    };
+
+    // Track loaded fonts in browser DOM memory to prevent duplicate requests
+    const loadedGoogleFonts = new Set(['Arial', 'Impact']);
+
+    // Dynamic On-Demand Font Loader (Lazy Load only when user clicks/selects font)
+    function loadGoogleFontDynamically(fontName) {
+        if (!fontName || loadedGoogleFonts.has(fontName)) return;
+
+        // Search in all languages for the query
+        let query = null;
+        for (const langKey in FontCatalog) {
+            const found = FontCatalog[langKey].find(f => f.name === fontName);
+            if (found && found.googleQuery) {
+                query = found.googleQuery;
+                break;
+            }
+        }
+
+        if (!query) {
+            query = fontName.replace(/\s+/g, '+') + ':wght@600;700;800;900';
+        }
+
+        const linkId = `gfont-${fontName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+        if (!document.getElementById(linkId)) {
+            const link = document.createElement('link');
+            link.id = linkId;
+            link.rel = 'stylesheet';
+            link.href = `https://fonts.googleapis.com/css2?family=${query}&display=swap`;
+            document.head.appendChild(link);
+            loadedGoogleFonts.add(fontName);
+        }
+    }
+
+    // Populate dynamic font dropdown based on selected language
+    function updateFontDropdownByLanguage(langKey, preserveFont = null) {
+        if (!dom.subFontFamily) return;
+        const fontList = FontCatalog[langKey] || FontCatalog.vi;
+        
+        let html = '';
+        fontList.forEach(f => {
+            html += `<option value="${f.name}">${escapeHtml(f.label)}</option>`;
+        });
+        dom.subFontFamily.innerHTML = html;
+
+        // Select preserved font if exists, otherwise first font in list
+        const targetFont = preserveFont && fontList.some(f => f.name === preserveFont)
+            ? preserveFont
+            : fontList[0].name;
+
+        dom.subFontFamily.value = targetFont;
+        SubState.style.fontFamily = targetFont;
+        loadGoogleFontDynamically(targetFont);
+        applyStyleToOverlay();
+    }
+
     // DOM Elements Cache
     let dom = {};
 
@@ -128,6 +231,7 @@
         bindEvents();
         setupCueListEventDelegation();
         setupTabSwitching();
+        updateFontDropdownByLanguage('vi', 'Arial');
         applyPreset('standard_clean');
         loadSampleDataIfEmpty();
         updateTimelineImageCount();
@@ -184,6 +288,7 @@
 
             // Presets & Styling Controls
             subPresetsContainer: document.getElementById('sub-presets-container'),
+            subFontLang: document.getElementById('sub-style-font-lang'),
             subFontFamily: document.getElementById('sub-style-font'),
             subFontSize: document.getElementById('sub-style-size'),
             subFontSizeVal: document.getElementById('sub-style-size-val'),
@@ -320,7 +425,17 @@
         }
 
         // Style controls
-        if (dom.subFontFamily) dom.subFontFamily.addEventListener('change', updateStyleFromControls);
+        if (dom.subFontLang) {
+            dom.subFontLang.addEventListener('change', (e) => {
+                updateFontDropdownByLanguage(e.target.value);
+            });
+        }
+        if (dom.subFontFamily) {
+            dom.subFontFamily.addEventListener('change', () => {
+                loadGoogleFontDynamically(dom.subFontFamily.value);
+                updateStyleFromControls();
+            });
+        }
         if (dom.subFontSize) {
             dom.subFontSize.addEventListener('input', (e) => {
                 if (dom.subFontSizeVal) dom.subFontSizeVal.textContent = `${e.target.value}px`;
@@ -1127,7 +1242,16 @@
         Object.assign(SubState.style, preset);
 
         // Update UI controls
-        if (dom.subFontFamily) dom.subFontFamily.value = preset.fontFamily;
+        loadGoogleFontDynamically(preset.fontFamily);
+        if (dom.subFontFamily) {
+            // Check if font exists in current language dropdown, else switch to vi/en
+            const hasOption = Array.from(dom.subFontFamily.options).some(o => o.value === preset.fontFamily);
+            if (!hasOption) {
+                updateFontDropdownByLanguage('vi', preset.fontFamily);
+            } else {
+                dom.subFontFamily.value = preset.fontFamily;
+            }
+        }
         if (dom.subFontSize) dom.subFontSize.value = preset.fontSize;
         if (dom.subFontSizeVal) dom.subFontSizeVal.textContent = `${preset.fontSize}px`;
         if (dom.subPrimaryColor) dom.subPrimaryColor.value = preset.primaryColor;
@@ -1141,7 +1265,10 @@
     }
 
     function updateStyleFromControls() {
-        if (dom.subFontFamily) SubState.style.fontFamily = dom.subFontFamily.value;
+        if (dom.subFontFamily) {
+            SubState.style.fontFamily = dom.subFontFamily.value;
+            loadGoogleFontDynamically(dom.subFontFamily.value);
+        }
         if (dom.subFontSize) SubState.style.fontSize = parseInt(dom.subFontSize.value);
         if (dom.subPrimaryColor) SubState.style.primaryColor = dom.subPrimaryColor.value;
         if (dom.subHighlightColor) SubState.style.highlightColor = dom.subHighlightColor.value;

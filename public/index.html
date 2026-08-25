@@ -6,7 +6,6 @@
     <title>Ist-dev</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&family=Montserrat:wght@400;600;700;800;900&family=Oswald:wght@500;600;700&family=Outfit:wght@400;600;700;800;900&family=Poppins:wght@400;600;700;800;900&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="subtitles.css">
 </head>
@@ -236,19 +235,19 @@
                         </div>
                         <div class="settings-grid-2col mt-2">
                             <div class="setting-row">
+                                <label for="sub-style-font-lang">Ngôn ngữ Font:</label>
+                                <select id="sub-style-font-lang" class="custom-select">
+                                    <option value="vi" selected>🇻🇳 Tiếng Việt (Việt hóa chuẩn)</option>
+                                    <option value="en">🇬🇧 Tiếng Anh / Quốc tế (English)</option>
+                                    <option value="ko">🇰🇷 Tiếng Hàn (Korean / 한국어)</option>
+                                    <option value="ja">🇯🇵 Tiếng Nhật (Japanese / 日本語)</option>
+                                    <option value="zh">🇨🇳 Tiếng Trung (Chinese / 中文)</option>
+                                </select>
+                            </div>
+                            <div class="setting-row">
                                 <label for="sub-style-font">Font chữ:</label>
                                 <select id="sub-style-font" class="custom-select">
-                                    <option value="Arial" selected>Arial (Chuẩn quốc tế / Quốc dân)</option>
-                                    <option value="Outfit">Outfit (Bo tròn hiện đại)</option>
-                                    <option value="Montserrat">Montserrat (Điện ảnh / Cao cấp)</option>
-                                    <option value="Inter">Inter (Gọn gàng / Rõ nét)</option>
-                                    <option value="Roboto">Roboto (Google / YouTube)</option>
-                                    <option value="Poppins">Poppins (Trẻ trung / Viral)</option>
-                                    <option value="Oswald">Oswald (Cao gọn / Phim tài liệu)</option>
-                                    <option value="Bebas Neue">Bebas Neue (In hoa mạnh mẽ)</option>
-                                    <option value="Anton">Anton (Dày đậm / Nổi bật)</option>
-                                    <option value="Impact">Impact (Meme / Highlight)</option>
-                                    <option value="JetBrains Mono">JetBrains Mono (Code / Tech)</option>
+                                    <!-- Dynamic options filled by language -->
                                 </select>
                             </div>
                             <div class="setting-row">
