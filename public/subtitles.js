@@ -17,8 +17,8 @@
         activeMode: 'sync', // 'sync' or 'transcribe'
         style: {
             preset: 'standard_clean',
-            fontFamily: 'Outfit',
-            fontSize: 42,
+            fontFamily: 'Arial',
+            fontSize: 40,
             primaryColor: '#FFFFFF',
             highlightColor: '#FFE500',
             outlineColor: '#000000',
@@ -30,8 +30,8 @@
         },
         presets: {
             standard_clean: {
-                name: 'Chữ Thường Chuẩn',
-                fontFamily: 'Outfit',
+                name: 'Arial Trắng Chuẩn',
+                fontFamily: 'Arial',
                 fontSize: 38,
                 primaryColor: '#FFFFFF',
                 highlightColor: '#FFFFFF',
@@ -42,11 +42,23 @@
                 animationType: 'none'
             },
             standard_yellow: {
-                name: 'Chữ Vàng Chuẩn',
-                fontFamily: 'Outfit',
+                name: 'Arial Vàng Chuẩn',
+                fontFamily: 'Arial',
                 fontSize: 38,
                 primaryColor: '#FFE500',
                 highlightColor: '#FFE500',
+                outlineColor: '#000000',
+                outlineWidth: 3,
+                shadow: 2,
+                position: 'bottom',
+                animationType: 'none'
+            },
+            montserrat_cinema: {
+                name: 'Montserrat Cinema',
+                fontFamily: 'Montserrat',
+                fontSize: 36,
+                primaryColor: '#FFFFFF',
+                highlightColor: '#FFFFFF',
                 outlineColor: '#000000',
                 outlineWidth: 3,
                 shadow: 2,
@@ -116,8 +128,7 @@
         bindEvents();
         setupCueListEventDelegation();
         setupTabSwitching();
-        renderPresetButtons();
-        applyStyleToOverlay();
+        applyPreset('standard_clean');
         loadSampleDataIfEmpty();
         updateTimelineImageCount();
     }
@@ -652,6 +663,17 @@
         const words = seg.words || [];
         const animType = SubState.style.animationType;
 
+        // MODE: Standard static subtitle (No bounce, no pop, clean sentence)
+        if (animType === 'none') {
+            if (lastRenderedSegId !== seg.id) {
+                lastRenderedSegId = seg.id;
+                lastRenderedWordIdx = null;
+                const fullText = seg.text || words.map(w => w.word).join(' ');
+                dom.subCaptionBox.innerHTML = `<span class="sub-word-item" style="color: ${SubState.style.primaryColor}; font-weight: 700; transform: none; display: block; text-align: center;">${escapeHtml(fullText)}</span>`;
+            }
+            return;
+        }
+
         if (words.length === 0) {
             if (lastRenderedSegId !== seg.id) {
                 dom.subCaptionBox.innerHTML = `<span class="sub-word-item">${escapeHtml(seg.text)}</span>`;
@@ -1134,6 +1156,11 @@
         if (!dom.subWordOverlay || !dom.subCaptionBox) return;
 
         dom.subWordOverlay.className = `sub-word-overlay pos-${SubState.style.position}`;
+        if (SubState.style.animationType === 'none') {
+            dom.subCaptionBox.classList.add('anim-none');
+        } else {
+            dom.subCaptionBox.classList.remove('anim-none');
+        }
         dom.subCaptionBox.style.fontFamily = `'${SubState.style.fontFamily}', sans-serif`;
         dom.subCaptionBox.style.fontSize = `${SubState.style.fontSize * 0.58}px`;
         dom.subCaptionBox.style.webkitTextStroke = `${SubState.style.outlineWidth * 0.8}px ${SubState.style.outlineColor}`;

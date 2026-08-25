@@ -175,6 +175,12 @@
 }
 
 /* Word Animation Styles */
+.sub-caption-box.anim-none .sub-word-item,
+.sub-caption-box.anim-none .sub-word-item.active-word {
+    transform: none !important;
+    animation: none !important;
+}
+
 .sub-word-item.active-word {
     transform: scale(1.18);
     z-index: 2;
