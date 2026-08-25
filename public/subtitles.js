@@ -916,7 +916,7 @@
                     <!-- Matched Image & Semantic Alignment Info -->
                     <div class="sub-cue-match-box">
                         <div class="sub-cue-match-info">
-                            ${thumbUrl ? `<img src="${thumbUrl}" class="sub-cue-thumb" alt="thumb">` : `<div class="sub-cue-thumb" style="display:flex;align-items:center;justify-content:center;font-size:14px;">🖼️</div>`}
+                            ${thumbUrl ? `<img src="${thumbUrl}" class="sub-cue-thumb" alt="thumb" loading="lazy" decoding="async">` : `<div class="sub-cue-thumb" style="display:flex;align-items:center;justify-content:center;font-size:14px;">🖼️</div>`}
                             <div class="sub-cue-match-text">
                                 <div class="sub-cue-match-name">🖼️ ${escapeHtml(matchedName)}</div>
                                 <div class="sub-cue-match-reason">${escapeHtml(seg.matchReason || 'Khớp theo ngữ cảnh câu thoại')}</div>

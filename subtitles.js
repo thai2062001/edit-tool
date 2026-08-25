@@ -284,27 +284,39 @@ YÊU CẦU ĐỊNH DẠNG:
                 });
             }
 
-            // 2. Add image thumbnails for vision validation
+            // 2. Add image thumbnails in parallel for blazing speed
             const imageList = Array.isArray(images) ? images : [];
             const maxThumbs = Math.min(15, imageList.length);
-            for (let i = 0; i < maxThumbs; i++) {
-                const img = imageList[i];
+
+            const thumbTasks = imageList.slice(0, maxThumbs).map(async (img, i) => {
                 if (img && img.filename) {
                     const imgPath = path.join(UPLOADS_DIR, img.filename);
                     if (fs.existsSync(imgPath)) {
                         const thumbBase64 = await getThumbnailBase64(imgPath);
                         if (thumbBase64) {
-                            contents.push({ text: `[IMAGE_${i}] Tên: ${img.originalName || img.filename}` });
-                            contents.push({
-                                inlineData: {
-                                    mimeType: 'image/jpeg',
-                                    data: thumbBase64
-                                }
-                            });
+                            return {
+                                index: i,
+                                name: img.originalName || img.filename,
+                                data: thumbBase64
+                            };
                         }
                     }
                 }
-            }
+                return null;
+            });
+
+            const processedThumbs = await Promise.all(thumbTasks);
+            processedThumbs.forEach(t => {
+                if (t && t.data) {
+                    contents.push({ text: `[IMAGE_${t.index}] Tên: ${t.name}` });
+                    contents.push({
+                        inlineData: {
+                            mimeType: 'image/jpeg',
+                            data: t.data
+                        }
+                    });
+                }
+            });
 
             // 3. Prompt for Gemini
             const srtSummary = rawParsedSrt.map((c, idx) => `#${idx + 1}: "${c.text}"`).join('\n');
@@ -639,11 +651,14 @@ function extractLightweightAudio(inputPath, outputPath) {
     return new Promise((resolve, reject) => {
         const proc = spawn('ffmpeg', [
             '-y',
+            '-threads', '0',
             '-i', inputPath,
             '-vn',
+            '-sn',
+            '-dn',
             '-ar', '16000',
             '-ac', '1',
-            '-b:a', '48k',
+            '-b:a', '32k',
             outputPath
         ]);
         proc.on('close', (code) => {

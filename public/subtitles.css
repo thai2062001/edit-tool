@@ -280,6 +280,8 @@
     border-radius: var(--radius-md);
     padding: 12px 14px;
     transition: var(--transition);
+    content-visibility: auto;
+    contain-intrinsic-size: 0 110px;
 }
 
 .sub-cue-card:hover {
