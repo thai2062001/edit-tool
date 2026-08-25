@@ -239,12 +239,20 @@ Motion gồm: 'zoom_in', 'zoom_out', 'pan_left', 'pan_right', 'zoom_pan', 'none'
         // Map compact array or object format to standard scenes
         let rawScenes = Array.isArray(parsed) ? parsed : (parsed.scenes || Object.values(parsed)[0] || []);
         
+        // Allowed motion values
+        const validMotions = ['zoom_in', 'zoom_out', 'pan_left', 'pan_right', 'zoom_pan', 'none'];
+        const cleanMotion = (m) => {
+            if (!m || typeof m !== 'string') return 'zoom_in';
+            let norm = m.trim().toLowerCase().replace(/[\s-]+/g, '_');
+            return validMotions.includes(norm) ? norm : 'zoom_in';
+        };
+
         const scenes = rawScenes.map((s, idx) => {
             if (Array.isArray(s)) {
                 return {
                     imageIndex: typeof s[0] === 'number' ? s[0] : (idx % items.length),
                     sceneText: s[1] || `Phân cảnh ${idx + 1}`,
-                    suggestedMotion: s[2] || 'zoom_in',
+                    suggestedMotion: cleanMotion(s[2]),
                     suggestedDuration: parseFloat(s[3] || 4.0),
                     fadeIn: parseFloat(s[4] || 0.8),
                     fadeOut: parseFloat(s[5] || 0.8)
@@ -253,7 +261,7 @@ Motion gồm: 'zoom_in', 'zoom_out', 'pan_left', 'pan_right', 'zoom_pan', 'none'
             return {
                 imageIndex: s.i !== undefined ? s.i : (s.imageIndex !== undefined ? s.imageIndex : idx % items.length),
                 sceneText: s.t || s.sceneText || `Phân cảnh ${idx + 1}`,
-                suggestedMotion: s.m || s.suggestedMotion || 'zoom_in',
+                suggestedMotion: cleanMotion(s.m || s.suggestedMotion || s.motion),
                 suggestedDuration: parseFloat(s.d || s.suggestedDuration || 4.0),
                 fadeIn: parseFloat(s.fi || s.fadeIn || 0.8),
                 fadeOut: parseFloat(s.fo || s.fadeOut || 0.8)

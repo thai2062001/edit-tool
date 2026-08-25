@@ -788,13 +788,15 @@ function renderAiScenesResult(scenes) {
 btnApplyAiTimeline.addEventListener('click', () => {
     if (!currentAiMatchedScenes || currentAiMatchedScenes.length === 0) return;
 
+    const sourceItems = (window.mediaItems && window.mediaItems.length > 0) ? window.mediaItems : mediaItems;
     const newTimeline = [];
 
-    currentAiMatchedScenes.forEach((scene) => {
-        const originalItem = mediaItems[scene.imageIndex];
+    currentAiMatchedScenes.forEach((scene, sIdx) => {
+        const originalItem = sourceItems[scene.imageIndex] || sourceItems[sIdx % sourceItems.length];
         if (originalItem) {
-            // Clone item with new AI settings
+            // Deep clone item with new AI settings
             const cloned = JSON.parse(JSON.stringify(originalItem));
+            if (!cloned.settings) cloned.settings = {};
             cloned.settings.motion = scene.suggestedMotion || 'zoom_in';
             cloned.settings.duration = parseFloat(scene.suggestedDuration || 4.0);
             cloned.settings.fadeIn = parseFloat(scene.fadeIn || 0.8);
@@ -805,6 +807,7 @@ btnApplyAiTimeline.addEventListener('click', () => {
 
     if (newTimeline.length > 0) {
         mediaItems = newTimeline;
+        window.mediaItems = newTimeline;
         renderMediaList();
         closeAiModal();
         alert('🎉 Đã áp dụng thành công kịch bản và tự động sắp xếp lại Timeline theo gợi ý của Gemini AI!');
