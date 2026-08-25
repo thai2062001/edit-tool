@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="subtitles.css">
 </head>
 <body>
     <div class="app-container">
@@ -33,8 +34,20 @@
             </div>
         </header>
 
-        <!-- Main Workspace -->
-        <main class="workspace-grid">
+        <!-- Main Tab Navigation -->
+        <nav class="main-tab-nav">
+            <button id="tab-btn-editor" class="tab-btn active">
+                <span>🎬 Dựng Video (Timeline)</span>
+            </button>
+            <button id="tab-btn-subtitles" class="tab-btn">
+                <span>💬 Auto Subtitle AI (Word-Level)</span>
+                <span class="tab-badge">MỚI</span>
+            </button>
+        </nav>
+
+        <!-- TAB 1: Main Video Editor Workspace -->
+        <div id="tab-pane-editor" class="tab-pane active">
+            <main class="workspace-grid">
             <!-- Left & Center: Media Timeline & Configuration -->
             <section class="media-timeline-section">
                 <!-- Dropzone for Upload -->
@@ -166,6 +179,233 @@
                 </div>
             </aside>
         </main>
+        </div>
+        <!-- End TAB 1 -->
+
+        <!-- TAB 2: Auto Subtitle / Captions (Word-Level Animation) -->
+        <div id="tab-pane-subtitles" class="tab-pane">
+            <div class="subtitles-layout-grid">
+                <!-- Left: Media Player & Realtime Word-Level Animated Preview -->
+                <div class="sub-preview-card">
+                    <div class="card-header flex-between">
+                        <h3>👁️ Trình Phát Video & Xem Trước Phụ Đề Hoạt Họa</h3>
+                        <div class="header-actions">
+                            <input type="file" id="sub-file-input" accept="video/*,audio/*" hidden>
+                            <button class="btn btn-small btn-outline" onclick="document.getElementById('sub-file-input').click()" title="Tải video hoặc audio từ máy tính của bạn">
+                                📁 Tải Từ Máy (PC)
+                            </button>
+                            <button id="sub-btn-use-editor-video" class="btn btn-small btn-secondary" title="Lấy video vừa dựng hoặc render xong từ Tab 1">
+                                🎬 Lấy Video Từ Tab 1
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="sub-media-name-label" class="text-xs text-dim">
+                        💡 Hỗ trợ cả 2 nguồn: Bấm <strong>"Tải Từ Máy (PC)"</strong> hoặc <strong>"Lấy Video Từ Tab 1"</strong> (hoặc kéo thả video trực tiếp vào khung dưới).
+                    </div>
+
+                    <!-- Video Container with Live Word-Level Overlay -->
+                    <div id="sub-video-container" class="sub-video-container">
+                        <video id="sub-video-player" class="sub-video-player" playsinline preload="auto"></video>
+                        <div id="sub-word-overlay" class="sub-word-overlay pos-bottom">
+                            <div id="sub-caption-box" class="sub-caption-box">
+                                <!-- Word pills rendered in real-time -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Player Controls -->
+                    <div class="sub-player-controls">
+                        <button id="sub-btn-play-pause" class="btn btn-primary btn-small">▶ Phát</button>
+                        <input type="range" id="sub-scrubber" class="custom-range sub-scrubber" min="0" max="10" step="0.05" value="0">
+                        <span id="sub-time-label" class="sub-time-label">0:00.0 / 0:00.0</span>
+                    </div>
+
+                    <!-- Subtitle Presets Selection -->
+                    <div class="settings-card mt-2">
+                        <div class="card-header">
+                            <h4>✨ Phong Cách Phụ Đề Viral (Word-Level Animation Presets)</h4>
+                        </div>
+                        <div id="sub-presets-container" class="sub-presets-grid mt-2"></div>
+                    </div>
+
+                    <!-- Advanced Subtitle Styling -->
+                    <div class="settings-card mt-2">
+                        <div class="card-header">
+                            <h4>🎨 Tùy Chỉnh Chi Tiết Phụ Đề</h4>
+                        </div>
+                        <div class="settings-grid-2col mt-2">
+                            <div class="setting-row">
+                                <label for="sub-style-font">Font chữ:</label>
+                                <select id="sub-style-font" class="custom-select">
+                                    <option value="Outfit" selected>Outfit (Hiện đại)</option>
+                                    <option value="Arial">Arial (Chuẩn)</option>
+                                    <option value="Impact">Impact (Đậm nét/Meme)</option>
+                                    <option value="Montserrat">Montserrat (Thời thượng)</option>
+                                    <option value="JetBrains Mono">JetBrains Mono (Code/Tech)</option>
+                                </select>
+                            </div>
+                            <div class="setting-row">
+                                <label for="sub-style-position">Vị trí hiển thị:</label>
+                                <select id="sub-style-position" class="custom-select">
+                                    <option value="bottom" selected>Dưới đáy (Chuẩn)</option>
+                                    <option value="center">Giữa khung hình (Tập trung)</option>
+                                    <option value="top">Trên đỉnh</option>
+                                </select>
+                            </div>
+                            <div class="setting-row">
+                                <label for="sub-style-animation">Hiệu ứng chuyển từ:</label>
+                                <select id="sub-style-animation" class="custom-select">
+                                    <option value="bounce" selected>Bounce (Nảy chữ CapCut)</option>
+                                    <option value="pop">Pop (Phóng to nhanh)</option>
+                                    <option value="glow">Glow (Phát sáng Neon)</option>
+                                    <option value="karaoke_fill">Karaoke Fill (Chạy màu dần)</option>
+                                    <option value="single_word">Single Word (Hiện từng từ lớn)</option>
+                                </select>
+                            </div>
+                            <div class="setting-row">
+                                <label for="sub-style-size">Cỡ chữ: <span id="sub-style-size-val">42px</span></label>
+                                <input type="range" id="sub-style-size" min="20" max="80" step="2" value="42" class="custom-range">
+                            </div>
+                        </div>
+
+                        <div class="sub-color-picker-row mt-3">
+                            <div class="color-input-group">
+                                <label>Màu chữ thường:</label>
+                                <input type="color" id="sub-style-primary-color" value="#FFFFFF">
+                            </div>
+                            <div class="color-input-group">
+                                <label>Màu Highlight (Từ đang nói):</label>
+                                <input type="color" id="sub-style-highlight-color" value="#FFE500">
+                            </div>
+                            <div class="color-input-group">
+                                <label>Màu viền (Stroke):</label>
+                                <input type="color" id="sub-style-outline-color" value="#000000">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Export & Burn Actions -->
+                    <div class="sub-actions-bar">
+                        <div class="export-file-btns">
+                            <button id="sub-btn-export-ass" class="btn btn-small btn-outline" title="Xuất file phụ đề ASS có gắn thẻ Karaoke \k">
+                                📥 Xuất File .ASS (Karaoke)
+                            </button>
+                            <button id="sub-btn-export-srt" class="btn btn-small btn-ghost">
+                                📥 Xuất .SRT
+                            </button>
+                        </div>
+                        <button id="sub-btn-burn-video" class="btn btn-primary">
+                            ⚡ Gắn Phụ Đề Vào Video (FFmpeg Render)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right: AI Generation Panel & Interactive Word-Level Editor -->
+                <div class="sub-editor-panel">
+                    <!-- Gemini AI Subtitle & Audio-SRT Sync Box -->
+                    <div class="sub-ai-box">
+                        <div class="sub-ai-header">
+                            <div class="sub-ai-title-wrap">
+                                <h4>🤖 Gemini AI Audio & Subtitle Studio</h4>
+                                <span class="ai-badge">Gemini 2.5 Flash</span>
+                            </div>
+                            <div class="sub-mode-toggle">
+                                <button type="button" id="sub-mode-sync" class="btn-mode active" title="Đồng bộ file Audio giọng đọc với file phụ đề SRT và hình ảnh">
+                                    🎙️ Đồng Bộ Audio - SRT - Ảnh
+                                </button>
+                                <button type="button" id="sub-mode-transcribe" class="btn-mode" title="Tự động nghe và chép lời từ video/audio">
+                                    ✨ Tự Chép Lời AI
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="setting-row">
+                            <label for="sub-input-api-key" class="text-xs text-dim">🔑 Gemini API Key:</label>
+                            <input type="password" id="sub-input-api-key" class="form-control font-mono" value="AQ.Ab8RN6JMEe8jCjohN1xaI2N70KtihaOv6Jd_Q-Ke2baWI6n-nA" placeholder="Nhập API Key...">
+                        </div>
+
+                        <!-- Mode: Audio-SRT-Image Sync Panel -->
+                        <div id="sub-panel-sync-mode" class="sub-sync-panel-wrap mt-2">
+                            <div class="sync-upload-row">
+                                <div class="sync-file-card">
+                                    <div class="sync-card-label">🔊 File Audio Giọng Đọc:</div>
+                                    <input type="file" id="sync-audio-file-input" accept="audio/*,video/*" hidden>
+                                    <div class="sync-card-action">
+                                        <button type="button" class="btn btn-xs btn-outline" onclick="document.getElementById('sync-audio-file-input').click()">
+                                            📁 Chọn Audio (.MP3/.WAV)
+                                        </button>
+                                        <span id="sync-audio-name" class="sync-filename-tag">Chưa chọn audio</span>
+                                    </div>
+                                </div>
+                                <div class="sync-file-card">
+                                    <div class="sync-card-label">📜 File Phụ Đề / Kịch Bản:</div>
+                                    <input type="file" id="sync-srt-file-input" accept=".srt,.vtt,.txt,.md" hidden>
+                                    <div class="sync-card-action">
+                                        <button type="button" class="btn btn-xs btn-outline" onclick="document.getElementById('sync-srt-file-input').click()">
+                                            📁 Nạp File (.SRT / .VTT)
+                                        </button>
+                                        <button type="button" id="sync-btn-sample-demo" class="btn btn-xs btn-ghost" title="Nạp mẫu SRT & Audio Seoul thử nghiệm">
+                                            📑 Nạp Mẫu Demo
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="setting-row mt-2">
+                                <label for="sub-script-textarea" class="text-xs">Nội dung Kịch bản / SRT:</label>
+                                <textarea id="sub-script-textarea" class="custom-textarea mt-1" rows="4" placeholder="Dán nội dung SRT hoặc tải file .srt/.vtt lên..."></textarea>
+                            </div>
+
+                            <div class="flex-between align-center mt-2">
+                                <span class="text-xs text-dim">🖼️ Ảnh Timeline: <strong id="sync-timeline-img-count">0 ảnh</strong></span>
+                                <button id="sync-btn-run-ai" class="btn btn-ai-action">
+                                    ⚡ AI Đồng Bộ Audio ➔ SRT ➔ Ảnh
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Mode: Auto Transcribe Panel (hidden by default) -->
+                        <div id="sub-panel-transcribe-mode" class="sub-transcribe-panel-wrap mt-2 hidden">
+                            <div class="flex-between align-center">
+                                <div class="setting-row" style="margin: 0;">
+                                    <label for="sub-chunk-words-select" class="text-xs">Độ dài câu:</label>
+                                    <select id="sub-chunk-words-select" class="custom-select custom-select-sm">
+                                        <option value="3">3 - 4 từ (TikTok Shorts)</option>
+                                        <option value="5" selected>4 - 6 từ (Tiêu chuẩn)</option>
+                                        <option value="8">7 - 10 từ (Câu dài)</option>
+                                    </select>
+                                </div>
+                                <button id="sub-btn-generate-ai" class="btn btn-ai-action">
+                                    ✨ Tạo Phụ Đề AI (Word-Level)
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="sub-ai-status" class="text-xs text-dim mt-2">
+                            Sẵn sàng đồng bộ giọng đọc theo kịch bản SRT và hình ảnh.
+                        </div>
+                    </div>
+
+                    <!-- Interactive Cues Timeline List -->
+                    <div class="card-header flex-between">
+                        <h4>📝 Danh Sách Phân Đoạn & Ảnh Khớp (<span id="sub-cues-count-badge">0 câu</span>)</h4>
+                        <div class="header-actions">
+                            <button id="sub-btn-apply-timeline" class="btn btn-small btn-primary" title="Tự động cập nhật thời lượng các ảnh trên Timeline theo đúng giọng đọc Audio">
+                                ✅ Áp Dụng Vào Timeline Dựng Phim
+                            </button>
+                            <button id="sub-btn-add-cue" class="btn btn-small btn-secondary">+ Thêm</button>
+                            <button id="sub-btn-clear-cues" class="btn btn-small btn-ghost">🗑️</button>
+                        </div>
+                    </div>
+
+                    <div id="sub-cues-list" class="sub-cues-list custom-scrollbar">
+                        <!-- Rendered Cue Cards with Word Pills & Matched Image Info -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- End TAB 2 -->
     </div>
 
     <!-- Live Preview Modal -->
@@ -298,6 +538,9 @@
                         <a id="btn-download-video" class="btn btn-primary" download="video_output.mp4">
                             💾 Tải Video Về Máy (.MP4)
                         </a>
+                        <button id="btn-send-to-subtitles" class="btn btn-ai" title="Chuyển video vừa xuất sang Tab 2 để tạo phụ đề hoạt họa bằng AI">
+                            💬 Gắn Phụ Đề AI Cho Video Này (Sang Tab 2)
+                        </button>
                         <button class="btn btn-secondary" onclick="closeRenderModal()">
                             Tiếp Tục Chỉnh Sửa
                         </button>
@@ -317,6 +560,49 @@
         </div>
     </div>
 
+    <!-- Subtitle Burning Progress & Result Modal -->
+    <div id="sub-burn-modal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-dialog render-dialog">
+            <div class="modal-header">
+                <h3>⚡ Đang Gắn Phụ Đề Word-Level (FFmpeg ASS)</h3>
+            </div>
+            <div class="modal-body render-body">
+                <!-- State: Processing -->
+                <div id="sub-burn-processing">
+                    <div class="progress-ring-container">
+                        <div class="spinner-neon"></div>
+                        <div class="progress-percent" id="sub-burn-percent">0%</div>
+                    </div>
+                    <div class="progress-bar-wrapper mt-4">
+                        <div class="progress-bar-fill" id="sub-burn-progress-bar" style="width: 0%;"></div>
+                    </div>
+                    <p class="render-status-text" id="sub-burn-status-text">Đang tổng hợp các bộ lọc phụ đề karaoke...</p>
+                </div>
+
+                <!-- State: Completed -->
+                <div id="sub-burn-completed" class="hidden">
+                    <div class="success-banner">
+                        <span class="success-icon">🎉</span>
+                        <h4>Gắn Phụ Đề Hoàn Tất!</h4>
+                    </div>
+                    <div class="rendered-video-wrapper mt-3">
+                        <video id="sub-burn-video-player" controls autoplay loop playsinline></video>
+                    </div>
+                    <div class="action-buttons-group mt-3">
+                        <a id="sub-btn-download-burned" class="btn btn-primary" download="video_with_subtitles.mp4">
+                            💾 Tải Video Phụ Đề Về Máy (.MP4)
+                        </a>
+                        <button class="btn btn-secondary" onclick="closeSubBurnModal()">
+                            Tiếp Tục Chỉnh Sửa
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="app.js"></script>
+    <script src="subtitles.js"></script>
 </body>
 </html>

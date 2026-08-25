@@ -160,8 +160,20 @@ btnRemoveBgm.addEventListener('click', () => {
     updateBgmUI();
 });
 
+// Expose utilities to window for Tab 2 Sync integration
+window.renderMediaList = function() {
+    if (window.mediaItems) mediaItems = window.mediaItems;
+    renderMediaList();
+};
+window.updateBgmUI = function() {
+    if (window.bgmTrack !== undefined) bgmTrack = window.bgmTrack;
+    updateBgmUI();
+};
+
 // Render Media List
 function renderMediaList() {
+    window.mediaItems = mediaItems;
+    window.bgmTrack = bgmTrack;
     if (mediaItems.length === 0) {
         emptyState.classList.remove('hidden');
         mediaList.innerHTML = '';

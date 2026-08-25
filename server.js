@@ -27,6 +27,14 @@ app.use(express.static(PUBLIC_DIR));
 app.use('/uploads', express.static(UPLOADS_DIR));
 app.use('/outputs', express.static(OUTPUTS_DIR));
 
+// Modular Subtitle / Word-Level Captions Extension
+try {
+    const { setupSubtitlesRoutes } = require('./subtitles');
+    setupSubtitlesRoutes(app, { UPLOADS_DIR, OUTPUTS_DIR, DEFAULT_GEMINI_API_KEY });
+} catch (subErr) {
+    console.error('Subtitle module load notice:', subErr.message);
+}
+
 // Setup Multer for file uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, UPLOADS_DIR),

@@ -1,0 +1,1386 @@
+/**
+ * SUBTITLES & WORD-LEVEL ANIMATION & AUDIO-SRT SYNC MODULE
+ * Ist-dev / FFmpeg Studio
+ * Isolated & Modular Script
+ */
+
+(function () {
+    'use strict';
+
+    // Global Subtitle State
+    const SubState = {
+        currentMedia: null, // { filename, url, duration, type }
+        syncAudio: null, // { filename, originalName, url, duration }
+        segments: [], // [{ id, start, end, duration, text, imageIndex, imageFilename, imageOriginalName, imageUrl, matchScore, matchReason, words: [{ word, start, end }] }]
+        activeSegmentId: null,
+        activeWordIndex: -1,
+        activeMode: 'sync', // 'sync' or 'transcribe'
+        style: {
+            preset: 'tiktok_yellow',
+            fontFamily: 'Outfit',
+            fontSize: 42,
+            primaryColor: '#FFFFFF',
+            highlightColor: '#FFE500',
+            outlineColor: '#000000',
+            outlineWidth: 3,
+            shadow: 2,
+            position: 'bottom', // 'top', 'center', 'bottom'
+            animationType: 'bounce', // 'bounce', 'pop', 'glow', 'karaoke_fill', 'single_word'
+            boxBg: 'transparent'
+        },
+        presets: {
+            tiktok_yellow: {
+                name: 'TikTok Pop',
+                fontFamily: 'Outfit',
+                fontSize: 44,
+                primaryColor: '#FFFFFF',
+                highlightColor: '#FFDF00',
+                outlineColor: '#000000',
+                outlineWidth: 4,
+                shadow: 2,
+                position: 'bottom',
+                animationType: 'bounce'
+            },
+            capcut_neon: {
+                name: 'CapCut Cyan',
+                fontFamily: 'Outfit',
+                fontSize: 42,
+                primaryColor: '#F0F9FF',
+                highlightColor: '#06B6D4',
+                outlineColor: '#0F172A',
+                outlineWidth: 3,
+                shadow: 3,
+                position: 'bottom',
+                animationType: 'glow'
+            },
+            mrbeast_bounce: {
+                name: 'MrBeast Pop',
+                fontFamily: 'Outfit',
+                fontSize: 48,
+                primaryColor: '#FFFFFF',
+                highlightColor: '#F97316',
+                outlineColor: '#000000',
+                outlineWidth: 5,
+                shadow: 3,
+                position: 'center',
+                animationType: 'bounce'
+            },
+            cyberpunk_pink: {
+                name: 'Cyberpunk',
+                fontFamily: 'Outfit',
+                fontSize: 42,
+                primaryColor: '#FFFFFF',
+                highlightColor: '#F43F5E',
+                outlineColor: '#4C0519',
+                outlineWidth: 3,
+                shadow: 4,
+                position: 'bottom',
+                animationType: 'glow'
+            },
+            clean_classic: {
+                name: 'Classic White',
+                fontFamily: 'Outfit',
+                fontSize: 38,
+                primaryColor: '#FFFFFF',
+                highlightColor: '#38BDF8',
+                outlineColor: '#000000',
+                outlineWidth: 2,
+                shadow: 1,
+                position: 'bottom',
+                animationType: 'karaoke_fill'
+            }
+        }
+    };
+
+    // DOM Elements Cache
+    let dom = {};
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initSubtitleModule();
+    });
+
+    function initSubtitleModule() {
+        cacheDom();
+        bindEvents();
+        setupCueListEventDelegation();
+        setupTabSwitching();
+        renderPresetButtons();
+        applyStyleToOverlay();
+        loadSampleDataIfEmpty();
+        updateTimelineImageCount();
+    }
+
+    function cacheDom() {
+        dom = {
+            // Tab buttons
+            tabVideoEditor: document.getElementById('tab-btn-editor'),
+            tabSubtitles: document.getElementById('tab-btn-subtitles'),
+            paneVideoEditor: document.getElementById('tab-pane-editor'),
+            paneSubtitles: document.getElementById('tab-pane-subtitles'),
+
+            // Media & Player
+            subVideoPlayer: document.getElementById('sub-video-player'),
+            subVideoContainer: document.getElementById('sub-video-container'),
+            subWordOverlay: document.getElementById('sub-word-overlay'),
+            subCaptionBox: document.getElementById('sub-caption-box'),
+            subBtnPlayPause: document.getElementById('sub-btn-play-pause'),
+            subScrubber: document.getElementById('sub-scrubber'),
+            subTimeLabel: document.getElementById('sub-time-label'),
+            subMediaNameLabel: document.getElementById('sub-media-name-label'),
+            subFileInput: document.getElementById('sub-file-input'),
+
+            // Mode switchers
+            subModeSync: document.getElementById('sub-mode-sync'),
+            subModeTranscribe: document.getElementById('sub-mode-transcribe'),
+            subPanelSyncMode: document.getElementById('sub-panel-sync-mode'),
+            subPanelTranscribeMode: document.getElementById('sub-panel-transcribe-mode'),
+
+            // Sync Mode Inputs
+            syncAudioFileInput: document.getElementById('sync-audio-file-input'),
+            syncAudioName: document.getElementById('sync-audio-name'),
+            syncSrtFileInput: document.getElementById('sync-srt-file-input'),
+            syncBtnSampleDemo: document.getElementById('sync-btn-sample-demo'),
+            syncBtnRunAi: document.getElementById('sync-btn-run-ai'),
+            syncTimelineImgCount: document.getElementById('sync-timeline-img-count'),
+
+            // AI Panel
+            subAiApiKey: document.getElementById('sub-input-api-key'),
+            subScriptTextarea: document.getElementById('sub-script-textarea'),
+            subChunkWordsSelect: document.getElementById('sub-chunk-words-select'),
+            subBtnGenerateAi: document.getElementById('sub-btn-generate-ai'),
+            subAiStatus: document.getElementById('sub-ai-status'),
+            subBtnUseEditorVideo: document.getElementById('sub-btn-use-editor-video'),
+            subBtnSampleScript: document.getElementById('sub-btn-sample-script'),
+
+            // Editor List & Apply
+            subCuesList: document.getElementById('sub-cues-list'),
+            subCuesCountBadge: document.getElementById('sub-cues-count-badge'),
+            subBtnApplyTimeline: document.getElementById('sub-btn-apply-timeline'),
+            subBtnAddCue: document.getElementById('sub-btn-add-cue'),
+            subBtnClearCues: document.getElementById('sub-btn-clear-cues'),
+
+            // Presets & Styling Controls
+            subPresetsContainer: document.getElementById('sub-presets-container'),
+            subFontFamily: document.getElementById('sub-style-font'),
+            subFontSize: document.getElementById('sub-style-size'),
+            subFontSizeVal: document.getElementById('sub-style-size-val'),
+            subPrimaryColor: document.getElementById('sub-style-primary-color'),
+            subHighlightColor: document.getElementById('sub-style-highlight-color'),
+            subOutlineColor: document.getElementById('sub-style-outline-color'),
+            subPosition: document.getElementById('sub-style-position'),
+            subAnimationType: document.getElementById('sub-style-animation'),
+
+            // Export & Burn
+            subBtnExportAss: document.getElementById('sub-btn-export-ass'),
+            subBtnExportSrt: document.getElementById('sub-btn-export-srt'),
+            subBtnBurnVideo: document.getElementById('sub-btn-burn-video'),
+
+            // Render modal quick-jump
+            btnSendToSubtitles: document.getElementById('btn-send-to-subtitles'),
+
+            // Burn Modal
+            subBurnModal: document.getElementById('sub-burn-modal'),
+            subBurnPercent: document.getElementById('sub-burn-percent'),
+            subBurnBar: document.getElementById('sub-burn-progress-bar'),
+            subBurnStatusText: document.getElementById('sub-burn-status-text'),
+            subBurnProcessing: document.getElementById('sub-burn-processing'),
+            subBurnCompleted: document.getElementById('sub-burn-completed'),
+            subBurnVideoPlayer: document.getElementById('sub-burn-video-player'),
+            subBtnDownloadBurned: document.getElementById('sub-btn-download-burned')
+        };
+    }
+
+    function bindEvents() {
+        // Drag & Drop onto Subtitle Player Container (Local PC files)
+        if (dom.subVideoContainer) {
+            dom.subVideoContainer.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dom.subVideoContainer.style.border = '2px dashed var(--accent-cyan)';
+            });
+            dom.subVideoContainer.addEventListener('dragleave', () => {
+                dom.subVideoContainer.style.border = 'none';
+            });
+            dom.subVideoContainer.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dom.subVideoContainer.style.border = 'none';
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    uploadLocalMediaFile(e.dataTransfer.files[0]);
+                }
+            });
+        }
+
+        // Jump to Tab 2 from Tab 1 Render Completion Modal
+        if (dom.btnSendToSubtitles) {
+            dom.btnSendToSubtitles.addEventListener('click', () => {
+                if (typeof window.closeRenderModal === 'function') {
+                    window.closeRenderModal();
+                }
+                switchTab('subtitles');
+                grabEditorVideo(false);
+            });
+        }
+        // Player events
+        if (dom.subVideoPlayer) {
+            dom.subVideoPlayer.addEventListener('timeupdate', onPlayerTimeUpdate);
+            dom.subVideoPlayer.addEventListener('loadedmetadata', onPlayerLoadedMetadata);
+            dom.subVideoPlayer.addEventListener('play', () => updatePlayButton(true));
+            dom.subVideoPlayer.addEventListener('pause', () => updatePlayButton(false));
+            dom.subVideoPlayer.addEventListener('ended', () => updatePlayButton(false));
+        }
+
+        if (dom.subBtnPlayPause) {
+            dom.subBtnPlayPause.addEventListener('click', togglePlayPause);
+        }
+
+        if (dom.subScrubber) {
+            dom.subScrubber.addEventListener('input', (e) => {
+                const targetTime = parseFloat(e.target.value);
+                if (dom.subVideoPlayer && !isNaN(targetTime)) {
+                    dom.subVideoPlayer.currentTime = targetTime;
+                }
+            });
+        }
+
+        // Mode Switching
+        if (dom.subModeSync) {
+            dom.subModeSync.addEventListener('click', () => switchAiMode('sync'));
+        }
+        if (dom.subModeTranscribe) {
+            dom.subModeTranscribe.addEventListener('click', () => switchAiMode('transcribe'));
+        }
+
+        // Sync Mode File Handlers
+        if (dom.syncAudioFileInput) {
+            dom.syncAudioFileInput.addEventListener('change', handleSyncAudioUpload);
+        }
+        if (dom.syncSrtFileInput) {
+            dom.syncSrtFileInput.addEventListener('change', handleSyncSrtUpload);
+        }
+        if (dom.syncBtnSampleDemo) {
+            dom.syncBtnSampleDemo.addEventListener('click', loadSampleSrtDemo);
+        }
+        if (dom.syncBtnRunAi) {
+            dom.syncBtnRunAi.addEventListener('click', runAiAudioSrtSync);
+        }
+
+        // Apply Timeline button
+        if (dom.subBtnApplyTimeline) {
+            dom.subBtnApplyTimeline.addEventListener('click', applyCuesToTimeline);
+        }
+
+        // File upload for video player
+        if (dom.subFileInput) {
+            dom.subFileInput.addEventListener('change', handleSubMediaUpload);
+        }
+
+        // Use video from editor tab
+        if (dom.subBtnUseEditorVideo) {
+            dom.subBtnUseEditorVideo.addEventListener('click', grabEditorVideo);
+        }
+
+        // Sample script button
+        if (dom.subBtnSampleScript) {
+            dom.subBtnSampleScript.addEventListener('click', loadSampleScript);
+        }
+
+        // Generate Subtitles AI Button
+        if (dom.subBtnGenerateAi) {
+            dom.subBtnGenerateAi.addEventListener('click', generateSubtitlesWithGemini);
+        }
+
+        // Add & Clear Cues
+        if (dom.subBtnAddCue) {
+            dom.subBtnAddCue.addEventListener('click', addNewEmptyCue);
+        }
+        if (dom.subBtnClearCues) {
+            dom.subBtnClearCues.addEventListener('click', clearAllCues);
+        }
+
+        // Style controls
+        if (dom.subFontFamily) dom.subFontFamily.addEventListener('change', updateStyleFromControls);
+        if (dom.subFontSize) {
+            dom.subFontSize.addEventListener('input', (e) => {
+                if (dom.subFontSizeVal) dom.subFontSizeVal.textContent = `${e.target.value}px`;
+                updateStyleFromControls();
+            });
+        }
+        if (dom.subPrimaryColor) dom.subPrimaryColor.addEventListener('input', updateStyleFromControls);
+        if (dom.subHighlightColor) dom.subHighlightColor.addEventListener('input', updateStyleFromControls);
+        if (dom.subOutlineColor) dom.subOutlineColor.addEventListener('input', updateStyleFromControls);
+        if (dom.subPosition) dom.subPosition.addEventListener('change', updateStyleFromControls);
+        if (dom.subAnimationType) dom.subAnimationType.addEventListener('change', updateStyleFromControls);
+
+        // Export events
+        if (dom.subBtnExportAss) dom.subBtnExportAss.addEventListener('click', () => exportSubtitlesFile('ass'));
+        if (dom.subBtnExportSrt) dom.subBtnExportSrt.addEventListener('click', () => exportSubtitlesFile('srt'));
+        if (dom.subBtnBurnVideo) dom.subBtnBurnVideo.addEventListener('click', burnSubtitlesIntoVideo);
+    }
+
+    function switchAiMode(mode) {
+        SubState.activeMode = mode;
+        if (mode === 'sync') {
+            if (dom.subModeSync) dom.subModeSync.classList.add('active');
+            if (dom.subModeTranscribe) dom.subModeTranscribe.classList.remove('active');
+            if (dom.subPanelSyncMode) dom.subPanelSyncMode.classList.remove('hidden');
+            if (dom.subPanelTranscribeMode) dom.subPanelTranscribeMode.classList.add('hidden');
+            if (dom.subAiStatus) dom.subAiStatus.textContent = 'Chế độ: Đồng bộ giọng đọc theo kịch bản SRT và hình ảnh.';
+        } else {
+            if (dom.subModeTranscribe) dom.subModeTranscribe.classList.add('active');
+            if (dom.subModeSync) dom.subModeSync.classList.remove('active');
+            if (dom.subPanelTranscribeMode) dom.subPanelTranscribeMode.classList.remove('hidden');
+            if (dom.subPanelSyncMode) dom.subPanelSyncMode.classList.add('hidden');
+            if (dom.subAiStatus) dom.subAiStatus.textContent = 'Chế độ: AI tự động nhận diện giọng nói và tạo phụ đề word-level.';
+        }
+    }
+
+    function updateTimelineImageCount() {
+        const count = (window.mediaItems && window.mediaItems.length) ? window.mediaItems.length : 0;
+        if (dom.syncTimelineImgCount) {
+            dom.syncTimelineImgCount.textContent = `${count} ảnh`;
+        }
+    }
+
+    // Audio file upload for Sync Mode
+    async function handleSyncAudioUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        if (dom.syncAudioName) dom.syncAudioName.textContent = `Đang tải: ${file.name}...`;
+
+        try {
+            const res = await fetch('/api/subtitles/upload', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success && data.file) {
+                SubState.syncAudio = data.file;
+                setSubMedia(data.file);
+                if (dom.syncAudioName) {
+                    dom.syncAudioName.textContent = `${data.file.originalName} (${data.file.duration.toFixed(1)}s)`;
+                    dom.syncAudioName.style.color = 'var(--accent-emerald)';
+                }
+                showToast(`Đã tải audio: ${data.file.originalName}`);
+            } else {
+                alert('Lỗi tải audio: ' + (data.error || 'Thử lại'));
+            }
+        } catch (err) {
+            alert('Lỗi kết nối khi tải audio');
+        }
+    }
+
+    // SRT File upload for Sync Mode
+    function handleSyncSrtUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            const content = evt.target.result;
+            if (dom.subScriptTextarea) {
+                dom.subScriptTextarea.value = content;
+            }
+            showToast(`Đã đọc nội dung file: ${file.name}`);
+        };
+        reader.readAsText(file);
+    }
+
+    // Run AI Audio-SRT-Image Sync
+    async function runAiAudioSrtSync() {
+        const apiKey = dom.subAiApiKey ? dom.subAiApiKey.value.trim() : '';
+        const srtText = dom.subScriptTextarea ? dom.subScriptTextarea.value.trim() : '';
+        const audioFile = SubState.syncAudio || SubState.currentMedia;
+
+        if (!audioFile || !audioFile.filename) {
+            alert('Vui lòng chọn hoặc tải lên file Audio giọng đọc trước!');
+            return;
+        }
+        if (!srtText) {
+            alert('Vui lòng nhập hoặc nạp file kịch bản / phụ đề SRT!');
+            return;
+        }
+
+        const images = (window.mediaItems && window.mediaItems.length > 0) ? window.mediaItems : [];
+
+        if (dom.syncBtnRunAi) {
+            dom.syncBtnRunAi.disabled = true;
+            dom.syncBtnRunAi.innerHTML = '⏳ AI Đang nghe audio & khớp SRT...';
+        }
+        if (dom.subAiStatus) {
+            dom.subAiStatus.innerHTML = '<span class="spinner-neon" style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:6px;"></span> Gemini AI đang lắng nghe audio, đối soát từng câu SRT và so khớp với từng hình ảnh...';
+        }
+
+        try {
+            const res = await fetch('/api/subtitles/sync-audio-srt', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    audioFilename: audioFile.filename,
+                    srtText: srtText,
+                    images: images,
+                    customApiKey: apiKey
+                })
+            });
+
+            const data = await res.json();
+
+            if (data.success && data.alignedCues) {
+                SubState.segments = data.alignedCues;
+                renderCuesList();
+
+                if (data.audioUrl) {
+                    setSubMedia({
+                        filename: data.audioFilename,
+                        url: data.audioUrl,
+                        duration: data.totalDuration,
+                        type: 'audio',
+                        originalName: audioFile.originalName || 'Voiceover Audio'
+                    });
+                }
+
+                showToast(`✅ Đã đồng bộ thành công ${data.alignedCues.length} phân đoạn theo giọng đọc Audio!`);
+                if (dom.subAiStatus) {
+                    dom.subAiStatus.innerHTML = `✅ Đã đồng bộ <strong>${data.alignedCues.length} câu</strong> khớp với audio (${data.totalDuration.toFixed(1)}s) & hình ảnh!`;
+                }
+            } else {
+                alert('Lỗi đồng bộ: ' + (data.error || 'Thử lại'));
+                if (dom.subAiStatus) dom.subAiStatus.textContent = '❌ Lỗi: ' + (data.error || 'Thất bại');
+            }
+
+        } catch (err) {
+            console.error(err);
+            alert('Lỗi kết nối khi gọi Gemini AI: ' + err.message);
+            if (dom.subAiStatus) dom.subAiStatus.textContent = '❌ Lỗi kết nối';
+        } finally {
+            if (dom.syncBtnRunAi) {
+                dom.syncBtnRunAi.disabled = false;
+                dom.syncBtnRunAi.innerHTML = '⚡ AI Đồng Bộ Audio ➔ SRT ➔ Ảnh';
+            }
+        }
+    }
+
+    // Apply Aligned Cues Durations to Tab 1 Video Editor Timeline
+    function applyCuesToTimeline() {
+        if (!SubState.segments || SubState.segments.length === 0) {
+            alert('Chưa có danh sách phân đoạn nào để áp dụng!');
+            return;
+        }
+
+        if (!window.mediaItems || window.mediaItems.length === 0) {
+            alert('Chưa có ảnh nào trên Timeline ở Tab 1 để áp dụng. Hãy sang Tab 1 tải ảnh lên trước nhé!');
+            return;
+        }
+
+        let updatedCount = 0;
+        SubState.segments.forEach((cue) => {
+            const imgIdx = typeof cue.imageIndex === 'number' ? cue.imageIndex : -1;
+            if (imgIdx >= 0 && window.mediaItems[imgIdx]) {
+                const targetItem = window.mediaItems[imgIdx];
+                const dur = parseFloat(Number(cue.duration || (cue.end - cue.start)).toFixed(2));
+                targetItem.duration = dur;
+                if (!targetItem.settings) targetItem.settings = {};
+                targetItem.settings.duration = dur;
+                updatedCount++;
+            }
+        });
+
+        // If we have sync audio, set it as active BGM / Voiceover track in Tab 1
+        const audioFile = SubState.syncAudio || SubState.currentMedia;
+        if (audioFile && audioFile.filename) {
+            window.bgmTrack = {
+                filename: audioFile.filename,
+                originalName: audioFile.originalName || 'Voiceover Audio',
+                duration: audioFile.duration || 10,
+                volume: 0.8
+            };
+            if (typeof window.updateBgmUi === 'function') {
+                window.updateBgmUi();
+            }
+        }
+
+        // Re-render Tab 1 Timeline List
+        if (typeof window.renderMediaList === 'function') {
+            window.renderMediaList();
+        }
+        if (typeof window.updateTotalDuration === 'function') {
+            window.updateTotalDuration();
+        }
+
+        showToast(`🎉 Đã áp dụng thời lượng ${updatedCount} ảnh khớp 100% với giọng đọc vào Timeline Dựng Phim!`);
+    }
+
+    // Tab Switching Logic
+    function setupTabSwitching() {
+        if (!dom.tabVideoEditor || !dom.tabSubtitles) return;
+
+        dom.tabVideoEditor.addEventListener('click', () => switchTab('editor'));
+        dom.tabSubtitles.addEventListener('click', () => switchTab('subtitles'));
+    }
+
+    function switchTab(tabKey) {
+        if (tabKey === 'editor') {
+            dom.tabVideoEditor.classList.add('active');
+            dom.tabSubtitles.classList.remove('active');
+            dom.paneVideoEditor.classList.add('active');
+            dom.paneSubtitles.classList.remove('active');
+            if (dom.subVideoPlayer && !dom.subVideoPlayer.paused) {
+                dom.subVideoPlayer.pause();
+            }
+        } else {
+            dom.tabSubtitles.classList.add('active');
+            dom.tabVideoEditor.classList.remove('active');
+            dom.paneSubtitles.classList.add('active');
+            dom.paneVideoEditor.classList.remove('active');
+
+            updateTimelineImageCount();
+            if (!SubState.currentMedia) {
+                grabEditorVideo(true);
+            }
+        }
+    }
+
+    // Toggle Play/Pause
+    function togglePlayPause() {
+        if (!dom.subVideoPlayer) return;
+        if (dom.subVideoPlayer.paused) {
+            dom.subVideoPlayer.play().catch(() => {});
+        } else {
+            dom.subVideoPlayer.pause();
+        }
+    }
+
+    function updatePlayButton(isPlaying) {
+        if (dom.subBtnPlayPause) {
+            dom.subBtnPlayPause.innerHTML = isPlaying ? '⏸ Tạm dừng' : '▶ Phát';
+        }
+    }
+
+    function onPlayerLoadedMetadata() {
+        if (!dom.subVideoPlayer) return;
+        const dur = dom.subVideoPlayer.duration || 10;
+        if (dom.subScrubber) {
+            dom.subScrubber.max = dur;
+            dom.subScrubber.value = dom.subVideoPlayer.currentTime || 0;
+        }
+        updateTimeDisplay(dom.subVideoPlayer.currentTime || 0, dur);
+    }
+
+    function updateTimeDisplay(cur, dur) {
+        if (!dom.subTimeLabel) return;
+        const format = (t) => {
+            const m = Math.floor(t / 60);
+            const s = Math.floor(t % 60);
+            const ms = Math.floor((t % 1) * 10);
+            return `${m}:${s < 10 ? '0' : ''}${s}.${ms}`;
+        };
+        dom.subTimeLabel.textContent = `${format(cur)} / ${format(dur)}`;
+    }
+
+    // Performance Cache for Real-time Playback
+    let lastRenderedSegId = null;
+    let lastRenderedWordIdx = null;
+    let currentActiveCardEl = null;
+    let currentActivePillEl = null;
+
+    // Real-time Word-Level Subtitle Rendering on Video/Audio Playback (Optimized)
+    function onPlayerTimeUpdate() {
+        if (!dom.subVideoPlayer) return;
+        const curTime = dom.subVideoPlayer.currentTime;
+        const dur = dom.subVideoPlayer.duration || 10;
+
+        if (dom.subScrubber) {
+            dom.subScrubber.value = curTime;
+        }
+        updateTimeDisplay(curTime, dur);
+
+        // Fast binary or linear search for active segment
+        const activeSeg = SubState.segments.find(s => curTime >= s.start && curTime <= s.end);
+
+        if (!activeSeg) {
+            if (lastRenderedSegId !== null) {
+                if (dom.subCaptionBox) dom.subCaptionBox.innerHTML = '';
+                if (currentActiveCardEl) {
+                    currentActiveCardEl.classList.remove('active-playing');
+                    currentActiveCardEl = null;
+                }
+                if (currentActivePillEl) {
+                    currentActivePillEl.classList.remove('active-highlight');
+                    currentActivePillEl = null;
+                }
+                lastRenderedSegId = null;
+                lastRenderedWordIdx = null;
+                SubState.activeSegmentId = null;
+                SubState.activeWordIndex = -1;
+            }
+            return;
+        }
+
+        // Highlight Cue in timeline list (O(1) fast pointer toggle)
+        if (SubState.activeSegmentId !== activeSeg.id) {
+            SubState.activeSegmentId = activeSeg.id;
+            if (currentActiveCardEl) {
+                currentActiveCardEl.classList.remove('active-playing');
+            }
+            currentActiveCardEl = dom.subCuesList ? dom.subCuesList.querySelector(`.sub-cue-card[data-id="${activeSeg.id}"]`) : null;
+            if (currentActiveCardEl) {
+                currentActiveCardEl.classList.add('active-playing');
+            }
+        }
+
+        // Render words inside caption overlay
+        renderLiveCaptionWords(activeSeg, curTime);
+    }
+
+    function renderLiveCaptionWords(seg, curTime) {
+        if (!dom.subCaptionBox) return;
+
+        const words = seg.words || [];
+        const animType = SubState.style.animationType;
+
+        if (words.length === 0) {
+            if (lastRenderedSegId !== seg.id) {
+                dom.subCaptionBox.innerHTML = `<span class="sub-word-item">${escapeHtml(seg.text)}</span>`;
+                lastRenderedSegId = seg.id;
+            }
+            return;
+        }
+
+        // Find active word index
+        const activeWordIdx = words.findIndex(w => curTime >= w.start && curTime <= w.end);
+
+        // Skip DOM rewrite if active word and segment haven't changed (Except for karaoke_fill which updates progress)
+        if (lastRenderedSegId === seg.id && lastRenderedWordIdx === activeWordIdx && animType !== 'karaoke_fill') {
+            return;
+        }
+
+        lastRenderedSegId = seg.id;
+        lastRenderedWordIdx = activeWordIdx;
+
+        if (animType === 'single_word') {
+            const activeWord = activeWordIdx >= 0 ? words[activeWordIdx] : words[0];
+            dom.subCaptionBox.innerHTML = `<span class="sub-word-item active-word bounce-anim" style="color: ${SubState.style.highlightColor}; font-size: 1.25em;">${escapeHtml(activeWord.word)}</span>`;
+            return;
+        }
+
+        let html = '';
+        for (let i = 0; i < words.length; i++) {
+            const w = words[i];
+            const isActive = i === activeWordIdx;
+            const isPast = activeWordIdx > i || curTime > w.end;
+
+            let wordClass = 'sub-word-item';
+            let wordColor = SubState.style.primaryColor;
+
+            if (isActive) {
+                wordClass += ' active-word';
+                if (animType === 'bounce') wordClass += ' bounce-anim';
+                if (animType === 'glow') wordClass += ' glow-anim';
+                wordColor = SubState.style.highlightColor;
+            } else if (animType === 'karaoke_fill' && isPast) {
+                wordColor = SubState.style.highlightColor;
+            }
+
+            html += `<span class="${wordClass}" style="color: ${wordColor};">${escapeHtml(w.word)}</span> `;
+        }
+
+        dom.subCaptionBox.innerHTML = html;
+
+        // Fast O(1) highlight active word pill
+        if (currentActiveCardEl) {
+            if (currentActivePillEl) {
+                currentActivePillEl.classList.remove('active-highlight');
+                currentActivePillEl = null;
+            }
+            if (activeWordIdx >= 0) {
+                currentActivePillEl = currentActiveCardEl.querySelector(`.word-pill[data-word-idx="${activeWordIdx}"]`);
+                if (currentActivePillEl) {
+                    currentActivePillEl.classList.add('active-highlight');
+                }
+            }
+        }
+    }
+
+    // Media Upload & Grabber (Local PC vs Tab 1 Video)
+    async function uploadLocalMediaFile(file) {
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        if (dom.subMediaNameLabel) {
+            dom.subMediaNameLabel.innerHTML = `⏳ Đang tải lên: <strong>${escapeHtml(file.name)}</strong>...`;
+        }
+
+        try {
+            const res = await fetch('/api/subtitles/upload', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success && data.file) {
+                data.file.source = 'local';
+                setSubMedia(data.file);
+                showToast(`📁 Đã nạp thành công: ${data.file.originalName}`);
+            } else {
+                alert('Lỗi tải tệp: ' + (data.error || 'Thử lại'));
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Lỗi kết nối khi tải tệp từ máy tính');
+        }
+    }
+
+    async function handleSubMediaUpload(e) {
+        const file = e.target.files[0];
+        if (file) {
+            uploadLocalMediaFile(file);
+            e.target.value = '';
+        }
+    }
+
+    function grabEditorVideo(silent = false) {
+        const renderedPlayer = document.getElementById('rendered-video-player');
+        if (renderedPlayer && renderedPlayer.src && !renderedPlayer.src.endsWith('#')) {
+            const url = renderedPlayer.src;
+            const filename = url.substring(url.lastIndexOf('/') + 1);
+            setSubMedia({
+                filename,
+                url,
+                duration: renderedPlayer.duration || 10,
+                type: 'video',
+                source: 'tab1_render',
+                originalName: `Video vừa render (${filename})`
+            });
+            if (!silent) showToast('🎬 Đã lấy video vừa xuất từ Tab Dựng phim!');
+            return;
+        }
+
+        if (window.mediaItems && window.mediaItems.length > 0) {
+            const firstVideo = window.mediaItems.find(i => i.type === 'video');
+            if (firstVideo) {
+                setSubMedia({
+                    filename: firstVideo.filename,
+                    url: firstVideo.url,
+                    duration: firstVideo.duration || 10,
+                    type: 'video',
+                    source: 'tab1_timeline',
+                    originalName: firstVideo.originalName || 'Video từ Timeline'
+                });
+                if (!silent) showToast('🎬 Đã lấy video từ danh sách Timeline!');
+                return;
+            }
+        }
+
+        if (!silent) {
+            alert('Chưa có video nào được xuất ở Tab 1. Bạn có thể bấm "Tải Từ Máy (PC)" hoặc kéo thả file video/audio vào đây!');
+        }
+    }
+
+    function setSubMedia(fileObj) {
+        SubState.currentMedia = fileObj;
+        if (dom.subVideoPlayer) {
+            dom.subVideoPlayer.src = fileObj.url;
+            dom.subVideoPlayer.load();
+        }
+        if (dom.subMediaNameLabel) {
+            const sourceBadge = fileObj.source === 'tab1_render' 
+                ? '<span class="badge-score-high">🎬 Nguồn: Video Render Tab 1</span>'
+                : (fileObj.source === 'local' 
+                    ? '<span class="badge-score-med">📁 Nguồn: Máy tính (PC Local)</span>'
+                    : '<span class="badge-accent">🔊 Nguồn: Audio/Video</span>');
+
+            dom.subMediaNameLabel.innerHTML = `${sourceBadge} <strong>${escapeHtml(fileObj.originalName || fileObj.filename)}</strong> (${fileObj.duration ? fileObj.duration.toFixed(1) + 's' : ''})`;
+        }
+    }
+
+    // Gemini AI Subtitle Generation (Mode 2)
+    async function generateSubtitlesWithGemini() {
+        const apiKey = dom.subAiApiKey ? dom.subAiApiKey.value.trim() : '';
+        const scriptText = dom.subScriptTextarea ? dom.subScriptTextarea.value.trim() : '';
+        const maxWordsPerSegment = dom.subChunkWordsSelect ? parseInt(dom.subChunkWordsSelect.value) : 4;
+        const mediaFilename = SubState.currentMedia ? SubState.currentMedia.filename : null;
+
+        if (!scriptText && !mediaFilename) {
+            alert('Vui lòng nhập nội dung kịch bản hoặc tải lên file âm thanh / video!');
+            return;
+        }
+
+        if (dom.subBtnGenerateAi) {
+            dom.subBtnGenerateAi.disabled = true;
+            dom.subBtnGenerateAi.innerHTML = '⏳ AI Đang phân tích âm thanh & tạo từ...';
+        }
+        if (dom.subAiStatus) {
+            dom.subAiStatus.innerHTML = '<span class="spinner-neon" style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:6px;"></span> Gemini đang phân tích giọng nói & căn chỉnh mốc thời gian từng từ...';
+        }
+
+        try {
+            const res = await fetch('/api/subtitles/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    mediaFilename,
+                    scriptText,
+                    customApiKey: apiKey,
+                    maxWordsPerSegment
+                })
+            });
+
+            const data = await res.json();
+
+            if (data.success && data.segments) {
+                SubState.segments = data.segments;
+                renderCuesList();
+                showToast(`Đã tạo thành công ${data.segments.length} phân đoạn phụ đề với word-level timestamps!`);
+                if (dom.subAiStatus) {
+                    dom.subAiStatus.innerHTML = `✅ Đã tạo xong <strong>${data.segments.length} câu</strong> (${data.mediaDuration ? data.mediaDuration.toFixed(1) + 's' : ''})`;
+                }
+            } else {
+                alert('Lỗi tạo phụ đề: ' + (data.error || 'Thử lại với API Key'));
+                if (dom.subAiStatus) dom.subAiStatus.textContent = '❌ Lỗi: ' + (data.error || 'Thất bại');
+            }
+
+        } catch (err) {
+            console.error('AI Subtitle error:', err);
+            alert('Lỗi kết nối khi gọi Gemini AI: ' + err.message);
+            if (dom.subAiStatus) dom.subAiStatus.textContent = '❌ Lỗi kết nối';
+        } finally {
+            if (dom.subBtnGenerateAi) {
+                dom.subBtnGenerateAi.disabled = false;
+                dom.subBtnGenerateAi.innerHTML = '✨ Tạo Phụ Đề AI (Word-Level)';
+            }
+        }
+    }
+
+    // Render Subtitle Cues Editor List with Matched Images
+    function renderCuesList() {
+        if (!dom.subCuesList) return;
+
+        if (dom.subCuesCountBadge) {
+            dom.subCuesCountBadge.textContent = `${SubState.segments.length} câu`;
+        }
+
+        if (SubState.segments.length === 0) {
+            dom.subCuesList.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">💬</div>
+                    <h4>Chưa có phân đoạn nào</h4>
+                    <p>Chọn audio, dán file SRT và bấm "AI Đồng Bộ Audio ➔ SRT ➔ Ảnh".</p>
+                </div>
+            `;
+            return;
+        }
+
+        const timelineImages = (window.mediaItems && window.mediaItems.length > 0) ? window.mediaItems : [];
+
+        let html = '';
+        SubState.segments.forEach((seg, idx) => {
+            const words = seg.words || [];
+            const dur = parseFloat(Number(seg.duration || (seg.end - seg.start)).toFixed(2));
+            const score = seg.matchScore || 95;
+            const scoreClass = score >= 90 ? 'badge-score-high' : 'badge-score-med';
+
+            // Find thumbnail
+            let thumbUrl = seg.imageUrl || '';
+            let matchedName = seg.imageOriginalName || `Ảnh #${(seg.imageIndex || 0) + 1}`;
+            if (!thumbUrl && typeof seg.imageIndex === 'number' && timelineImages[seg.imageIndex]) {
+                thumbUrl = timelineImages[seg.imageIndex].url;
+                matchedName = timelineImages[seg.imageIndex].originalName || matchedName;
+            }
+
+            html += `
+                <div class="sub-cue-card" data-id="${seg.id}" data-idx="${idx}">
+                    <div class="sub-cue-header">
+                        <div class="sub-cue-time-inputs">
+                            <strong>#${idx + 1}</strong>
+                            <input type="number" step="0.1" class="input-time-compact input-start" value="${seg.start}" data-idx="${idx}" title="Bắt đầu (giây)">
+                            <span>➔</span>
+                            <input type="number" step="0.1" class="input-time-compact input-end" value="${seg.end}" data-idx="${idx}" title="Kết thúc (giây)">
+                            <span class="text-xs text-dim">(${dur}s)</span>
+                            <button class="btn btn-icon btn-ghost btn-play-cue" data-start="${seg.start}" title="Phát câu này">▶</button>
+                        </div>
+                        <button class="btn btn-icon btn-ghost btn-delete-cue" data-idx="${idx}" title="Xóa câu">✕</button>
+                    </div>
+
+                    <div class="sub-cue-words-wrap">
+                        ${words.map((w, wIdx) => `
+                            <span class="word-pill" data-seg-idx="${idx}" data-word-idx="${wIdx}" data-start="${w.start}" data-end="${w.end}" title="Tua tới từ này: [${w.start}s - ${w.end}s]">
+                                <strong class="word-text">${escapeHtml(w.word)}</strong>
+                                <span class="word-pill-time">${w.start}s</span>
+                            </span>
+                        `).join('')}
+                    </div>
+
+                    <!-- Matched Image & Semantic Alignment Info -->
+                    <div class="sub-cue-match-box">
+                        <div class="sub-cue-match-info">
+                            ${thumbUrl ? `<img src="${thumbUrl}" class="sub-cue-thumb" alt="thumb">` : `<div class="sub-cue-thumb" style="display:flex;align-items:center;justify-content:center;font-size:14px;">🖼️</div>`}
+                            <div class="sub-cue-match-text">
+                                <div class="sub-cue-match-name">🖼️ ${escapeHtml(matchedName)}</div>
+                                <div class="sub-cue-match-reason">${escapeHtml(seg.matchReason || 'Khớp theo ngữ cảnh câu thoại')}</div>
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <span class="${scoreClass}">✅ ${score}%</span>
+                            ${timelineImages.length > 1 ? `
+                                <select class="sub-image-select" data-seg-idx="${idx}" title="Đổi sang ảnh khác trên timeline">
+                                    ${timelineImages.map((img, iIdx) => `
+                                        <option value="${iIdx}" ${seg.imageIndex === iIdx ? 'selected' : ''}>
+                                            Ảnh ${iIdx + 1}: ${escapeHtml(img.originalName || img.filename).slice(0, 14)}...
+                                        </option>
+                                    `).join('')}
+                                </select>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        dom.subCuesList.innerHTML = html;
+    }
+
+    // Event Delegation on subCuesList (Ultra-fast, zero memory leaks)
+    function setupCueListEventDelegation() {
+        if (!dom.subCuesList) return;
+
+        dom.subCuesList.addEventListener('click', (e) => {
+            // Play cue button
+            const playBtn = e.target.closest('.btn-play-cue');
+            if (playBtn) {
+                e.stopPropagation();
+                const start = parseFloat(playBtn.dataset.start);
+                if (dom.subVideoPlayer && !isNaN(start)) {
+                    dom.subVideoPlayer.currentTime = start;
+                    dom.subVideoPlayer.play().catch(() => {});
+                }
+                return;
+            }
+
+            // Delete cue button
+            const delBtn = e.target.closest('.btn-delete-cue');
+            if (delBtn) {
+                e.stopPropagation();
+                const idx = parseInt(delBtn.dataset.idx);
+                SubState.segments.splice(idx, 1);
+                renderCuesList();
+                return;
+            }
+
+            // Word pill click to seek
+            const pill = e.target.closest('.word-pill');
+            if (pill) {
+                e.stopPropagation();
+                const start = parseFloat(pill.dataset.start);
+                if (dom.subVideoPlayer && !isNaN(start)) {
+                    dom.subVideoPlayer.currentTime = start;
+                    dom.subVideoPlayer.play().catch(() => {});
+                }
+                return;
+            }
+        });
+
+        dom.subCuesList.addEventListener('change', (e) => {
+            // Input start
+            if (e.target.classList.contains('input-start')) {
+                const idx = parseInt(e.target.dataset.idx);
+                const val = parseFloat(e.target.value);
+                if (SubState.segments[idx] && !isNaN(val)) {
+                    SubState.segments[idx].start = val;
+                    SubState.segments[idx].duration = parseFloat(Math.max(0.5, SubState.segments[idx].end - val).toFixed(2));
+                }
+                return;
+            }
+
+            // Input end
+            if (e.target.classList.contains('input-end')) {
+                const idx = parseInt(e.target.dataset.idx);
+                const val = parseFloat(e.target.value);
+                if (SubState.segments[idx] && !isNaN(val)) {
+                    SubState.segments[idx].end = val;
+                    SubState.segments[idx].duration = parseFloat(Math.max(0.5, val - SubState.segments[idx].start).toFixed(2));
+                }
+                return;
+            }
+
+            // Image switcher select
+            if (e.target.classList.contains('sub-image-select')) {
+                const segIdx = parseInt(e.target.dataset.segIdx);
+                const newImgIdx = parseInt(e.target.value);
+                if (SubState.segments[segIdx]) {
+                    SubState.segments[segIdx].imageIndex = newImgIdx;
+                    if (window.mediaItems && window.mediaItems[newImgIdx]) {
+                        SubState.segments[segIdx].imageFilename = window.mediaItems[newImgIdx].filename;
+                        SubState.segments[segIdx].imageOriginalName = window.mediaItems[newImgIdx].originalName;
+                        SubState.segments[segIdx].imageUrl = window.mediaItems[newImgIdx].url;
+                    }
+                    renderCuesList();
+                    showToast(`Đã gán câu #${segIdx + 1} sang Ảnh #${newImgIdx + 1}`);
+                }
+                return;
+            }
+        });
+    }
+
+    function addNewEmptyCue() {
+        const lastSeg = SubState.segments[SubState.segments.length - 1];
+        const start = lastSeg ? parseFloat((lastSeg.end + 0.2).toFixed(2)) : 0.0;
+        const end = parseFloat((start + 2.5).toFixed(2));
+        const newId = Date.now();
+
+        const words = [
+            { word: 'Phân', start: start, end: parseFloat((start + 0.8).toFixed(2)) },
+            { word: 'đoạn', start: parseFloat((start + 0.8).toFixed(2)), end: parseFloat((start + 1.6).toFixed(2)) },
+            { word: 'mới', start: parseFloat((start + 1.6).toFixed(2)), end: end }
+        ];
+
+        SubState.segments.push({
+            id: newId,
+            start,
+            end,
+            duration: 2.5,
+            text: 'Phân đoạn mới',
+            imageIndex: SubState.segments.length % Math.max(1, (window.mediaItems?.length || 1)),
+            matchScore: 90,
+            matchReason: 'Thêm thủ công',
+            words
+        });
+
+        renderCuesList();
+    }
+
+    function clearAllCues() {
+        if (confirm('Bạn có chắc muốn xóa tất cả phụ đề?')) {
+            SubState.segments = [];
+            renderCuesList();
+            if (dom.subCaptionBox) dom.subCaptionBox.innerHTML = '';
+        }
+    }
+
+    // Presets & Styling Management
+    function renderPresetButtons() {
+        if (!dom.subPresetsContainer) return;
+        let html = '';
+        Object.keys(SubState.presets).forEach(key => {
+            const p = SubState.presets[key];
+            const isActive = SubState.style.preset === key;
+            html += `
+                <div class="preset-card ${isActive ? 'active' : ''}" data-preset="${key}">
+                    <div class="preset-preview-text" style="color: ${p.highlightColor}; text-shadow: 0 0 6px ${p.highlightColor};">
+                        ${escapeHtml(p.name)}
+                    </div>
+                    <div class="preset-name">${p.animationType}</div>
+                </div>
+            `;
+        });
+        dom.subPresetsContainer.innerHTML = html;
+
+        dom.subPresetsContainer.querySelectorAll('.preset-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const presetKey = card.dataset.preset;
+                applyPreset(presetKey);
+            });
+        });
+    }
+
+    function applyPreset(presetKey) {
+        const preset = SubState.presets[presetKey];
+        if (!preset) return;
+
+        SubState.style.preset = presetKey;
+        Object.assign(SubState.style, preset);
+
+        // Update UI controls
+        if (dom.subFontFamily) dom.subFontFamily.value = preset.fontFamily;
+        if (dom.subFontSize) dom.subFontSize.value = preset.fontSize;
+        if (dom.subFontSizeVal) dom.subFontSizeVal.textContent = `${preset.fontSize}px`;
+        if (dom.subPrimaryColor) dom.subPrimaryColor.value = preset.primaryColor;
+        if (dom.subHighlightColor) dom.subHighlightColor.value = preset.highlightColor;
+        if (dom.subOutlineColor) dom.subOutlineColor.value = preset.outlineColor;
+        if (dom.subPosition) dom.subPosition.value = preset.position;
+        if (dom.subAnimationType) dom.subAnimationType.value = preset.animationType;
+
+        renderPresetButtons();
+        applyStyleToOverlay();
+    }
+
+    function updateStyleFromControls() {
+        if (dom.subFontFamily) SubState.style.fontFamily = dom.subFontFamily.value;
+        if (dom.subFontSize) SubState.style.fontSize = parseInt(dom.subFontSize.value);
+        if (dom.subPrimaryColor) SubState.style.primaryColor = dom.subPrimaryColor.value;
+        if (dom.subHighlightColor) SubState.style.highlightColor = dom.subHighlightColor.value;
+        if (dom.subOutlineColor) SubState.style.outlineColor = dom.subOutlineColor.value;
+        if (dom.subPosition) SubState.style.position = dom.subPosition.value;
+        if (dom.subAnimationType) SubState.style.animationType = dom.subAnimationType.value;
+
+        applyStyleToOverlay();
+    }
+
+    function applyStyleToOverlay() {
+        if (!dom.subWordOverlay || !dom.subCaptionBox) return;
+
+        dom.subWordOverlay.className = `sub-word-overlay pos-${SubState.style.position}`;
+        dom.subCaptionBox.style.fontFamily = `'${SubState.style.fontFamily}', sans-serif`;
+        dom.subCaptionBox.style.fontSize = `${SubState.style.fontSize * 0.58}px`;
+        dom.subCaptionBox.style.webkitTextStroke = `${SubState.style.outlineWidth * 0.8}px ${SubState.style.outlineColor}`;
+        dom.subCaptionBox.style.textShadow = `0 2px 8px ${SubState.style.outlineColor}`;
+    }
+
+    // Export Subtitles Files (.ASS, .SRT)
+    async function exportSubtitlesFile(format) {
+        if (SubState.segments.length === 0) {
+            alert('Chưa có nội dung phụ đề để xuất!');
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/subtitles/export', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    segments: SubState.segments,
+                    format: format,
+                    style: SubState.style,
+                    videoWidth: 1080,
+                    videoHeight: 1920
+                })
+            });
+
+            if (!res.ok) throw new Error('Lỗi xuất tệp phụ đề');
+
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `subtitles_${Date.now()}.${format}`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+            showToast(`Đã tải về tệp phụ đề .${format.toUpperCase()}!`);
+        } catch (err) {
+            alert('Lỗi xuất tệp: ' + err.message);
+        }
+    }
+
+    // Burn Word-Level Subtitles into Video via FFmpeg
+    async function burnSubtitlesIntoVideo() {
+        if (!SubState.currentMedia || !SubState.currentMedia.filename) {
+            alert('Vui lòng chọn hoặc tải lên một tệp Video nguồn để gắn phụ đề!');
+            return;
+        }
+        if (SubState.segments.length === 0) {
+            alert('Chưa có câu phụ đề nào để gắn vào video!');
+            return;
+        }
+
+        openBurnModal();
+
+        try {
+            const res = await fetch('/api/subtitles/burn', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    videoFilename: SubState.currentMedia.filename,
+                    segments: SubState.segments,
+                    style: SubState.style,
+                    videoWidth: 1080,
+                    videoHeight: 1920
+                })
+            });
+
+            const data = await res.json();
+            if (data.success && data.jobId) {
+                trackBurnProgress(data.jobId);
+            } else {
+                showBurnError(data.error || 'Không thể bắt đầu render phụ đề');
+            }
+        } catch (err) {
+            showBurnError(err.message);
+        }
+    }
+
+    function trackBurnProgress(jobId) {
+        const eventSource = new EventSource(`/api/subtitles/progress/${jobId}`);
+
+        eventSource.onmessage = (event) => {
+            try {
+                const job = JSON.parse(event.data);
+                if (dom.subBurnPercent) dom.subBurnPercent.textContent = `${job.progress || 0}%`;
+                if (dom.subBurnBar) dom.subBurnBar.style.width = `${job.progress || 0}%`;
+
+                if (job.status === 'completed') {
+                    eventSource.close();
+                    if (dom.subBurnProcessing) dom.subBurnProcessing.classList.add('hidden');
+                    if (dom.subBurnCompleted) dom.subBurnCompleted.classList.remove('hidden');
+                    if (dom.subBurnVideoPlayer) {
+                        dom.subBurnVideoPlayer.src = job.outputUrl;
+                        dom.subBurnVideoPlayer.load();
+                        dom.subBurnVideoPlayer.play().catch(() => {});
+                    }
+                    if (dom.subBtnDownloadBurned) {
+                        dom.subBtnDownloadBurned.href = job.outputUrl;
+                        dom.subBtnDownloadBurned.download = job.outputFilename;
+                    }
+                } else if (job.status === 'failed') {
+                    eventSource.close();
+                    showBurnError(job.error || 'Render phụ đề thất bại');
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        };
+
+        eventSource.onerror = () => {
+            eventSource.close();
+        };
+    }
+
+    function openBurnModal() {
+        if (!dom.subBurnModal) return;
+        dom.subBurnModal.classList.remove('hidden');
+        if (dom.subBurnProcessing) dom.subBurnProcessing.classList.remove('hidden');
+        if (dom.subBurnCompleted) dom.subBurnCompleted.classList.add('hidden');
+        if (dom.subBurnPercent) dom.subBurnPercent.textContent = '0%';
+        if (dom.subBurnBar) dom.subBurnBar.style.width = '0%';
+        if (dom.subBurnStatusText) dom.subBurnStatusText.textContent = 'Đang chuyển đổi hiệu ứng phụ đề hoạt họa Word-Level ASS...';
+    }
+
+    function showBurnError(msg) {
+        if (dom.subBurnStatusText) dom.subBurnStatusText.textContent = `❌ Lỗi: ${msg}`;
+    }
+
+    window.closeSubBurnModal = function () {
+        if (dom.subBurnModal) dom.subBurnModal.classList.add('hidden');
+        if (dom.subBurnVideoPlayer) dom.subBurnVideoPlayer.pause();
+    };
+
+    // Sample Demo Loader (SRT + Audio Voiceover)
+    function loadSampleSrtDemo() {
+        if (dom.subScriptTextarea) {
+            dom.subScriptTextarea.value = `1
+00:00:00,000 --> 00:00:03,800
+Mùa đông Seoul tuyết rơi phủ trắng xóa khắp mọi nẻo đường.
+
+2
+00:00:03,800 --> 00:00:07,500
+Dừng chân tại một quán cà phê nhỏ ven phố cổ Bukchon.
+
+3
+00:00:07,500 --> 00:00:11,200
+Hương cà phê thơm lừng xua tan đi cái lạnh buốt giá mùa đông.`;
+            showToast('Đã nạp mẫu file phụ đề SRT tiếng Việt!');
+        }
+    }
+
+    function loadSampleScript() {
+        if (dom.subScriptTextarea) {
+            dom.subScriptTextarea.value = `Mùa đông Seoul phủ đầy tuyết trắng xóa.
+Những bông tuyết nhẹ nhàng rơi trên phố cổ Bukchon.
+Cảm giác bình yên giữa lòng thủ đô hiện đại.
+Hương thơm cà phê nóng hổi xua tan giá lạnh.`;
+            showToast('Đã nạp mẫu kịch bản tiếng Việt!');
+        }
+    }
+
+    function loadSampleDataIfEmpty() {
+        if (SubState.segments.length === 0) {
+            SubState.segments = [
+                {
+                    id: 1,
+                    start: 0.0,
+                    end: 3.2,
+                    duration: 3.2,
+                    text: 'Mùa đông Seoul tuyết trắng xóa',
+                    imageIndex: 0,
+                    matchScore: 98,
+                    matchReason: 'Ảnh tuyết trắng Seoul khớp với mở đầu kịch bản',
+                    words: [
+                        { word: 'Mùa', start: 0.0, end: 0.5 },
+                        { word: 'đông', start: 0.5, end: 1.0 },
+                        { word: 'Seoul', start: 1.0, end: 1.8 },
+                        { word: 'tuyết', start: 1.8, end: 2.3 },
+                        { word: 'trắng', start: 2.3, end: 2.8 },
+                        { word: 'xóa', start: 2.8, end: 3.2 }
+                    ]
+                },
+                {
+                    id: 2,
+                    start: 3.2,
+                    end: 6.8,
+                    duration: 3.6,
+                    text: 'Từng bông tuyết nhẹ nhàng rơi',
+                    imageIndex: 1,
+                    matchScore: 95,
+                    matchReason: 'Ảnh phố cổ Bukchon phủ tuyết rơi êm đềm',
+                    words: [
+                        { word: 'Từng', start: 3.2, end: 3.7 },
+                        { word: 'bông', start: 3.7, end: 4.3 },
+                        { word: 'tuyết', start: 4.3, end: 5.0 },
+                        { word: 'nhẹ', start: 5.0, end: 5.6 },
+                        { word: 'nhàng', start: 5.6, end: 6.2 },
+                        { word: 'rơi', start: 6.2, end: 6.8 }
+                    ]
+                },
+                {
+                    id: 3,
+                    start: 6.8,
+                    end: 10.5,
+                    duration: 3.7,
+                    text: 'Hương cà phê ấm nồng giữa lòng thủ đô',
+                    imageIndex: 2,
+                    matchScore: 94,
+                    matchReason: 'Ảnh quán cà phê ấm cúng ven đường',
+                    words: [
+                        { word: 'Hương', start: 6.8, end: 7.3 },
+                        { word: 'cà', start: 7.3, end: 7.8 },
+                        { word: 'phê', start: 7.8, end: 8.4 },
+                        { word: 'ấm', start: 8.4, end: 8.9 },
+                        { word: 'nồng', start: 8.9, end: 9.5 },
+                        { word: 'thủ', start: 9.5, end: 10.0 },
+                        { word: 'đô', start: 10.0, end: 10.5 }
+                    ]
+                }
+            ];
+            renderCuesList();
+        }
+    }
+
+    function showToast(msg) {
+        const toast = document.createElement('div');
+        toast.className = 'toast-notification';
+        toast.textContent = msg;
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            background: linear-gradient(135deg, #4f46e5, #06b6d4);
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            z-index: 9999;
+            animation: fadeInTab 0.25s ease-out;
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }, 3200);
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+})();
