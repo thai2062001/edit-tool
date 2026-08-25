@@ -160,20 +160,18 @@ btnRemoveBgm.addEventListener('click', () => {
     updateBgmUI();
 });
 
-// Expose utilities to window for Tab 2 Sync integration
-window.renderMediaList = function() {
-    if (window.mediaItems) mediaItems = window.mediaItems;
-    renderMediaList();
-};
-window.updateBgmUI = function() {
-    if (window.bgmTrack !== undefined) bgmTrack = window.bgmTrack;
-    updateBgmUI();
-};
-
 // Render Media List
 function renderMediaList() {
-    window.mediaItems = mediaItems;
-    window.bgmTrack = bgmTrack;
+    if (window.mediaItems && window.mediaItems !== mediaItems) {
+        mediaItems = window.mediaItems;
+    } else {
+        window.mediaItems = mediaItems;
+    }
+    if (window.bgmTrack !== undefined && window.bgmTrack !== bgmTrack) {
+        bgmTrack = window.bgmTrack;
+    } else {
+        window.bgmTrack = bgmTrack;
+    }
     if (mediaItems.length === 0) {
         emptyState.classList.remove('hidden');
         mediaList.innerHTML = '';
@@ -276,6 +274,10 @@ function renderMediaList() {
 
     totalDurationEl.innerText = `${totalDur.toFixed(1)}s`;
 }
+
+// Expose utilities to window for Tab 2 Sync integration
+window.renderMediaList = renderMediaList;
+window.updateBgmUI = updateBgmUI;
 
 function moveToTop(index) {
     if (index <= 0 || index >= mediaItems.length) return;
