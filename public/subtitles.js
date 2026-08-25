@@ -16,7 +16,7 @@
         activeWordIndex: -1,
         activeMode: 'sync', // 'sync' or 'transcribe'
         style: {
-            preset: 'tiktok_yellow',
+            preset: 'standard_clean',
             fontFamily: 'Outfit',
             fontSize: 42,
             primaryColor: '#FFFFFF',
@@ -25,10 +25,34 @@
             outlineWidth: 3,
             shadow: 2,
             position: 'bottom', // 'top', 'center', 'bottom'
-            animationType: 'bounce', // 'bounce', 'pop', 'glow', 'karaoke_fill', 'single_word'
+            animationType: 'none', // 'none', 'bounce', 'pop', 'glow', 'karaoke_fill', 'single_word'
             boxBg: 'transparent'
         },
         presets: {
+            standard_clean: {
+                name: 'Chữ Thường Chuẩn',
+                fontFamily: 'Outfit',
+                fontSize: 38,
+                primaryColor: '#FFFFFF',
+                highlightColor: '#FFFFFF',
+                outlineColor: '#000000',
+                outlineWidth: 3,
+                shadow: 2,
+                position: 'bottom',
+                animationType: 'none'
+            },
+            standard_yellow: {
+                name: 'Chữ Vàng Chuẩn',
+                fontFamily: 'Outfit',
+                fontSize: 38,
+                primaryColor: '#FFE500',
+                highlightColor: '#FFE500',
+                outlineColor: '#000000',
+                outlineWidth: 3,
+                shadow: 2,
+                position: 'bottom',
+                animationType: 'none'
+            },
             tiktok_yellow: {
                 name: 'TikTok Pop',
                 fontFamily: 'Outfit',
@@ -64,18 +88,6 @@
                 shadow: 3,
                 position: 'center',
                 animationType: 'bounce'
-            },
-            cyberpunk_pink: {
-                name: 'Cyberpunk',
-                fontFamily: 'Outfit',
-                fontSize: 42,
-                primaryColor: '#FFFFFF',
-                highlightColor: '#F43F5E',
-                outlineColor: '#4C0519',
-                outlineWidth: 3,
-                shadow: 4,
-                position: 'bottom',
-                animationType: 'glow'
             },
             clean_classic: {
                 name: 'Classic White',

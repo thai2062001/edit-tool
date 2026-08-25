@@ -555,16 +555,20 @@ Trả về DUY NHẤT một JSON hợp lệ có cấu trúc:
         });
     });
 
-    function executeSubBurn(job, inputVideoPath, assPath, outputPath) {
-        // Use FFmpeg subtitles filter with ASS file
-        // Windows path escaping for FFmpeg filter_complex
-        const normalizedAssPath = assPath.replace(/\\/g, '/').replace(/:/g, '\\:');
+    async function executeSubBurn(job, inputVideoPath, assPath, outputPath) {
+        // Probe input video duration to compute accurate percentage
+        let totalDuration = 10;
+        try {
+            totalDuration = await probeMediaDuration(inputVideoPath);
+        } catch (e) {}
 
+        // Run FFmpeg inside OUTPUTS_DIR so we can use simple relative filename for the ASS filter
+        const relAssFilename = path.basename(assPath);
         const args = [
             '-y',
             '-threads', '0',
             '-i', inputVideoPath,
-            '-vf', `ass='${normalizedAssPath}'`,
+            '-vf', `ass=${relAssFilename}`,
             '-c:v', 'libx264',
             '-preset', 'veryfast',
             '-crf', '20',
@@ -573,16 +577,24 @@ Trả về DUY NHẤT một JSON hợp lệ có cấu trúc:
             outputPath
         ];
 
-        const proc = spawn('ffmpeg', args);
+        console.log('Starting Subtitle Burn with FFmpeg (CWD:', OUTPUTS_DIR, '):', args.join(' '));
+
+        const proc = spawn('ffmpeg', args, { cwd: OUTPUTS_DIR });
         let stderrLog = '';
 
         proc.stderr.on('data', data => {
             const str = data.toString();
             stderrLog += str;
-            // Parse time if possible
-            const timeMatch = str.match(/time=(\d+):(\d+):(\d+\.\d+)/);
-            if (timeMatch) {
-                job.progress = Math.min(95, (job.progress || 0) + 5);
+            
+            // Parse time format: time=00:01:23.45
+            const timeMatch = str.match(/time=(\d{2}):(\d{2}):(\d{2}\.\d+)/);
+            if (timeMatch && totalDuration > 0) {
+                const hours = parseFloat(timeMatch[1]);
+                const mins = parseFloat(timeMatch[2]);
+                const secs = parseFloat(timeMatch[3]);
+                const currentTime = (hours * 3600) + (mins * 60) + secs;
+                const percent = Math.min(98, Math.round((currentTime / totalDuration) * 100));
+                job.progress = Math.max(job.progress || 0, percent);
                 notifySubJobClients(job);
             }
         });
@@ -595,10 +607,11 @@ Trả về DUY NHẤT một JSON hợp lệ có cấu trúc:
                 job.progress = 100;
                 job.outputUrl = `/outputs/${job.outputFilename}`;
                 notifySubJobClients(job);
+                console.log('Subtitle Burn completed successfully:', job.outputFilename);
             } else {
                 console.error('Sub burn error:', stderrLog.slice(-500));
                 job.status = 'failed';
-                job.error = `FFmpeg exit code ${code}`;
+                job.error = `FFmpeg exit code ${code}: ${stderrLog.slice(-200)}`;
                 notifySubJobClients(job);
             }
         });
@@ -866,8 +879,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         const segEnd = seg.end;
         const words = seg.words || [];
 
-        if (words.length === 0) {
-            ass += `Dialogue: 0,${formatAssTime(segStart)},${formatAssTime(segEnd)},Default,,0,0,0,,${escapeAssText(seg.text)}\n`;
+        if (animationType === 'none' || words.length === 0) {
+            ass += `Dialogue: 0,${formatAssTime(segStart)},${formatAssTime(segEnd)},Default,,0,0,0,,${escapeAssText(seg.text || words.map(w => w.word).join(' '))}\n`;
             return;
         }
 
