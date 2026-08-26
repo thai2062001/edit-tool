@@ -193,12 +193,21 @@ function renderMediaList() {
         const card = document.createElement('div');
         card.className = 'media-card';
         card.dataset.index = index;
+        card.setAttribute('draggable', 'true');
+
+        // Drag and Drop Event Listeners
+        card.addEventListener('dragstart', handleDragStart);
+        card.addEventListener('dragover', handleDragOver);
+        card.addEventListener('dragleave', handleDragLeave);
+        card.addEventListener('drop', handleDrop);
+        card.addEventListener('dragend', handleDragEnd);
 
         const isImage = item.type === 'image';
         const dur = isImage ? item.settings.duration : (item.settings.trimEnd - item.settings.trimStart);
         totalDur += Math.max(0.5, dur);
 
         card.innerHTML = `
+            <div class="card-drag-handle" title="Kéo thả chuột để đổi vị trí phân đoạn">⠿</div>
             <div class="card-index">#${index + 1}</div>
             <div class="card-thumb-wrapper">
                 ${isImage 
@@ -272,6 +281,35 @@ function renderMediaList() {
                         </div>
                     `}
                 </div>
+
+                <!-- Text Overlay / Headline Row -->
+                <div class="card-text-overlay-row">
+                    <div class="text-overlay-input-wrap">
+                        <span class="text-overlay-icon">✍️ Tiêu đề/Chữ:</span>
+                        <input type="text" class="form-control form-control-sm text-overlay-input" 
+                               placeholder="Nhập chữ/tiêu đề xuất hiện trên phân đoạn này..." 
+                               value="${item.settings?.overlayText || ''}" 
+                               onchange="updateItemSetting(${index}, 'overlayText', this.value)">
+                    </div>
+                    <div class="text-overlay-options">
+                        <select class="form-control form-control-sm" onchange="updateItemSetting(${index}, 'textPosition', this.value)" title="Vị trí hiển thị chữ">
+                            <option value="bottom" ${(item.settings?.textPosition || 'bottom') === 'bottom' ? 'selected' : ''}>📍 Dưới đáy</option>
+                            <option value="center" ${(item.settings?.textPosition || 'bottom') === 'center' ? 'selected' : ''}>📍 Giữa khung</option>
+                            <option value="top" ${(item.settings?.textPosition || 'bottom') === 'top' ? 'selected' : ''}>📍 Trên đỉnh</option>
+                        </select>
+                        <select class="form-control form-control-sm" onchange="updateItemSetting(${index}, 'textStyle', this.value)" title="Kiểu hiển thị chữ">
+                            <option value="banner" ${(item.settings?.textStyle || 'banner') === 'banner' ? 'selected' : ''}>🎨 Banner mờ</option>
+                            <option value="outline" ${(item.settings?.textStyle || 'banner') === 'outline' ? 'selected' : ''}>🎨 Viền đen</option>
+                            <option value="glow" ${(item.settings?.textStyle || 'banner') === 'glow' ? 'selected' : ''}>🎨 Neon sáng</option>
+                            <option value="plain" ${(item.settings?.textStyle || 'banner') === 'plain' ? 'selected' : ''}>🎨 Chữ trắng</option>
+                        </select>
+                        <select class="form-control form-control-sm" onchange="updateItemSetting(${index}, 'fontSize', parseInt(this.value))" title="Cỡ chữ">
+                            <option value="36" ${(item.settings?.fontSize || 48) === 36 ? 'selected' : ''}>36px (Vừa)</option>
+                            <option value="48" ${(item.settings?.fontSize || 48) === 48 ? 'selected' : ''}>48px (Lớn)</option>
+                            <option value="64" ${(item.settings?.fontSize || 48) === 64 ? 'selected' : ''}>64px (To)</option>
+                        </select>
+                    </div>
+                </div>
             </div>
             <div class="card-actions">
                 <button class="btn btn-icon btn-secondary" onclick="moveToTop(${index})" ${index === 0 ? 'disabled' : ''} title="Đưa lên đầu danh sách">⏫</button>
@@ -285,6 +323,51 @@ function renderMediaList() {
     });
 
     totalDurationEl.innerText = `${totalDur.toFixed(1)}s`;
+}
+
+// Drag and Drop Reordering Handlers
+let draggedIndex = null;
+
+function handleDragStart(e) {
+    const target = e.target;
+    if (['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON', 'OPTION', 'A'].includes(target.tagName) || target.closest('button') || target.closest('.form-control')) {
+        e.preventDefault();
+        return;
+    }
+    draggedIndex = parseInt(this.dataset.index);
+    this.classList.add('is-dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', draggedIndex);
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    this.classList.add('drag-over-target');
+}
+
+function handleDragLeave(e) {
+    this.classList.remove('drag-over-target');
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    this.classList.remove('drag-over-target');
+    const targetIndex = parseInt(this.dataset.index);
+    if (draggedIndex !== null && !isNaN(draggedIndex) && draggedIndex !== targetIndex) {
+        const item = mediaItems.splice(draggedIndex, 1)[0];
+        mediaItems.splice(targetIndex, 0, item);
+        renderMediaList();
+    }
+}
+
+function handleDragEnd(e) {
+    this.classList.remove('is-dragging');
+    document.querySelectorAll('.media-card').forEach(c => {
+        c.classList.remove('drag-over-target');
+        c.classList.remove('is-dragging');
+    });
+    draggedIndex = null;
 }
 
 // Expose utilities to window for Tab 2 Sync integration
@@ -483,6 +566,10 @@ const modalPreviewDuration = document.getElementById('modal-preview-duration');
 const modalPreviewIntensity = document.getElementById('modal-preview-intensity');
 const modalPreviewFadeIn = document.getElementById('modal-preview-fadein');
 const modalPreviewFadeOut = document.getElementById('modal-preview-fadeout');
+const modalPreviewText = document.getElementById('modal-preview-text');
+const modalPreviewTextPos = document.getElementById('modal-preview-text-pos');
+const modalPreviewTextStyle = document.getElementById('modal-preview-text-style');
+const modalPreviewTextSize = document.getElementById('modal-preview-text-size');
 const btnSavePreviewSettings = document.getElementById('btn-save-preview-settings');
 let previewImg = new Image();
 let previewItemData = null;
@@ -500,6 +587,10 @@ function previewItemMotion(index) {
     if (modalPreviewIntensity) modalPreviewIntensity.value = previewItemData.settings.zoomIntensity || 1.25;
     if (modalPreviewFadeIn) modalPreviewFadeIn.value = previewItemData.settings.fadeIn ?? 0.8;
     if (modalPreviewFadeOut) modalPreviewFadeOut.value = previewItemData.settings.fadeOut ?? 0.8;
+    if (modalPreviewText) modalPreviewText.value = previewItemData.settings.overlayText || '';
+    if (modalPreviewTextPos) modalPreviewTextPos.value = previewItemData.settings.textPosition || 'bottom';
+    if (modalPreviewTextStyle) modalPreviewTextStyle.value = previewItemData.settings.textStyle || 'banner';
+    if (modalPreviewTextSize) modalPreviewTextSize.value = previewItemData.settings.fontSize || 48;
 
     previewEffectName.innerText = (previewItemData.settings.motion || 'zoom_in').replace('_', ' ').toUpperCase();
     previewModal.classList.remove('hidden');
@@ -513,7 +604,7 @@ function previewItemMotion(index) {
 }
 
 // Attach live changes inside Preview Modal
-[modalPreviewMotion, modalPreviewDuration, modalPreviewIntensity, modalPreviewFadeIn, modalPreviewFadeOut].forEach(el => {
+[modalPreviewMotion, modalPreviewDuration, modalPreviewIntensity, modalPreviewFadeIn, modalPreviewFadeOut, modalPreviewText, modalPreviewTextPos, modalPreviewTextStyle, modalPreviewTextSize].forEach(el => {
     if (el) {
         el.addEventListener('input', () => {
             if (!previewItemData) return;
@@ -522,6 +613,10 @@ function previewItemMotion(index) {
             previewItemData.settings.zoomIntensity = parseFloat(modalPreviewIntensity.value) || 1.25;
             previewItemData.settings.fadeIn = parseFloat(modalPreviewFadeIn.value) || 0;
             previewItemData.settings.fadeOut = parseFloat(modalPreviewFadeOut.value) || 0;
+            previewItemData.settings.overlayText = modalPreviewText ? modalPreviewText.value : '';
+            previewItemData.settings.textPosition = modalPreviewTextPos ? modalPreviewTextPos.value : 'bottom';
+            previewItemData.settings.textStyle = modalPreviewTextStyle ? modalPreviewTextStyle.value : 'banner';
+            previewItemData.settings.fontSize = modalPreviewTextSize ? parseInt(modalPreviewTextSize.value) : 48;
             previewEffectName.innerText = previewItemData.settings.motion.replace('_', ' ').toUpperCase();
             startPreviewAnimation();
         });
@@ -613,6 +708,70 @@ function startPreviewAnimation() {
             previewCanvas.height
         );
         ctx.restore();
+
+        // Render Text Overlay if available
+        const overlayText = previewItemData.settings.overlayText?.trim();
+        if (overlayText) {
+            const textPos = previewItemData.settings.textPosition || 'bottom';
+            const textStyle = previewItemData.settings.textStyle || 'banner';
+            const fontSize = Number(previewItemData.settings.fontSize) || 48;
+
+            ctx.save();
+            ctx.font = `bold ${fontSize}px Outfit, -apple-system, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            const textX = previewCanvas.width / 2;
+            let textY = previewCanvas.height - 120;
+            if (textPos === 'top') textY = 120;
+            else if (textPos === 'center') textY = previewCanvas.height / 2;
+
+            const metrics = ctx.measureText(overlayText);
+            const boxWidth = metrics.width + 48;
+            const boxHeight = fontSize * 1.6;
+
+            if (textStyle === 'banner') {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+                const rx = textX - boxWidth / 2;
+                const ry = textY - boxHeight / 2;
+                const r = 12;
+                ctx.beginPath();
+                ctx.moveTo(rx + r, ry);
+                ctx.lineTo(rx + boxWidth - r, ry);
+                ctx.quadraticCurveTo(rx + boxWidth, ry, rx + boxWidth, ry + r);
+                ctx.lineTo(rx + boxWidth, ry + boxHeight - r);
+                ctx.quadraticCurveTo(rx + boxWidth, ry + boxHeight, rx + boxWidth - r, ry + boxHeight);
+                ctx.lineTo(rx + r, ry + boxHeight);
+                ctx.quadraticCurveTo(rx, ry + boxHeight, rx, ry + boxHeight - r);
+                ctx.lineTo(rx, ry + r);
+                ctx.quadraticCurveTo(rx, ry, rx + r, ry);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillText(overlayText, textX, textY);
+            } else if (textStyle === 'outline') {
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = Math.max(6, fontSize * 0.15);
+                ctx.lineJoin = 'round';
+                ctx.strokeText(overlayText, textX, textY);
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillText(overlayText, textX, textY);
+            } else if (textStyle === 'glow') {
+                ctx.shadowColor = '#6366F1';
+                ctx.shadowBlur = 24;
+                ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+                ctx.lineWidth = 4;
+                ctx.strokeText(overlayText, textX, textY);
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillText(overlayText, textX, textY);
+            } else {
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillText(overlayText, textX, textY);
+            }
+
+            ctx.restore();
+        }
 
         // Calculate Fade Alpha
         let alpha = 1.0;
@@ -743,9 +902,9 @@ btnSampleDemo.addEventListener('click', async () => {
     try {
         // Create 3 sample SVG/Canvas images and upload them
         const samples = [
-            { title: 'Scene 1: Bình Minh', gradient: ['#FF512F', '#DD2476'], motion: 'zoom_in', fadeIn: 1.0, fadeOut: 0.5 },
-            { title: 'Scene 2: Đại Dương Xanh', gradient: ['#1A2980', '#26D0CE'], motion: 'zoom_out', fadeIn: 0.5, fadeOut: 0.5 },
-            { title: 'Scene 3: Hoàng Hôn Neon', gradient: ['#8E2DE2', '#4A00E0'], motion: 'pan_right', fadeIn: 0.5, fadeOut: 1.0 }
+            { title: 'Scene 1: Bình Minh', textOverlay: 'Bình Minh Rực Rỡ', gradient: ['#FF512F', '#DD2476'], motion: 'zoom_in', fadeIn: 1.0, fadeOut: 0.5 },
+            { title: 'Scene 2: Đại Dương Xanh', textOverlay: 'Đại Dương Vô Tận', gradient: ['#1A2980', '#26D0CE'], motion: 'zoom_out', fadeIn: 0.5, fadeOut: 0.5 },
+            { title: 'Scene 3: Hoàng Hôn Neon', textOverlay: 'Thành Phố Về Đêm', gradient: ['#8E2DE2', '#4A00E0'], motion: 'pan_right', fadeIn: 0.5, fadeOut: 1.0 }
         ];
 
         const uploadedSamples = [];
@@ -788,6 +947,10 @@ btnSampleDemo.addEventListener('click', async () => {
                 item.settings.zoomIntensity = 1.25;
                 item.settings.fadeIn = s.fadeIn;
                 item.settings.fadeOut = s.fadeOut;
+                item.settings.overlayText = s.textOverlay;
+                item.settings.textPosition = 'bottom';
+                item.settings.textStyle = 'banner';
+                item.settings.fontSize = 48;
                 uploadedSamples.push(item);
             }
         }
@@ -1003,9 +1166,12 @@ btnApplyAiTimeline.addEventListener('click', () => {
             const cloned = JSON.parse(JSON.stringify(originalItem));
             if (!cloned.settings) cloned.settings = {};
             cloned.settings.motion = scene.suggestedMotion || 'zoom_in';
-            cloned.settings.duration = parseFloat(scene.suggestedDuration || 4.0);
+            cloned.settings.duration = parseFloat(scene.suggestedDuration || 5.0);
             cloned.settings.fadeIn = parseFloat(scene.fadeIn || 0.8);
             cloned.settings.fadeOut = parseFloat(scene.fadeOut || 0.8);
+            if (scene.sceneText) {
+                cloned.settings.overlayText = scene.sceneText;
+            }
             newTimeline.push(cloned);
         }
     });

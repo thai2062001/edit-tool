@@ -297,10 +297,11 @@ body {
     border-radius: var(--radius-md);
     padding: 14px 18px;
     display: grid;
-    grid-template-columns: 36px 120px 1fr auto;
-    gap: 18px;
+    grid-template-columns: 24px 36px 120px 1fr auto;
+    gap: 14px;
     align-items: center;
     transition: var(--transition);
+    position: relative;
 }
 
 .media-card:hover {
@@ -308,9 +309,42 @@ body {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
+.media-card.is-dragging {
+    opacity: 0.4;
+    border: 2px dashed var(--primary);
+    transform: scale(0.98);
+}
+
+.media-card.drag-over-target {
+    border-top: 3px solid var(--accent-cyan);
+    background: rgba(6, 182, 212, 0.08);
+    transform: translateY(2px);
+}
+
+.card-drag-handle {
+    cursor: grab;
+    font-size: 18px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    transition: var(--transition);
+    padding: 4px;
+}
+
+.card-drag-handle:hover {
+    color: var(--primary);
+    transform: scale(1.2);
+}
+
+.card-drag-handle:active {
+    cursor: grabbing;
+}
+
 .card-index {
     font-weight: 700;
-    font-size: 15px;
+    font-size: 14px;
     color: var(--text-dim);
     text-align: center;
 }
@@ -354,7 +388,7 @@ body {
 .card-controls {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
 }
 
 .card-title-row {
@@ -375,7 +409,46 @@ body {
 .card-form-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-    gap: 12px;
+    gap: 10px;
+}
+
+/* Text Overlay Row in Card */
+.card-text-overlay-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px dashed rgba(99, 102, 241, 0.3);
+    border-radius: var(--radius-sm);
+    padding: 6px 10px;
+    margin-top: 2px;
+}
+
+.text-overlay-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 220px;
+}
+
+.text-overlay-icon {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent-cyan);
+    white-space: nowrap;
+}
+
+.text-overlay-input {
+    flex: 1;
+    font-size: 12px;
+}
+
+.text-overlay-options {
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .form-group {

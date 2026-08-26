@@ -540,6 +540,39 @@
                     </div>
                 </div>
 
+                <!-- Text Overlay controls inside modal -->
+                <div class="preview-interactive-bar mt-2" style="background: rgba(30, 27, 75, 0.4);">
+                    <div class="preview-control-item" style="flex: 2;">
+                        <label>✍️ Tiêu đề chữ (Text Overlay):</label>
+                        <input type="text" id="modal-preview-text" class="form-control form-control-sm" placeholder="Nhập chữ/tiêu đề hiển thị lên ảnh...">
+                    </div>
+                    <div class="preview-control-item">
+                        <label>📍 Vị trí:</label>
+                        <select id="modal-preview-text-pos" class="custom-select form-control-sm">
+                            <option value="bottom">Dưới đáy</option>
+                            <option value="center">Giữa khung</option>
+                            <option value="top">Trên đỉnh</option>
+                        </select>
+                    </div>
+                    <div class="preview-control-item">
+                        <label>🎨 Kiểu chữ:</label>
+                        <select id="modal-preview-text-style" class="custom-select form-control-sm">
+                            <option value="banner">Banner mờ đen</option>
+                            <option value="outline">Viền đen nổi bật</option>
+                            <option value="glow">Phát sáng Neon</option>
+                            <option value="plain">Chữ trắng đơn</option>
+                        </select>
+                    </div>
+                    <div class="preview-control-item">
+                        <label>📏 Cỡ chữ:</label>
+                        <select id="modal-preview-text-size" class="custom-select form-control-sm">
+                            <option value="36">Vừa (36px)</option>
+                            <option value="48" selected>Lớn (48px)</option>
+                            <option value="64">Cực lớn (64px)</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="preview-controls">
                     <button id="btn-play-preview" class="btn btn-primary btn-small">▶ Phát Lại</button>
                     <button id="btn-save-preview-settings" class="btn btn-secondary btn-small" title="Lưu cài đặt này vào thẻ ảnh">💾 Lưu Cài Đặt</button>

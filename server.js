@@ -114,7 +114,12 @@ app.post('/api/upload', upload.array('files'), async (req, res) => {
                     fitMode: 'cover', // cover, contain
                     videoVolume: 1.0,
                     trimStart: 0,
-                    trimEnd: type === 'video' ? parseFloat(duration.toFixed(2)) : 0
+                    trimEnd: type === 'video' ? parseFloat(duration.toFixed(2)) : 0,
+                    overlayText: '',
+                    textPosition: 'bottom',
+                    textStyle: 'banner',
+                    fontSize: 48,
+                    textAnimation: 'always'
                 }
             });
         }
@@ -324,6 +329,55 @@ app.post('/api/render', async (req, res) => {
     executeFFmpegRender(job, items, bgm, { width, height, fps, outputPath });
 });
 
+// Helper to build FFmpeg drawtext filter for Text Overlay
+function buildDrawtextFilter(settings, width, height) {
+    if (!settings || !settings.overlayText || !settings.overlayText.trim()) {
+        return '';
+    }
+    const text = settings.overlayText.trim();
+    // Escape single quotes, colons, and backslashes for FFmpeg drawtext filter syntax
+    const escapedText = text
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/:/g, '\\:');
+
+    const position = settings.textPosition || 'bottom';
+    const style = settings.textStyle || 'banner';
+    const baseFontSize = Number(settings.fontSize) || 48;
+    const scaledFontSize = Math.max(20, Math.round(baseFontSize * (height / 1080)));
+
+    let x = '(w-text_w)/2';
+    let y = 'h-text_h-120';
+
+    if (position === 'top') {
+        y = `${Math.round(height * 0.10)}`;
+    } else if (position === 'center') {
+        y = '(h-text_h)/2';
+    } else {
+        // bottom
+        y = `h-text_h-${Math.round(height * 0.10)}`;
+    }
+
+    let styleParams = ':fontcolor=white';
+    if (style === 'banner') {
+        styleParams = ':fontcolor=white:box=1:boxcolor=black@0.65:boxborderw=16';
+    } else if (style === 'outline') {
+        styleParams = ':fontcolor=white:borderw=4:bordercolor=black';
+    } else if (style === 'glow') {
+        styleParams = ':fontcolor=white:shadowcolor=0x6366F1@0.8:shadowx=3:shadowy=3:borderw=2:bordercolor=black';
+    } else if (style === 'plain') {
+        styleParams = ':fontcolor=white';
+    }
+
+    let animParams = '';
+    const textAnimation = settings.textAnimation || 'always';
+    if (textAnimation === 'intro') {
+        animParams = ":enable='between(t,0,2.8)'";
+    }
+
+    return `drawtext=fontfile='C\\:/Windows/Fonts/arial.ttf':expansion=none:text='${escapedText}':fontsize=${scaledFontSize}:x=${x}:y=${y}${styleParams}${animParams}`;
+}
+
 // Function to render a single batch/chunk of items
 function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, config) {
     return new Promise((resolve, reject) => {
@@ -410,6 +464,12 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
                     vFilters += `,fade=t=out:st=${fadeStart}:d=${fadeOut}`;
                 }
 
+                // Append Drawtext Filter if Text Overlay is provided
+                const drawtextFilter = buildDrawtextFilter(item.settings, width, height);
+                if (drawtextFilter) {
+                    vFilters += `,${drawtextFilter}`;
+                }
+
                 filterComplex.push(`[${idx}:v]${vFilters}[${vTag}]`);
                 videoStreamTags.push(`[${vTag}]`);
                 filterComplex.push(`anullsrc=r=44100:cl=stereo:d=${dur}[${aTag}]`);
@@ -428,6 +488,12 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
                 if (fadeOut > 0) {
                     const fadeStart = Math.max(0, videoDur - fadeOut);
                     vFilters += `,fade=t=out:st=${fadeStart}:d=${fadeOut}`;
+                }
+
+                // Append Drawtext Filter if Text Overlay is provided
+                const drawtextFilter = buildDrawtextFilter(item.settings, width, height);
+                if (drawtextFilter) {
+                    vFilters += `,${drawtextFilter}`;
                 }
 
                 filterComplex.push(`[${idx}:v]${vFilters}[${vTag}]`);
