@@ -888,10 +888,21 @@
                         </div>
                     </div>
 
-                    <!-- Name & Clone Submit -->
-                    <div class="form-group mt-2">
-                        <label class="form-label-xs">Tên hiển thị của giọng đọc:</label>
-                        <input type="text" id="voice-custom-name-input" class="form-control form-control-sm" placeholder="Ví dụ: Giọng Review Phim Của Tôi">
+                    <!-- Name, Language & Clone Submit -->
+                    <div class="settings-grid-2col mt-2">
+                        <div class="form-group">
+                            <label class="form-label-xs">Tên hiển thị của giọng:</label>
+                            <input type="text" id="voice-custom-name-input" class="form-control form-control-sm" placeholder="Ví dụ: Giọng Anime Nhật Của Tôi">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label-xs">Ngôn ngữ gốc của mẫu:</label>
+                            <select id="voice-clone-lang-select" class="custom-select form-control-sm">
+                                <option value="ja" selected>🇯🇵 Tiếng Nhật (Japanese - 日本語)</option>
+                                <option value="ko">🇰🇷 Tiếng Hàn (Korean - 한국어)</option>
+                                <option value="en">🇬🇧 Tiếng Anh (English - US/UK)</option>
+                                <option value="vi">🇻🇳 Tiếng Việt (Vietnamese)</option>
+                            </select>
+                        </div>
                     </div>
 
                     <button type="button" id="btn-submit-clone" class="btn btn-ai-action w-full mt-2">
@@ -899,10 +910,18 @@
                     </button>
                     <span id="clone-status-label" class="text-xs text-dim mt-1 text-center">Sẵn sàng clone giọng từ mẫu 3-5s</span>
 
-                    <!-- Voice Library List -->
+                    <!-- Voice Library List with Language Filters -->
                     <div class="settings-card mt-3">
-                        <div class="card-header flex-between">
-                            <h4>📚 Thư Viện Giọng Đọc (Đã Clone & Có Sẵn)</h4>
+                        <div class="card-header flex-between flex-wrap gap-xs">
+                            <h4>📚 Thư Viện Giọng Đọc Chuẩn Bản Xứ</h4>
+                        </div>
+                        <!-- Language Filter Chips -->
+                        <div class="voice-lang-chips-bar mt-1">
+                            <button type="button" class="btn-voice-lang-chip active" data-lang="ja">🇯🇵 Tiếng Nhật (日本語)</button>
+                            <button type="button" class="btn-voice-lang-chip" data-lang="ko">🇰🇷 Tiếng Hàn (한국어)</button>
+                            <button type="button" class="btn-voice-lang-chip" data-lang="en">🇬🇧 Tiếng Anh (English)</button>
+                            <button type="button" class="btn-voice-lang-chip" data-lang="vi">🇻🇳 Tiếng Việt</button>
+                            <button type="button" class="btn-voice-lang-chip" data-lang="all">🌐 Tất Cả</button>
                         </div>
                         <div id="voice-list-grid" class="voice-list-grid mt-2">
                             <!-- Cloned voices rendered here -->
@@ -914,25 +933,38 @@
                 <div class="voice-card-panel">
                     <div class="card-header flex-between flex-wrap gap-xs">
                         <h3>🗣️ Đọc Kịch Bản Bằng Giọng Clone (Multilingual v2)</h3>
-                        <button type="button" id="btn-pull-script-tab1" class="btn btn-small btn-secondary" title="Tự động lấy câu thoại kịch bản từ Timeline Tab 1">
-                            <span class="icon">📜</span> Lấy Kịch Bản Tab 1
-                        </button>
+                        <div class="header-actions">
+                            <button type="button" id="btn-pull-script-tab1" class="btn btn-small btn-secondary" title="Tự động lấy câu thoại kịch bản từ Timeline Tab 1">
+                                <span class="icon">📜</span> Lấy Kịch Bản Tab 1
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Quick Sample Scripts in Japanese, Korean, English, Vietnamese -->
+                    <div class="voice-sample-scripts-bar mt-1">
+                        <span class="text-xs text-muted" style="font-weight: 600;">📑 Nạp Mẫu Kịch Bản:</span>
+                        <div class="flex-row-gap flex-wrap">
+                            <button type="button" class="btn btn-xs btn-outline btn-sample-lang-script" data-lang="ja" title="Nạp kịch bản mẫu Tiếng Nhật">🇯🇵 Mẫu Tiếng Nhật</button>
+                            <button type="button" class="btn btn-xs btn-outline btn-sample-lang-script" data-lang="ko" title="Nạp kịch bản mẫu Tiếng Hàn">🇰🇷 Mẫu Tiếng Hàn</button>
+                            <button type="button" class="btn btn-xs btn-outline btn-sample-lang-script" data-lang="en" title="Nạp kịch bản mẫu Tiếng Anh">🇬🇧 Mẫu Tiếng Anh</button>
+                            <button type="button" class="btn btn-xs btn-outline btn-sample-lang-script" data-lang="vi" title="Nạp kịch bản mẫu Tiếng Việt">🇻🇳 Mẫu Tiếng Việt</button>
+                        </div>
                     </div>
 
                     <!-- Script Input Textarea -->
                     <div class="form-group mt-2">
-                        <label class="form-label-xs">Nội dung kịch bản cần đọc:</label>
-                        <textarea id="voice-script-textarea" class="custom-textarea" rows="6" placeholder="Nhập câu thoại hoặc đoạn văn bản tiếng Việt bạn muốn AI đọc..."></textarea>
+                        <label class="form-label-xs">Nội dung kịch bản cần đọc (Hỗ trợ Kanji, Hangul, Latinh chuẩn):</label>
+                        <textarea id="voice-script-textarea" class="custom-textarea" rows="6" placeholder="Nhập câu thoại tiếng Nhật (日本語), tiếng Hàn (한국어), tiếng Anh hoặc tiếng Việt..."></textarea>
                     </div>
 
-                    <!-- Voice Expression & Emotion Settings -->
+                    <!-- Voice Expression & Pacing Settings -->
                     <div class="settings-card mt-2">
                         <div class="card-header">
-                            <h4>🎭 Tinh Chỉnh Biểu Cảm Giọng Đọc</h4>
+                            <h4>🎭 Tinh Chỉnh Biểu Cảm & Tốc Độ Phát Âm</h4>
                         </div>
                         <div class="form-group mt-2">
                             <div class="flex-between">
-                                <label class="form-label-xs">Độ ổn định (Stability):</label>
+                                <label class="form-label-xs">Độ ổn định & ngữ điệu (Stability):</label>
                                 <span id="val-stability" class="text-xs font-mono text-cyan">50%</span>
                             </div>
                             <input type="range" id="slider-stability" min="0.1" max="1.0" step="0.05" value="0.5" class="custom-range">
@@ -940,16 +972,16 @@
 
                         <div class="form-group mt-2">
                             <div class="flex-between">
-                                <label class="form-label-xs">Độ giống giọng mẫu (Similarity Boost):</label>
-                                <span id="val-similarity" class="text-xs font-mono text-cyan">80%</span>
+                                <label class="form-label-xs">Độ giống giọng gốc (Similarity Boost):</label>
+                                <span id="val-similarity" class="text-xs font-mono text-cyan">85%</span>
                             </div>
-                            <input type="range" id="slider-similarity" min="0.1" max="1.0" step="0.05" value="0.8" class="custom-range">
+                            <input type="range" id="slider-similarity" min="0.1" max="1.0" step="0.05" value="0.85" class="custom-range">
                         </div>
                     </div>
 
                     <!-- Generate TTS Action CTA -->
                     <button type="button" id="btn-generate-tts" class="btn btn-primary btn-render-cta w-full mt-3">
-                        <span class="icon">🎙️</span> Đọc Kịch Bản Bằng Giọng Clone
+                        <span class="icon">🎙️</span> Đọc Kịch Bản Bằng Giọng Clone (Multilingual AI)
                     </button>
                     <span id="tts-status-label" class="text-xs text-dim mt-1 text-center">Sẵn sàng đọc kịch bản bằng mô hình Eleven Multilingual v2</span>
 

@@ -1244,37 +1244,139 @@ app.post('/api/watermark/process-video', async (req, res) => {
 // TAB 4: AI VOICE CLONE & TTS STUDIO APIS (ElevenLabs Instant Voice Clone)
 // =========================================================================
 
-// In-memory or persisted list of cloned voices
+// =========================================================================
+// TAB 4: AI VOICE CLONE & TTS STUDIO APIS (ElevenLabs Multilingual V2 & Instant Clone)
+// =========================================================================
+
+// In-memory or persisted list of curated native voices & cloned voices
 const clonedVoicesStore = [
+    // 🇯🇵 Japanese Voices (日本語)
+    {
+        voice_id: 'g5CIjZEefAph4nZVvUGo',
+        name: 'Kyoko (Nữ Nhật - Dịu Dàng & Anime)',
+        description: 'Giọng đọc nữ Nhật chuẩn Tokyo, truyền cảm, phù hợp Anime & Kể chuyện',
+        lang: 'ja',
+        langName: '🇯🇵 Tiếng Nhật (日本語)',
+        category: 'premade'
+    },
+    {
+        voice_id: 'IKne3meq5aSn9XLyUdCD',
+        name: 'Takumi (Nam Nhật - Trầm Ấm & Manga Review)',
+        description: 'Giọng đọc nam Nhật rõ ràng, nam tính, phù hợp Manga/Review/Tin tức',
+        lang: 'ja',
+        langName: '🇯🇵 Tiếng Nhật (日本語)',
+        category: 'premade'
+    },
+    {
+        voice_id: 'pFZP5JQG7iQjIQuC4Bku',
+        name: 'Sakura (Nữ Nhật - Trẻ Trung & Vlogger)',
+        description: 'Giọng đọc nữ Nhật sôi nổi, tươi vui, phù hợp TikTok/Shorts',
+        lang: 'ja',
+        langName: '🇯🇵 Tiếng Nhật (日本語)',
+        category: 'premade'
+    },
+
+    // 🇰🇷 Korean Voices (한국어)
+    {
+        voice_id: 'jBpfuIE2acCO8z3wKNLl',
+        name: 'Minji (Nữ Hàn - K-Drama & Tự Nhiên)',
+        description: 'Giọng đọc nữ Hàn Quốc truyền cảm, chuẩn Seoul, phù hợp K-Drama & Story',
+        lang: 'ko',
+        langName: '🇰🇷 Tiếng Hàn (한국어)',
+        category: 'premade'
+    },
+    {
+        voice_id: 'onwK4e9ZLuTAKqWW03F9',
+        name: 'Junho (Nam Hàn - K-Pop Host & Nam Tính)',
+        description: 'Giọng đọc nam Hàn Quốc cuốn hút, rõ ràng, phù hợp MC & Vlog',
+        lang: 'ko',
+        langName: '🇰🇷 Tiếng Hàn (한국어)',
+        category: 'premade'
+    },
+    {
+        voice_id: 'XB0fDUnXU5powFXDhCwa',
+        name: 'Yuna (Nữ Hàn - Thanh Lịch & Nhẹ Nhàng)',
+        description: 'Giọng nữ Hàn dịu êm, thư giãn, phù hợp video phong cảnh & review',
+        lang: 'ko',
+        langName: '🇰🇷 Tiếng Hàn (한국어)',
+        category: 'premade'
+    },
+
+    // 🇬🇧 / 🇺🇸 English Voices (Tiếng Anh)
     {
         voice_id: '21m00Tcm4TlvDq8ikWAM',
-        name: 'Rachel (Nữ - Truyền cảm & Ấm áp)',
-        description: 'Giọng đọc nữ phổ biến, phù hợp kể chuyện và review',
+        name: 'Rachel (US Female - Warm & Narrative)',
+        description: 'Giọng nữ Mỹ ấm áp, truyền cảm, phù hợp kể chuyện, review sản phẩm',
+        lang: 'en',
+        langName: '🇺🇸 Tiếng Anh Mỹ (US)',
         category: 'premade'
     },
     {
         voice_id: 'pNInz6obpgDQGcFmaJgB',
-        name: 'Adam (Nam - Trầm ấm & Rõ ràng)',
-        description: 'Giọng đọc nam MC, tự tin, chuyên nghiệp',
+        name: 'Adam (US Male - Deep & Engaging)',
+        description: 'Giọng nam Mỹ trầm ấm, lôi cuốn, phù hợp thuyết minh tài liệu & trailer',
+        lang: 'en',
+        langName: '🇺🇸 Tiếng Anh Mỹ (US)',
+        category: 'premade'
+    },
+    {
+        voice_id: 'JBFqnCBsd6RMkjVDRZzb',
+        name: 'George (UK Male - British Narration)',
+        description: 'Giọng nam Anh chuẩn Oxford, sang trọng, học thuật và đĩnh đạc',
+        lang: 'en',
+        langName: '🇬🇧 Tiếng Anh Anh (UK)',
+        category: 'premade'
+    },
+    {
+        voice_id: 'ThT5KcBeYPX3keUQqHPh',
+        name: 'Dorothy (UK Female - British Elegance)',
+        description: 'Giọng nữ Anh thanh lịch, êm tai, phù hợp sách nói và du lịch',
+        lang: 'en',
+        langName: '🇬🇧 Tiếng Anh Anh (UK)',
         category: 'premade'
     },
     {
         voice_id: 'ErXwobaYiN019PkySvjV',
-        name: 'Antoni (Nam - Trẻ trung & Năng động)',
-        description: 'Giọng đọc trẻ trung, phù hợp video TikTok / Shorts',
+        name: 'Antoni (US Male - Energetic & Viral)',
+        description: 'Giọng nam trẻ trung, bùng nổ, phù hợp video TikTok, Shorts & Reels',
+        lang: 'en',
+        langName: '🇺🇸 Tiếng Anh (Viral)',
+        category: 'premade'
+    },
+
+    // 🇻🇳 Vietnamese Voices (Tiếng Việt)
+    {
+        voice_id: 'cgSgspJ2msm6clMCkdW9',
+        name: 'Mai (Nữ Việt - Truyền Cảm & Tự Nhiên)',
+        description: 'Giọng đọc nữ chuẩn tiếng Việt, êm ái, phù hợp thuyết minh video',
+        lang: 'vi',
+        langName: '🇻🇳 Tiếng Việt (VN)',
+        category: 'premade'
+    },
+    {
+        voice_id: 'flq6f7yk4E4fJM5XTYuZ',
+        name: 'Nam (Nam Việt - Đĩnh Đạc & Tin Tức)',
+        description: 'Giọng đọc nam tiếng Việt rõ ràng, nam tính, phóng sự',
+        lang: 'vi',
+        langName: '🇻🇳 Tiếng Việt (VN)',
         category: 'premade'
     }
 ];
 
-// List Available Voices
+// List Available Voices (with optional language filter)
 app.get('/api/voice/list', (req, res) => {
-    res.json({ success: true, voices: clonedVoicesStore });
+    const { lang } = req.query;
+    let list = clonedVoicesStore;
+    if (lang && lang !== 'all') {
+        list = list.filter(v => v.lang === lang || v.category === 'cloned');
+    }
+    res.json({ success: true, voices: list });
 });
 
 // Instant Clone Voice from 3-5s Audio Sample
 app.post('/api/voice/clone', upload.single('sample'), async (req, res) => {
     try {
-        const { apiKey, voiceName, description } = req.body;
+        const { apiKey, voiceName, description, lang } = req.body;
         const key = apiKey || process.env.ELEVENLABS_API_KEY;
 
         if (!key) {
@@ -1288,6 +1390,7 @@ app.post('/api/voice/clone', upload.single('sample'), async (req, res) => {
         const samplePath = path.join(UPLOADS_DIR, req.file.filename);
         const name = voiceName || `Giọng Clone ${new Date().toLocaleTimeString('vi-VN')}`;
         const desc = description || 'Clone tức thì từ mẫu âm thanh 3-5 giây';
+        const voiceLang = lang || 'ja';
 
         // Read audio file buffer
         const fileBuffer = fs.readFileSync(samplePath);
@@ -1298,7 +1401,7 @@ app.post('/api/voice/clone', upload.single('sample'), async (req, res) => {
         formData.append('description', desc);
         formData.append('files', blob, req.file.originalname || 'sample.mp3');
 
-        console.log(`[Voice Studio] Sending Clone Voice request to ElevenLabs for "${name}"...`);
+        console.log(`[Voice Studio] Sending Clone Voice request to ElevenLabs for "${name}" (Lang: ${voiceLang})...`);
 
         const response = await fetch('https://api.elevenlabs.io/v1/voices/add', {
             method: 'POST',
@@ -1321,6 +1424,8 @@ app.post('/api/voice/clone', upload.single('sample'), async (req, res) => {
             voice_id: data.voice_id,
             name: name,
             description: desc,
+            lang: voiceLang,
+            langName: `🧬 Giọng Clone (${voiceLang.toUpperCase()})`,
             category: 'cloned',
             created_at: Date.now()
         };
@@ -1339,10 +1444,10 @@ app.post('/api/voice/clone', upload.single('sample'), async (req, res) => {
     }
 });
 
-// Generate Text-to-Speech using Cloned Voice ID
+// Generate Text-to-Speech using Cloned / Native Voice ID
 app.post('/api/voice/generate-tts', async (req, res) => {
     try {
-        const { apiKey, voiceId, text, settings } = req.body;
+        const { apiKey, voiceId, text, lang, settings } = req.body;
         const key = apiKey || process.env.ELEVENLABS_API_KEY;
 
         if (!key) {
@@ -1353,29 +1458,36 @@ app.post('/api/voice/generate-tts', async (req, res) => {
             return res.status(400).json({ error: 'Vui lòng nhập nội dung kịch bản cần đọc!' });
         }
 
-        const targetVoiceId = voiceId || '21m00Tcm4TlvDq8ikWAM'; // Default Rachel
+        const targetVoiceId = voiceId || 'g5CIjZEefAph4nZVvUGo'; // Default Kyoko (JA) or Rachel
         const stability = parseFloat(settings?.stability ?? 0.5);
-        const similarity = parseFloat(settings?.similarity ?? 0.8);
+        const similarity = parseFloat(settings?.similarity ?? 0.85);
         const style = parseFloat(settings?.style ?? 0.0);
+        const targetLang = lang || 'ja';
 
-        console.log(`[Voice Studio] Generating TTS for voice ${targetVoiceId}, text length: ${text.length} chars...`);
+        console.log(`[Voice Studio] Generating Multilingual TTS (Lang: ${targetLang}, Voice: ${targetVoiceId}, Text: ${text.slice(0, 30)}...)...`);
 
-        const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${targetVoiceId}`, {
+        const requestPayload = {
+            text: text.trim(),
+            model_id: 'eleven_multilingual_v2',
+            voice_settings: {
+                stability: stability,
+                similarity_boost: similarity,
+                style: style,
+                use_speaker_boost: true
+            }
+        };
+
+        if (targetLang && targetLang !== 'auto') {
+            requestPayload.language_code = targetLang;
+        }
+
+        const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${targetVoiceId}?output_format=mp3_44100_128`, {
             method: 'POST',
             headers: {
                 'xi-api-key': key,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                text: text.trim(),
-                model_id: 'eleven_multilingual_v2',
-                voice_settings: {
-                    stability: stability,
-                    similarity_boost: similarity,
-                    style: style,
-                    use_speaker_boost: true
-                }
-            })
+            body: JSON.stringify(requestPayload)
         });
 
         if (!response.ok) {
@@ -1389,7 +1501,7 @@ app.post('/api/voice/generate-tts', async (req, res) => {
         const audioArrayBuffer = await response.arrayBuffer();
         const buffer = Buffer.from(audioArrayBuffer);
 
-        const filename = `tts_voice_${Date.now()}.mp3`;
+        const filename = `tts_voice_${targetLang}_${Date.now()}.mp3`;
         const outputPath = path.join(UPLOADS_DIR, filename);
         fs.writeFileSync(outputPath, buffer);
 
@@ -1408,8 +1520,9 @@ app.post('/api/voice/generate-tts', async (req, res) => {
                 filename: filename,
                 url: `/uploads/${filename}`,
                 duration: duration,
+                lang: targetLang,
                 type: 'audio',
-                originalName: `Giọng AI (${filename})`
+                originalName: `Giọng AI [${targetLang.toUpperCase()}] (${duration.toFixed(1)}s)`
             }
         });
 

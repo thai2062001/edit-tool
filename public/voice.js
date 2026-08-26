@@ -8,7 +8,8 @@
 
     const VoiceState = {
         apiKey: localStorage.getItem('elevenlabs_api_key') || '',
-        activeVoiceId: '21m00Tcm4TlvDq8ikWAM',
+        activeVoiceId: 'g5CIjZEefAph4nZVvUGo', // Default Kyoko (JA)
+        selectedLang: 'ja', // 'ja' | 'ko' | 'en' | 'vi' | 'all'
         voices: [],
         recordedBlob: null,
         isRecording: false,
@@ -18,9 +19,16 @@
         generatedAudio: null,
         settings: {
             stability: 0.5,
-            similarity: 0.8,
+            similarity: 0.85,
             style: 0.0
         }
+    };
+
+    const SampleScripts = {
+        ja: 'こんにちは！今回は日本の伝統的な文化と東京の最新人気スポットをご紹介します。美しい景色と美味しいグルメをぜひお楽しみください！',
+        ko: '안녕하세요 여러분! 오늘은 한국의 아름다운 명소와 서울에서 가장 핫한 맛집들을 소개해 드리겠습니다. 끝까지 재미있게 시청해 주세요!',
+        en: 'Welcome back everyone! Today we are exploring the most stunning and breathtaking places around the world. Make sure to stay until the very end!',
+        vi: 'Xin chào các bạn! Hôm nay chúng ta sẽ cùng khám phá những địa điểm du lịch tuyệt đẹp và những câu chuyện thú vị nhất. Hãy theo dõi đến cuối video nhé!'
     };
 
     let dom = {};
@@ -28,7 +36,7 @@
     function init() {
         getDomElements();
         bindEvents();
-        loadVoiceList();
+        loadVoiceList('ja');
         if (VoiceState.apiKey && dom.voiceApiKeyInput) {
             dom.voiceApiKeyInput.value = VoiceState.apiKey;
         }
@@ -49,11 +57,16 @@
             voiceSampleInput: document.getElementById('voice-sample-input'),
             voiceSampleName: document.getElementById('voice-sample-name'),
             voiceCustomNameInput: document.getElementById('voice-custom-name-input'),
+            voiceCloneLangSelect: document.getElementById('voice-clone-lang-select'),
             btnSubmitClone: document.getElementById('btn-submit-clone'),
             cloneStatusLabel: document.getElementById('clone-status-label'),
 
-            // Voice List
+            // Voice List & Language Filter Chips
+            voiceLangChips: document.querySelectorAll('.btn-voice-lang-chip'),
             voiceListGrid: document.getElementById('voice-list-grid'),
+
+            // Sample scripts buttons
+            sampleLangButtons: document.querySelectorAll('.btn-sample-lang-script'),
 
             // TTS Generator Panel
             voiceScriptTextarea: document.getElementById('voice-script-textarea'),
@@ -92,6 +105,32 @@
                 const key = e.target.value.trim();
                 VoiceState.apiKey = key;
                 localStorage.setItem('elevenlabs_api_key', key);
+            });
+        }
+
+        // Language Filter Chips
+        if (dom.voiceLangChips) {
+            dom.voiceLangChips.forEach(chip => {
+                chip.addEventListener('click', () => {
+                    dom.voiceLangChips.forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+                    const lang = chip.dataset.lang;
+                    VoiceState.selectedLang = lang;
+                    loadVoiceList(lang);
+                });
+            });
+        }
+
+        // Sample Language Scripts
+        if (dom.sampleLangButtons) {
+            dom.sampleLangButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const lang = btn.dataset.lang;
+                    if (SampleScripts[lang] && dom.voiceScriptTextarea) {
+                        dom.voiceScriptTextarea.value = SampleScripts[lang];
+                        showToast(`📑 Đã nạp kịch bản mẫu: ${btn.textContent}`);
+                    }
+                });
             });
         }
 
@@ -239,11 +278,13 @@
         }
 
         const voiceName = dom.voiceCustomNameInput?.value?.trim() || `Giọng Clone ${new Date().toLocaleTimeString('vi-VN')}`;
+        const voiceLang = dom.voiceCloneLangSelect?.value || 'ja';
 
         const formData = new FormData();
         formData.append('apiKey', apiKey);
         formData.append('voiceName', voiceName);
-        formData.append('description', 'Instant Voice Clone 3-5s via Web Editor Studio');
+        formData.append('lang', voiceLang);
+        formData.append('description', `Instant Voice Clone 3-5s (${voiceLang.toUpperCase()}) via Web Editor Studio`);
         formData.append('sample', VoiceState.recordedBlob, 'sample_3s.mp3');
 
         if (dom.btnSubmitClone) {
@@ -251,7 +292,7 @@
             dom.btnSubmitClone.innerHTML = '<span class="icon">⏳</span> Đang Trích Xuất & Clone Giọng...';
         }
         if (dom.cloneStatusLabel) {
-            dom.cloneStatusLabel.textContent = 'Đang gửi mẫu âm thanh lên ElevenLabs AI...';
+            dom.cloneStatusLabel.textContent = `Đang gửi mẫu âm thanh (${voiceLang.toUpperCase()}) lên ElevenLabs AI...`;
         }
 
         try {
@@ -271,7 +312,7 @@
             }
 
             VoiceState.activeVoiceId = data.voice.voice_id;
-            loadVoiceList();
+            loadVoiceList(VoiceState.selectedLang);
 
         } catch (err) {
             alert('Lỗi Clone Giọng: ' + err.message);
@@ -285,12 +326,17 @@
     }
 
     // Load Voice Library
-    async function loadVoiceList() {
+    async function loadVoiceList(langFilter) {
         try {
-            const res = await fetch('/api/voice/list');
+            const lang = langFilter || VoiceState.selectedLang || 'ja';
+            const url = lang ? `/api/voice/list?lang=${lang}` : '/api/voice/list';
+            const res = await fetch(url);
             const data = await res.json();
             if (data.success && data.voices) {
                 VoiceState.voices = data.voices;
+                if (data.voices.length > 0 && !data.voices.some(v => v.voice_id === VoiceState.activeVoiceId)) {
+                    VoiceState.activeVoiceId = data.voices[0].voice_id;
+                }
                 renderVoiceList();
             }
         } catch (err) {
@@ -304,11 +350,12 @@
         VoiceState.voices.forEach(v => {
             const isActive = v.voice_id === VoiceState.activeVoiceId;
             const isCloned = v.category === 'cloned';
+            const langTag = v.langName || (v.lang ? `[${v.lang.toUpperCase()}]` : '');
             html += `
                 <div class="voice-item-card ${isActive ? 'active' : ''}" data-id="${v.voice_id}">
                     <div class="voice-item-name">
                         <span>${isCloned ? '🧬' : '🗣️'} ${escapeHtml(v.name)}</span>
-                        <span class="badge-voice-type">${isCloned ? 'CLONE' : 'PRESET'}</span>
+                        <span class="badge-voice-type">${isCloned ? 'CLONE' : 'NATIVE'}</span>
                     </div>
                     <div class="voice-item-desc">${escapeHtml(v.description || '')}</div>
                 </div>
@@ -344,7 +391,7 @@
             dom.voiceScriptTextarea.value = script;
             showToast('📜 Đã nạp kịch bản từ phân đoạn Timeline!');
         } else {
-            alert('Chưa có câu thoại nào ở Tab 1 hoặc Tab 2. Bạn có thể nhập kịch bản trực tiếp vào khung.');
+            alert('Chưa có câu thoại nào ở Tab 1 hoặc Tab 2. Bạn có thể bấm các nút "Mẫu Tiếng Nhật/Hàn/Anh" ở trên!');
         }
     }
 
@@ -364,12 +411,14 @@
             return;
         }
 
+        const activeLang = VoiceState.selectedLang !== 'all' ? VoiceState.selectedLang : 'ja';
+
         if (dom.btnGenerateTts) {
             dom.btnGenerateTts.disabled = true;
             dom.btnGenerateTts.innerHTML = '<span class="icon">⏳</span> Đang Đọc Kịch Bản...';
         }
         if (dom.ttsStatusLabel) {
-            dom.ttsStatusLabel.textContent = 'Mô hình Eleven Multilingual v2 đang sinh audio...';
+            dom.ttsStatusLabel.textContent = `Mô hình Eleven Multilingual v2 đang sinh audio chuẩn [${activeLang.toUpperCase()}]...`;
         }
 
         try {
@@ -380,6 +429,7 @@
                     apiKey,
                     voiceId: VoiceState.activeVoiceId,
                     text,
+                    lang: activeLang,
                     settings: VoiceState.settings
                 })
             });
@@ -397,7 +447,7 @@
                 dom.voiceAudioPlayer.play().catch(() => {});
             }
             if (dom.ttsStatusLabel) {
-                dom.ttsStatusLabel.textContent = `✅ Đã tạo giọng đọc: ${(data.file.duration || 5).toFixed(1)}s`;
+                dom.ttsStatusLabel.textContent = `✅ Đã tạo giọng đọc [${activeLang.toUpperCase()}]: ${(data.file.duration || 5).toFixed(1)}s`;
             }
 
             showToast(`🎙️ Đã tạo xong giọng đọc AI (${(data.file.duration || 5).toFixed(1)}s)!`);
@@ -408,7 +458,7 @@
         } finally {
             if (dom.btnGenerateTts) {
                 dom.btnGenerateTts.disabled = false;
-                dom.btnGenerateTts.innerHTML = '<span class="icon">🎙️</span> Đọc Kịch Bản Bằng Giọng Clone';
+                dom.btnGenerateTts.innerHTML = '<span class="icon">🎙️</span> Đọc Kịch Bản Bằng Giọng Clone (Multilingual AI)';
             }
         }
     }
