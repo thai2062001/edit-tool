@@ -83,8 +83,34 @@
             // Output Player & Quick-Jump CTA
             voiceResultBox: document.getElementById('voice-result-box'),
             voiceAudioPlayer: document.getElementById('voice-audio-player'),
+            btnAuditVoice: document.getElementById('btn-audit-voice'),
             btnSendToTab1Bgm: document.getElementById('btn-send-to-tab1-bgm'),
-            btnSendToTab2Sub: document.getElementById('btn-send-to-tab2-sub')
+            btnSendToTab2Sub: document.getElementById('btn-send-to-tab2-sub'),
+
+            // AI Voice Quality & Pronunciation Audit Modal
+            voiceAuditModal: document.getElementById('voice-audit-modal'),
+            voiceAuditLoading: document.getElementById('voice-audit-loading'),
+            voiceAuditResult: document.getElementById('voice-audit-result'),
+            ringVoiceScore: document.getElementById('ring-voice-score'),
+            voiceAuditScoreNum: document.getElementById('voice-audit-score-num'),
+            voiceAuditRatingTitle: document.getElementById('voice-audit-rating-title'),
+            voiceAuditBadge: document.getElementById('voice-audit-badge'),
+            voiceAuditSummaryDesc: document.getElementById('voice-audit-summary-desc'),
+            voiceAuditLangTag: document.getElementById('voice-audit-lang-tag'),
+            voiceAuditSpeedTag: document.getElementById('voice-audit-speed-tag'),
+            voiceAuditDurTag: document.getElementById('voice-audit-dur-tag'),
+            barVoicePronunciation: document.getElementById('bar-voice-pronunciation'),
+            scoreVoicePronunciation: document.getElementById('score-voice-pronunciation'),
+            barVoiceIntonation: document.getElementById('bar-voice-intonation'),
+            scoreVoiceIntonation: document.getElementById('score-voice-intonation'),
+            barVoicePacing: document.getElementById('bar-voice-pacing'),
+            scoreVoicePacing: document.getElementById('score-voice-pacing'),
+            barVoiceFidelity: document.getElementById('bar-voice-fidelity'),
+            scoreVoiceFidelity: document.getElementById('score-voice-fidelity'),
+            auditVoiceStrengths: document.getElementById('audit-voice-strengths'),
+            auditVoiceWarnings: document.getElementById('audit-voice-warnings'),
+            auditVoiceRecs: document.getElementById('audit-voice-recs'),
+            btnVoiceAutofix: document.getElementById('btn-voice-autofix')
         };
     }
 
@@ -182,6 +208,16 @@
         // Generate TTS Button
         if (dom.btnGenerateTts) {
             dom.btnGenerateTts.addEventListener('click', generateVoiceTTS);
+        }
+
+        // Audit Voice Button
+        if (dom.btnAuditVoice) {
+            dom.btnAuditVoice.addEventListener('click', runVoiceAudit);
+        }
+
+        // Auto-fix Voice Settings Button
+        if (dom.btnVoiceAutofix) {
+            dom.btnVoiceAutofix.addEventListener('click', applyOptimalVoiceSettings);
         }
 
         // Send to Tab 1
@@ -505,6 +541,130 @@
 
         showToast('💬 Đã nạp giọng đọc sang Tab 2 để đồng bộ phụ đề và canh ảnh AI!');
     }
+
+    // =========================================================================
+    // AI VOICE QUALITY & PRONUNCIATION AUDITOR
+    // =========================================================================
+
+    let currentOptimalSettings = null;
+
+    async function runVoiceAudit() {
+        const text = dom.voiceScriptTextarea?.value?.trim();
+        if (!text) {
+            alert('Chưa có kịch bản giọng đọc để đánh giá!');
+            return;
+        }
+
+        const activeLang = VoiceState.selectedLang !== 'all' ? VoiceState.selectedLang : 'ja';
+        const duration = VoiceState.generatedAudio?.duration || 5.0;
+        const currentVoice = VoiceState.voices.find(v => v.voice_id === VoiceState.activeVoiceId);
+        const voiceName = currentVoice ? currentVoice.name : 'Giọng AI';
+
+        // Open Modal
+        if (dom.voiceAuditModal) dom.voiceAuditModal.classList.remove('hidden');
+        if (dom.voiceAuditLoading) dom.voiceAuditLoading.classList.remove('hidden');
+        if (dom.voiceAuditResult) dom.voiceAuditResult.classList.add('hidden');
+
+        try {
+            const res = await fetch('/api/ai/audit-voice', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    text,
+                    lang: activeLang,
+                    duration,
+                    voiceSettings: VoiceState.settings,
+                    voiceName
+                })
+            });
+
+            const data = await res.json();
+            if (!res.ok || data.error) {
+                throw new Error(data.error || 'Lỗi khi gọi AI Auditor');
+            }
+
+            const audit = data.audit;
+            currentOptimalSettings = audit.optimalSettings;
+
+            // Render Hero Score
+            if (dom.voiceAuditScoreNum) dom.voiceAuditScoreNum.textContent = audit.overallScore;
+            if (dom.voiceAuditRatingTitle) dom.voiceAuditRatingTitle.textContent = audit.rating;
+            if (dom.voiceAuditBadge) {
+                dom.voiceAuditBadge.textContent = audit.rating;
+                dom.voiceAuditBadge.className = audit.ratingClass || 'badge-score-high';
+            }
+
+            // Animate SVG Ring
+            if (dom.ringVoiceScore) {
+                const circumference = 2 * Math.PI * 50; // 314.159
+                const offset = circumference - (audit.overallScore / 100) * circumference;
+                dom.ringVoiceScore.style.strokeDashoffset = offset;
+            }
+
+            // Tags
+            if (dom.voiceAuditLangTag) dom.voiceAuditLangTag.textContent = audit.lang;
+            if (dom.voiceAuditSpeedTag) {
+                dom.voiceAuditSpeedTag.textContent = (audit.lang === 'JA' || audit.lang === 'KO') ? `${audit.metrics.cps} ký tự/s` : `${audit.metrics.wpm} từ/phút`;
+            }
+            if (dom.voiceAuditDurTag) dom.voiceAuditDurTag.textContent = `${audit.metrics.duration.toFixed(1)}s`;
+
+            // 4 Category Progress Bars
+            if (dom.barVoicePronunciation) dom.barVoicePronunciation.style.width = `${audit.categories.pronunciation}%`;
+            if (dom.scoreVoicePronunciation) dom.scoreVoicePronunciation.textContent = `${audit.categories.pronunciation}%`;
+
+            if (dom.barVoiceIntonation) dom.barVoiceIntonation.style.width = `${audit.categories.intonation}%`;
+            if (dom.scoreVoiceIntonation) dom.scoreVoiceIntonation.textContent = `${audit.categories.intonation}%`;
+
+            if (dom.barVoicePacing) dom.barVoicePacing.style.width = `${audit.categories.pacing}%`;
+            if (dom.scoreVoicePacing) dom.scoreVoicePacing.textContent = `${audit.categories.pacing}%`;
+
+            if (dom.barVoiceFidelity) dom.barVoiceFidelity.style.width = `${audit.categories.fidelity}%`;
+            if (dom.scoreVoiceFidelity) dom.scoreVoiceFidelity.textContent = `${audit.categories.fidelity}%`;
+
+            // Strengths List
+            if (dom.auditVoiceStrengths) {
+                dom.auditVoiceStrengths.innerHTML = audit.strengths.map(s => `<li>${escapeHtml(s)}</li>`).join('') || '<li>✅ Phát âm chuẩn xác, ngữ điệu ổn định.</li>';
+            }
+
+            // Warnings List
+            if (dom.auditVoiceWarnings) {
+                dom.auditVoiceWarnings.innerHTML = audit.warnings.map(w => `<li>${escapeHtml(w)}</li>`).join('') || '<li>🎉 Không phát hiện lỗi phát âm hay ngắt câu nào bất thường!</li>';
+            }
+
+            // Recommendations List
+            if (dom.auditVoiceRecs) {
+                dom.auditVoiceRecs.innerHTML = audit.recommendations.map(r => `<li>${escapeHtml(r)}</li>`).join('') || '<li>💡 Giữ nguyên cài đặt hiện tại để xuất video đạt chất lượng tối ưu nhất.</li>';
+            }
+
+            if (dom.voiceAuditLoading) dom.voiceAuditLoading.classList.add('hidden');
+            if (dom.voiceAuditResult) dom.voiceAuditResult.classList.remove('hidden');
+
+        } catch (err) {
+            alert('Lỗi đánh giá giọng đọc: ' + err.message);
+            closeVoiceAuditModal();
+        }
+    }
+
+    function applyOptimalVoiceSettings() {
+        if (!currentOptimalSettings) return;
+
+        VoiceState.settings.stability = currentOptimalSettings.stability;
+        VoiceState.settings.similarity = currentOptimalSettings.similarity;
+
+        if (dom.sliderStability) dom.sliderStability.value = currentOptimalSettings.stability;
+        if (dom.valStability) dom.valStability.textContent = `${Math.round(currentOptimalSettings.stability * 100)}%`;
+
+        if (dom.sliderSimilarity) dom.sliderSimilarity.value = currentOptimalSettings.similarity;
+        if (dom.valSimilarity) dom.valSimilarity.textContent = `${Math.round(currentOptimalSettings.similarity * 100)}%`;
+
+        showToast(`⚡ Đã tự động áp dụng thông số tối ưu (Stability: ${Math.round(currentOptimalSettings.stability * 100)}%, Similarity: ${Math.round(currentOptimalSettings.similarity * 100)}%)!`);
+        closeVoiceAuditModal();
+    }
+
+    window.closeVoiceAuditModal = function () {
+        const modal = document.getElementById('voice-audit-modal');
+        if (modal) modal.classList.add('hidden');
+    };
 
     function showToast(msg) {
         const toast = document.createElement('div');

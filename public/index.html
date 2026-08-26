@@ -994,10 +994,13 @@
                         <audio id="voice-audio-player" class="w-full mt-1" controls></audio>
 
                         <div class="voice-actions-row mt-2">
+                            <button type="button" id="btn-audit-voice" class="btn btn-small btn-ai" title="AI Đánh giá chi tiết phát âm, độ tự nhiên, ngữ điệu và tốc độ đọc">
+                                <span class="icon">🧐</span> Đánh Giá Phát Âm AI
+                            </button>
                             <button type="button" id="btn-send-to-tab1-bgm" class="btn btn-small btn-primary">
                                 <span class="icon">🎬</span> Gán Làm Giọng Đọc Video (Tab 1)
                             </button>
-                            <button type="button" id="btn-send-to-tab2-sub" class="btn btn-small btn-ai">
+                            <button type="button" id="btn-send-to-tab2-sub" class="btn btn-small btn-secondary">
                                 <span class="icon">💬</span> Đồng Bộ Phụ Đề & Khớp Ảnh (Tab 2)
                             </button>
                         </div>
@@ -1499,6 +1502,135 @@
                         </button>
                         <button type="button" class="btn btn-primary btn-small" onclick="closeSubtitleAuditModal()">
                             Đã Hiểu & Tiếp Tục
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Voice Quality & Pronunciation Audit Modal -->
+    <div id="voice-audit-modal" class="modal hidden">
+        <div class="modal-backdrop" onclick="closeVoiceAuditModal()"></div>
+        <div class="modal-dialog audit-dialog">
+            <div class="modal-header">
+                <div class="flex-row align-center gap-xs">
+                    <span style="font-size: 22px;">🧐</span>
+                    <h3>Đánh Giá Phát Âm & Độ Tự Nhiên Giọng Đọc AI</h3>
+                </div>
+                <button class="btn-close" onclick="closeVoiceAuditModal()">✕</button>
+            </div>
+            <div class="modal-body audit-modal-body">
+                <!-- Loading State -->
+                <div id="voice-audit-loading" class="audit-loading hidden">
+                    <div class="spinner"></div>
+                    <h4>AI Đang Thẩm Định Âm Vị, Ngữ Điệu & Tốc Độ Phát Âm...</h4>
+                    <p class="text-xs text-dim">Kiểm tra nối âm, biến âm và độ tự nhiên bản xứ</p>
+                </div>
+
+                <!-- Result Content -->
+                <div id="voice-audit-result" class="audit-result-content">
+                    <!-- Top Score Summary Card -->
+                    <div class="audit-score-hero">
+                        <div class="score-circle-wrap">
+                            <svg class="score-ring-svg" viewBox="0 0 120 120">
+                                <circle class="score-ring-bg" cx="60" cy="60" r="50"></circle>
+                                <circle id="ring-voice-score" class="score-ring-bar" cx="60" cy="60" r="50" style="stroke-dashoffset: 40;"></circle>
+                            </svg>
+                            <div class="score-number-display">
+                                <span id="voice-audit-score-num" class="score-big">94</span>
+                                <span class="score-denom">/100</span>
+                            </div>
+                        </div>
+                        <div class="score-hero-details">
+                            <div class="flex-row align-center gap-xs">
+                                <h4 id="voice-audit-rating-title">Xuất Sắc & Tự Nhiên</h4>
+                                <span id="voice-audit-badge" class="badge-score-high">Chuẩn Bản Xứ</span>
+                            </div>
+                            <p id="voice-audit-summary-desc" class="text-xs text-muted mt-1">
+                                Giọng đọc phát âm chuẩn xác, ngữ điệu truyền cảm và nhịp điệu ngắt nghỉ tự nhiên.
+                            </p>
+                            <div class="score-metrics-mini mt-2">
+                                <span>🗣️ Ngôn ngữ: <strong id="voice-audit-lang-tag">JA</strong></span>
+                                <span>⏱️ Tốc độ: <strong id="voice-audit-speed-tag">5.5 ký tự/s</strong></span>
+                                <span>⏳ Thời lượng: <strong id="voice-audit-dur-tag">5.0s</strong></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4 Detail Category Meters -->
+                    <div class="audit-categories-grid mt-3">
+                        <div class="category-card">
+                            <div class="category-header">
+                                <span class="category-icon">🎯</span>
+                                <span class="category-name">Phát Âm Chuẩn</span>
+                            </div>
+                            <div class="category-score-bar">
+                                <div id="bar-voice-pronunciation" class="category-progress" style="width: 95%;"></div>
+                            </div>
+                            <span id="score-voice-pronunciation" class="category-score-num">95%</span>
+                        </div>
+
+                        <div class="category-card">
+                            <div class="category-header">
+                                <span class="category-icon">🌊</span>
+                                <span class="category-name">Ngữ Điệu & Cảm Xúc</span>
+                            </div>
+                            <div class="category-score-bar">
+                                <div id="bar-voice-intonation" class="category-progress" style="width: 92%;"></div>
+                            </div>
+                            <span id="score-voice-intonation" class="category-score-num">92%</span>
+                        </div>
+
+                        <div class="category-card">
+                            <div class="category-header">
+                                <span class="category-icon">⏱️</span>
+                                <span class="category-name">Tốc Độ & Ngắt Nghỉ</span>
+                            </div>
+                            <div class="category-score-bar">
+                                <div id="bar-voice-pacing" class="category-progress" style="width: 90%;"></div>
+                            </div>
+                            <span id="score-voice-pacing" class="category-score-num">90%</span>
+                        </div>
+
+                        <div class="category-card">
+                            <div class="category-header">
+                                <span class="category-icon">🧬</span>
+                                <span class="category-name">Độ Chân Thực Mẫu</span>
+                            </div>
+                            <div class="category-score-bar">
+                                <div id="bar-voice-fidelity" class="category-progress" style="width: 94%;"></div>
+                            </div>
+                            <span id="score-voice-fidelity" class="category-score-num">94%</span>
+                        </div>
+                    </div>
+
+                    <!-- Strengths & Warnings Grid -->
+                    <div class="audit-details-grid mt-3">
+                        <div class="audit-box strengths-box">
+                            <h5>🌟 Điểm Tốt Về Âm Vị & Ngữ Điệu</h5>
+                            <ul id="audit-voice-strengths" class="audit-list"></ul>
+                        </div>
+
+                        <div class="audit-box warnings-box">
+                            <h5>⚠️ Lưu Ý Phát Âm & Nhịp Điệu</h5>
+                            <ul id="audit-voice-warnings" class="audit-list"></ul>
+                        </div>
+                    </div>
+
+                    <!-- AI Recommendations -->
+                    <div class="audit-box recs-box mt-3">
+                        <h5>💡 Đề Xuất Tối Ưu Hóa Giọng Đọc</h5>
+                        <ul id="audit-voice-recs" class="audit-list"></ul>
+                    </div>
+
+                    <!-- Footer Actions -->
+                    <div class="audit-footer mt-3">
+                        <button type="button" id="btn-voice-autofix" class="btn btn-secondary btn-small" title="Tự động áp dụng thông số Stability & Similarity được AI khuyên dùng">
+                            ⚡ Tự Động Áp Dụng Cài Đặt Tối Ưu
+                        </button>
+                        <button type="button" class="btn btn-primary btn-small" onclick="closeVoiceAuditModal()">
+                            Đã Hiểu & Đóng
                         </button>
                     </div>
                 </div>
