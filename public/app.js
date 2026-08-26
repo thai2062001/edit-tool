@@ -233,6 +233,7 @@ function renderMediaList() {
         btnRenderAll.disabled = true;
         itemCountEl.innerText = '0';
         totalDurationEl.innerText = '0.0s';
+        updateWorkflowStep(1);
         return;
     }
 
@@ -240,6 +241,7 @@ function renderMediaList() {
     mediaList.innerHTML = '';
     btnRenderAll.disabled = false;
     itemCountEl.innerText = mediaItems.length;
+    updateWorkflowStep(2);
 
     let totalDur = 0;
 
@@ -257,29 +259,40 @@ function renderMediaList() {
         card.addEventListener('dragend', handleDragEnd);
 
         const isImage = item.type === 'image';
-        const dur = isImage ? item.settings.duration : (item.settings.trimEnd - item.settings.trimStart);
+        const dur = isImage ? Number(item.settings.duration || 5.0) : Math.max(0.5, Number(item.settings.trimEnd || item.duration || 5) - Number(item.settings.trimStart || 0));
         totalDur += Math.max(0.5, dur);
 
         card.innerHTML = `
-            <div class="card-drag-handle" title="Kéo thả chuột để đổi vị trí phân đoạn">⠿</div>
-            <div class="card-index">#${index + 1}</div>
+            <div class="card-drag-handle" title="Kéo thả chuột để đổi vị trí phân đoạn">
+                <span>⠿</span>
+            </div>
+            
+            <div class="card-index-badge">#${index + 1}</div>
+
             <div class="card-thumb-wrapper">
                 ${isImage 
                     ? `<img src="${item.url}" class="card-thumb" alt="${item.originalName}">` 
                     : `<video src="${item.url}" class="card-thumb" muted></video>`
                 }
-                <span class="card-type-badge ${item.type}">${item.type === 'image' ? 'Ảnh' : 'Video'}</span>
+                <span class="card-type-badge ${item.type}">${item.type === 'image' ? '🖼️ Ảnh' : '🎬 Clip'}</span>
+                <span class="card-duration-tag">⏱️ ${dur.toFixed(1)}s</span>
             </div>
+
             <div class="card-controls">
                 <div class="card-title-row">
-                    <span class="card-filename" title="${item.originalName}">${item.originalName}</span>
-                    ${isImage ? `<button class="btn btn-small btn-outline" onclick="previewItemMotion(${index})">👁️ Xem Trước Chuyển Động</button>` : ''}
+                    <div class="card-filename-wrap">
+                        <span class="card-filename" title="${item.originalName}">${item.originalName}</span>
+                    </div>
+                    <div class="card-quick-actions">
+                        ${isImage ? `<button type="button" class="btn btn-xs btn-preview-card" onclick="previewItemMotion(${index})" title="Xem trước chuyển động & chữ">👁️ Xem Thử</button>` : ''}
+                    </div>
                 </div>
+
                 <div class="card-form-grid">
                     ${isImage ? `
-                        <div class="form-group">
-                            <label>Hiệu ứng Motion:</label>
-                            <select class="form-control" onchange="updateItemSetting(${index}, 'motion', this.value)">
+                        <div class="form-group motion-select-group">
+                            <label class="form-label-xs">🎬 Hiệu ứng Motion:</label>
+                            <select class="form-control form-control-sm" onchange="updateItemSetting(${index}, 'motion', this.value)">
                                 <option value="zoom_in" ${item.settings.motion === 'zoom_in' ? 'selected' : ''}>🔍 Zoom In (Phóng to tâm)</option>
                                 <option value="zoom_out" ${item.settings.motion === 'zoom_out' ? 'selected' : ''}>🔎 Zoom Out (Thu nhỏ tâm)</option>
                                 <option value="pan_left" ${item.settings.motion === 'pan_left' ? 'selected' : ''}>⬅️ Pan Trái</option>
@@ -292,46 +305,48 @@ function renderMediaList() {
                                 <option value="none" ${item.settings.motion === 'none' ? 'selected' : ''}>⏹️ Tĩnh (Không zoom)</option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label>Thời lượng (giây):</label>
-                            <input type="number" class="form-control" min="1" max="30" step="0.5" value="${item.settings.duration || 5.0}" onchange="updateItemSetting(${index}, 'duration', parseFloat(this.value))">
+                        <div class="form-group duration-input-group">
+                            <label class="form-label-xs">⏱️ Thời lượng (s):</label>
+                            <input type="number" class="form-control form-control-sm" min="1" max="30" step="0.5" value="${item.settings.duration || 5.0}" onchange="updateItemSetting(${index}, 'duration', parseFloat(this.value))">
                         </div>
-                        <div class="form-group">
-                            <label>Tốc độ / Cường độ:</label>
-                            <select class="form-control" onchange="updateItemSetting(${index}, 'zoomIntensity', parseFloat(this.value))">
+                        <div class="form-group intensity-group">
+                            <label class="form-label-xs">🌊 Tốc độ/Cường độ:</label>
+                            <select class="form-control form-control-sm" onchange="updateItemSetting(${index}, 'zoomIntensity', parseFloat(this.value))">
                                 <option value="1.15" ${(item.settings.zoomIntensity || 1.25) === 1.15 ? 'selected' : ''}>🌿 Rất chậm (15%)</option>
                                 <option value="1.25" ${(item.settings.zoomIntensity || 1.25) === 1.25 ? 'selected' : ''}>✨ Chuẩn mượt (25%)</option>
                                 <option value="1.40" ${(item.settings.zoomIntensity || 1.25) === 1.40 ? 'selected' : ''}>⚡ Kịch tính (40%)</option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label>Fade In (giây):</label>
-                            <input type="number" class="form-control" min="0" max="3" step="0.1" value="${item.settings.fadeIn}" onchange="updateItemSetting(${index}, 'fadeIn', parseFloat(this.value))">
-                        </div>
-                        <div class="form-group">
-                            <label>Fade Out (giây):</label>
-                            <input type="number" class="form-control" min="0" max="3" step="0.1" value="${item.settings.fadeOut}" onchange="updateItemSetting(${index}, 'fadeOut', parseFloat(this.value))">
+                        <div class="form-group fade-group">
+                            <label class="form-label-xs">✨ Fade In / Out:</label>
+                            <div class="flex-row-gap">
+                                <input type="number" class="form-control form-control-sm" min="0" max="3" step="0.1" value="${item.settings.fadeIn}" title="Fade In (giây)" placeholder="In" onchange="updateItemSetting(${index}, 'fadeIn', parseFloat(this.value))">
+                                <input type="number" class="form-control form-control-sm" min="0" max="3" step="0.1" value="${item.settings.fadeOut}" title="Fade Out (giây)" placeholder="Out" onchange="updateItemSetting(${index}, 'fadeOut', parseFloat(this.value))">
+                            </div>
                         </div>
                     ` : `
                         <div class="form-group">
-                            <label>Cắt từ (giây):</label>
-                            <input type="number" class="form-control" min="0" max="${item.duration}" step="0.5" value="${item.settings.trimStart}" onchange="updateItemSetting(${index}, 'trimStart', parseFloat(this.value))">
+                            <label class="form-label-xs">✂️ Cắt từ (giây):</label>
+                            <input type="number" class="form-control form-control-sm" min="0" max="${item.duration}" step="0.5" value="${item.settings.trimStart}" onchange="updateItemSetting(${index}, 'trimStart', parseFloat(this.value))">
                         </div>
                         <div class="form-group">
-                            <label>Đến (giây):</label>
-                            <input type="number" class="form-control" min="0.5" max="${item.duration}" step="0.5" value="${item.settings.trimEnd}" onchange="updateItemSetting(${index}, 'trimEnd', parseFloat(this.value))">
+                            <label class="form-label-xs">✂️ Đến (giây):</label>
+                            <input type="number" class="form-control form-control-sm" min="0.5" max="${item.duration}" step="0.5" value="${item.settings.trimEnd}" onchange="updateItemSetting(${index}, 'trimEnd', parseFloat(this.value))">
                         </div>
                         <div class="form-group">
-                            <label>Âm lượng video:</label>
-                            <select class="form-control" onchange="updateItemSetting(${index}, 'videoVolume', parseFloat(this.value))">
+                            <label class="form-label-xs">🔊 Âm lượng video:</label>
+                            <select class="form-control form-control-sm" onchange="updateItemSetting(${index}, 'videoVolume', parseFloat(this.value))">
                                 <option value="1.0" ${item.settings.videoVolume === 1.0 ? 'selected' : ''}>🔊 100% Gốc</option>
                                 <option value="0.5" ${item.settings.videoVolume === 0.5 ? 'selected' : ''}>🔉 50% Nhỏ</option>
-                                <option value="0" ${item.settings.videoVolume === 0 ? 'selected' : ''}>🔇 Tắt tiếng (Mute)</option>
+                                <option value="0" ${item.settings.videoVolume === 0 ? 'selected' : ''}>🔇 Tắt tiếng</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Fade In / Out:</label>
-                            <input type="number" class="form-control" min="0" max="2" step="0.1" value="${item.settings.fadeIn}" placeholder="Fade In (s)" onchange="updateItemSetting(${index}, 'fadeIn', parseFloat(this.value))">
+                            <label class="form-label-xs">✨ Fade In / Out:</label>
+                            <div class="flex-row-gap">
+                                <input type="number" class="form-control form-control-sm" min="0" max="2" step="0.1" value="${item.settings.fadeIn}" placeholder="In" onchange="updateItemSetting(${index}, 'fadeIn', parseFloat(this.value))">
+                                <input type="number" class="form-control form-control-sm" min="0" max="2" step="0.1" value="${item.settings.fadeOut}" placeholder="Out" onchange="updateItemSetting(${index}, 'fadeOut', parseFloat(this.value))">
+                            </div>
                         </div>
                     `}
                 </div>
@@ -365,12 +380,13 @@ function renderMediaList() {
                     </div>
                 </div>
             </div>
+
             <div class="card-actions">
-                <button class="btn btn-icon btn-secondary" onclick="moveToTop(${index})" ${index === 0 ? 'disabled' : ''} title="Đưa lên đầu danh sách">⏫</button>
-                <button class="btn btn-icon btn-secondary" onclick="moveItem(${index}, -1)" ${index === 0 ? 'disabled' : ''} title="Di chuyển lên một bậc">▲</button>
-                <button class="btn btn-icon btn-secondary" onclick="moveItem(${index}, 1)" ${index === mediaItems.length - 1 ? 'disabled' : ''} title="Di chuyển xuống một bậc">▼</button>
-                <button class="btn btn-icon btn-secondary" onclick="moveToBottom(${index})" ${index === mediaItems.length - 1 ? 'disabled' : ''} title="Đưa xuống cuối danh sách">⏬</button>
-                <button class="btn btn-icon btn-ghost" onclick="removeItem(${index})" title="Xóa">✕</button>
+                <button type="button" class="btn btn-icon btn-secondary" onclick="moveToTop(${index})" ${index === 0 ? 'disabled' : ''} title="Đưa lên đầu danh sách">⏫</button>
+                <button type="button" class="btn btn-icon btn-secondary" onclick="moveItem(${index}, -1)" ${index === 0 ? 'disabled' : ''} title="Di chuyển lên một bậc">▲</button>
+                <button type="button" class="btn btn-icon btn-secondary" onclick="moveItem(${index}, 1)" ${index === mediaItems.length - 1 ? 'disabled' : ''} title="Di chuyển xuống một bậc">▼</button>
+                <button type="button" class="btn btn-icon btn-secondary" onclick="moveToBottom(${index})" ${index === mediaItems.length - 1 ? 'disabled' : ''} title="Đưa xuống cuối danh sách">⏬</button>
+                <button type="button" class="btn btn-icon btn-ghost btn-delete-card" onclick="removeItem(${index})" title="Xóa phân đoạn">✕</button>
             </div>
         `;
         mediaList.appendChild(card);
@@ -425,9 +441,22 @@ function handleDragEnd(e) {
     draggedIndex = null;
 }
 
+// Workflow Step Dynamic Progress
+function updateWorkflowStep(step) {
+    const steps = document.querySelectorAll('.workflow-steps-bar .step-item');
+    steps.forEach((el, idx) => {
+        if (idx + 1 <= step) {
+            el.classList.add('active');
+        } else {
+            el.classList.remove('active');
+        }
+    });
+}
+
 // Expose utilities to window for Tab 2 Sync integration
 window.renderMediaList = renderMediaList;
 window.updateBgmUI = updateBgmUI;
+window.updateWorkflowStep = updateWorkflowStep;
 
 function moveToTop(index) {
     if (index <= 0 || index >= mediaItems.length) return;
@@ -885,6 +914,7 @@ let currentEventSource = null;
 btnRenderAll.addEventListener('click', async () => {
     if (mediaItems.length === 0) return;
 
+    updateWorkflowStep(3);
     renderModal.classList.remove('hidden');
     renderStateProcessing.classList.remove('hidden');
     renderStateCompleted.classList.add('hidden');

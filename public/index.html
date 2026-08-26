@@ -22,24 +22,36 @@
             </div>
             <div class="nav-actions">
                 <input type="file" id="input-project-file" accept=".json,.edtproject" hidden>
-                <button id="btn-save-project" class="btn btn-outline" title="Lưu toàn bộ dự án (Ảnh, thời lượng, hiệu ứng, chữ) thành file .json về máy">
-                    <span class="icon">💾</span> Lưu Dự Án
-                </button>
-                <button id="btn-open-project" class="btn btn-outline" title="Mở file dự án đã lưu (.json)">
-                    <span class="icon">📂</span> Mở Dự Án
-                </button>
-                <button id="btn-audit-timeline" class="btn btn-ai" title="AI Đánh giá kịch bản, phân cảnh, nhịp điệu và âm thanh">
-                    <span class="icon">🧐</span> Đánh Giá Video (AI Audit)
-                </button>
-                <button id="btn-open-ai-modal" class="btn btn-ai">
-                    <span class="icon">🤖</span> Khớp Kịch Bản (Gemini AI)
-                </button>
-                <button id="btn-sample-demo" class="btn btn-secondary">
-                    <span class="icon">✨</span> Nạp Mẫu Thử Nghiệm
-                </button>
-                <button id="btn-render-all" class="btn btn-primary" disabled>
-                    <span class="icon">⚡</span> Xuất Video (Render)
-                </button>
+                
+                <!-- Project Management Group -->
+                <div class="nav-btn-group">
+                    <button id="btn-open-project" class="btn btn-small btn-outline" title="Mở file dự án đã lưu (.json)">
+                        <span class="icon">📂</span> Mở Dự Án
+                    </button>
+                    <button id="btn-save-project" class="btn btn-small btn-outline" title="Lưu toàn bộ dự án (Ảnh, thời lượng, hiệu ứng, chữ) thành file .json về máy">
+                        <span class="icon">💾</span> Lưu Dự Án
+                    </button>
+                </div>
+
+                <!-- AI Automation Group -->
+                <div class="nav-btn-group">
+                    <button id="btn-open-ai-modal" class="btn btn-ai btn-small" title="Tự động phân tích kịch bản và khớp các phân cảnh">
+                        <span class="icon">🤖</span> Khớp Kịch Bản (AI)
+                    </button>
+                    <button id="btn-audit-timeline" class="btn btn-ai btn-small" title="AI Đánh giá kịch bản, phân cảnh, nhịp điệu và âm thanh">
+                        <span class="icon">🧐</span> Đánh Giá Video (AI)
+                    </button>
+                </div>
+
+                <!-- Template & Render CTA Group -->
+                <div class="nav-btn-group">
+                    <button id="btn-sample-demo" class="btn btn-secondary btn-small" title="Nạp nhanh 12 ảnh & kịch bản mẫu thử nghiệm">
+                        <span class="icon">✨</span> Nạp Mẫu Demo
+                    </button>
+                    <button id="btn-render-all" class="btn btn-primary btn-render-cta" disabled title="Xuất video hoàn chỉnh với FFmpeg">
+                        <span class="icon">⚡</span> Xuất Video (Render)
+                    </button>
+                </div>
             </div>
         </header>
 
@@ -53,6 +65,33 @@
                 <span class="tab-badge">MỚI</span>
             </button>
         </nav>
+
+        <!-- Workflow Step Guide for Beginners -->
+        <div class="workflow-steps-bar">
+            <div class="step-item active">
+                <span class="step-badge">1</span>
+                <div class="step-info">
+                    <strong>Nạp Ảnh & Video</strong>
+                    <span>Kéo thả ảnh hoặc nạp mẫu thử</span>
+                </div>
+            </div>
+            <div class="step-arrow">➔</div>
+            <div class="step-item">
+                <span class="step-badge">2</span>
+                <div class="step-info">
+                    <strong>Chỉnh Hiệu Ứng & Khớp AI</strong>
+                    <span>Zoom, Fade, Text & Kịch bản</span>
+                </div>
+            </div>
+            <div class="step-arrow">➔</div>
+            <div class="step-item">
+                <span class="step-badge">3</span>
+                <div class="step-info">
+                    <strong>Xuất Video & Gắn Sub AI</strong>
+                    <span>Render Full HD & Chuyển Tab 2</span>
+                </div>
+            </div>
+        </div>
 
         <!-- Auto-save notification banner -->
         <div id="autosave-banner" class="autosave-banner hidden">
@@ -106,8 +145,13 @@
                 <div id="media-list" class="media-list">
                     <div class="empty-state" id="empty-state">
                         <div class="empty-icon">🎞️</div>
-                        <h4>Chưa có ảnh hoặc video nào</h4>
-                        <p>Kéo thả tệp vào khung bên trên hoặc nhấn "Nạp Mẫu Thử Nghiệm" để bắt đầu.</p>
+                        <h4>Chưa có ảnh hoặc video nào trên Timeline</h4>
+                        <p>Kéo thả tệp vào khung bên trên hoặc nhấn nút bên dưới để nạp mẫu thử nghiệm ngay.</p>
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-secondary btn-small" onclick="document.getElementById('btn-sample-demo').click()">
+                                ✨ Nạp 12 Ảnh Mẫu & Kịch Bản Demo
+                            </button>
+                        </div>
                     </div>
                 </div>
             </section>
