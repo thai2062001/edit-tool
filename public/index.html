@@ -343,15 +343,15 @@
             <div class="subtitles-layout-grid">
                 <!-- Left: Media Player & Realtime Word-Level Animated Preview -->
                 <div class="sub-preview-card">
-                    <div class="card-header flex-between">
+                    <div class="card-header flex-between flex-wrap gap-xs">
                         <h3>👁️ Trình Phát Video & Xem Trước Phụ Đề Hoạt Họa</h3>
                         <div class="header-actions">
                             <input type="file" id="sub-file-input" accept="video/*,audio/*" hidden>
-                            <button class="btn btn-small btn-outline" onclick="document.getElementById('sub-file-input').click()" title="Tải video hoặc audio từ máy tính của bạn">
-                                📁 Tải Từ Máy (PC)
+                            <button id="sub-btn-use-editor-video" class="btn btn-small btn-ai" title="Lấy video vừa dựng hoặc render xong từ Tab 1">
+                                <span class="icon">🎬</span> Lấy Video/Ảnh Từ Tab 1
                             </button>
-                            <button id="sub-btn-use-editor-video" class="btn btn-small btn-secondary" title="Lấy video vừa dựng hoặc render xong từ Tab 1">
-                                🎬 Lấy Video Từ Tab 1
+                            <button class="btn btn-small btn-outline" onclick="document.getElementById('sub-file-input').click()" title="Tải video hoặc audio từ máy tính của bạn">
+                                <span class="icon">📁</span> Tải Từ Máy (PC)
                             </button>
                         </div>
                     </div>
