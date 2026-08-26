@@ -526,7 +526,7 @@
             if (data.error) throw new Error(data.error);
 
             // Listen to SSE progress
-            const eventSource = new EventSource(`/api/render-status/${data.jobId}`);
+            const eventSource = new EventSource(`/api/progress/${data.jobId}`);
             eventSource.onmessage = (e) => {
                 const job = JSON.parse(e.data);
                 renderPercent.innerText = `${job.progress}%`;

@@ -677,7 +677,7 @@ function buildDrawtextFilter(settings, width, height) {
         y = '(h-text_h)/2';
     } else {
         // bottom
-        y = `h-text_h-${Math.round(height * 0.10)}`;
+y = `h-text_h-${Math.round(height * 0.10)}`;
     }
 
     let styleParams = ':fontcolor=white';
@@ -715,6 +715,8 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
         const videoStreamTags = [];
         const audioStreamTags = [];
 
+        let chunkDuration = 0;
+
         chunkItems.forEach((item, idx) => {
             const vTag = `v_${idx}`;
             const aTag = `a_${idx}`;
@@ -727,6 +729,7 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
             const delta = zoomIntensity - 1.0;
 
             if (item.type === 'image') {
+                chunkDuration += dur;
                 let zExpr = '1.0';
                 let xExpr = 'iw/2-(iw/zoom/2)';
                 let yExpr = 'ih/2-(ih/zoom/2)';
@@ -755,29 +758,19 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
                     zExpr = `${zoomIntensity}`;
                     xExpr = 'iw/2-(iw/zoom/2)';
                     yExpr = `(ih-ih/zoom)*(on/${frames})`;
-                } else if (motion === 'zoom_in_left') {
-                    zExpr = `1.0+(${delta}*(on/${frames}))`;
-                    xExpr = '0';
-                    yExpr = '0';
-                } else if (motion === 'zoom_in_right') {
-                    zExpr = `1.0+(${delta}*(on/${frames}))`;
-                    xExpr = '(iw-iw/zoom)';
-                    yExpr = '0';
-                } else if (motion === 'zoom_pan') {
-                    zExpr = `1.0+(${delta}*(on/${frames}))`;
-                    xExpr = `(iw-iw/zoom)*(on/${frames})`;
-                    yExpr = `(ih-ih/zoom)*(on/${frames})`;
-                } else {
-                    zExpr = '1.0';
-                    xExpr = 'iw/2-(iw/zoom/2)';
-                    yExpr = 'ih/2-(ih/zoom/2)';
                 }
 
-                // Smart Reframe for images: High-res scaling with cover crop and center zoompan
-                const preScale = `scale=w=${width * 2}:h=${height * 2}:force_original_aspect_ratio=increase,crop=${width * 2}:${height * 2}`;
-                const zoompan = `zoompan=z='${zExpr}':x='${xExpr}':y='${yExpr}':d=${frames}:s=${width}x${height}:fps=${fps}`;
+                // Image Smart Reframe Modes
+                let imageScaleFilter = '';
+                if (reframeMode === 'contain_blur') {
+                    imageScaleFilter = `scale=w=${width}:h=${height}:force_original_aspect_ratio=increase,crop=${width}:${height},boxblur=25:5[bg];[0:v]scale=w=${width}:h=${height}:force_original_aspect_ratio=decrease[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2,crop=${width}:${height}`;
+                } else if (reframeMode === 'contain_black') {
+                    imageScaleFilter = `scale=w=${width}:h=${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:black`;
+                } else {
+                    imageScaleFilter = `scale=w=${width}:h=${height}:force_original_aspect_ratio=increase,crop=${width}:${height}`;
+                }
 
-                let vFilters = `${preScale},${zoompan},format=yuv420p,setsar=1`;
+                let vFilters = `zoompan=z='${zExpr}':x='${xExpr}':y='${yExpr}':d=${frames}:s=${width}x${height}:fps=${fps},${imageScaleFilter},setsar=1,format=yuv420p`;
 
                 if (fadeIn > 0) {
                     vFilters += `,fade=t=in:st=0:d=${fadeIn}`;
@@ -787,7 +780,6 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
                     vFilters += `,fade=t=out:st=${fadeStart}:d=${fadeOut}`;
                 }
 
-                // Append Drawtext Filter if Text Overlay is provided
                 const drawtextFilter = buildDrawtextFilter(item.settings, width, height);
                 if (drawtextFilter) {
                     vFilters += `,${drawtextFilter}`;
@@ -801,9 +793,9 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
                 const trimStart = Number(item.settings?.trimStart || 0);
                 const trimEnd = Number(item.settings?.trimEnd || item.duration || 5);
                 const videoDur = Math.max(0.5, trimEnd - trimStart);
+                chunkDuration += videoDur;
                 const vol = Number(item.settings?.videoVolume ?? 1.0);
 
-                // Video Smart Reframe modes
                 let reframeFilter = '';
                 if (reframeMode === 'cover') {
                     reframeFilter = `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height}`;
@@ -823,7 +815,6 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
                     vFilters += `,fade=t=out:st=${fadeStart}:d=${fadeOut}`;
                 }
 
-                // Append Drawtext Filter if Text Overlay is provided
                 const drawtextFilter = buildDrawtextFilter(item.settings, width, height);
                 if (drawtextFilter) {
                     vFilters += `,${drawtextFilter}`;
@@ -857,7 +848,20 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
         const proc = spawn('ffmpeg', args);
         let stderrLog = '';
         proc.stderr.on('data', d => {
-            stderrLog += d.toString();
+            const str = d.toString();
+            stderrLog += str;
+            const timeMatch = str.match(/time=(\d{2}):(\d{2}):(\d{2}\.\d+)/);
+            if (timeMatch && chunkDuration > 0) {
+                const hours = parseFloat(timeMatch[1]);
+                const mins = parseFloat(timeMatch[2]);
+                const secs = parseFloat(timeMatch[3]);
+                const currentTime = (hours * 3600) + (mins * 60) + secs;
+                const chunkPct = Math.min(100, Math.round((currentTime / chunkDuration) * 100));
+                if (totalChunks === 1) {
+                    job.progress = Math.min(95, Math.max(job.progress || 0, Math.round(chunkPct * 0.95)));
+                    sendJobUpdate(job);
+                }
+            }
         });
 
         proc.on('close', (code) => {
@@ -870,9 +874,6 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
         });
 
         proc.on('error', (err) => {
-            if (fs.existsSync(filterScriptPath)) {
-                try { fs.unlinkSync(filterScriptPath); } catch (e) {}
-            }
             reject(err);
         });
     });
@@ -885,6 +886,9 @@ async function executeFFmpegRender(job, items, bgm, config) {
     const tempFiles = [];
 
     try {
+        job.progress = 5;
+        sendJobUpdate(job);
+
         if (items.length <= CHUNK_SIZE && (!bgm || !bgm.filename)) {
             // Direct single render
             await renderChunk(job, items, outputPath, 0, 1, config);
@@ -918,7 +922,7 @@ async function executeFFmpegRender(job, items, bgm, config) {
                 return renderChunk(job, chunk, chunkFile, chunkIdx, chunks.length, config).then(() => {
                     completedChunks++;
                     const pct = Math.min(88, Math.round((completedChunks / chunks.length) * 88));
-                    job.progress = pct;
+                    job.progress = Math.max(job.progress || 0, pct);
                     sendJobUpdate(job);
                 });
             });
@@ -1001,13 +1005,16 @@ async function executeFFmpegRender(job, items, bgm, config) {
 }
 
 function sendJobUpdate(job) {
+    if (!job.clients || !Array.isArray(job.clients)) return;
     job.clients.forEach(res => {
-        res.write(`data: ${JSON.stringify({
-            status: job.status,
-            progress: job.progress,
-            outputUrl: job.outputUrl,
-            error: job.error
-        })}\n\n`);
+        try {
+            res.write(`data: ${JSON.stringify({
+                status: job.status,
+                progress: job.progress,
+                outputUrl: job.outputUrl,
+                error: job.error
+            })}\n\n`);
+        } catch (e) {}
     });
 }
 
@@ -1073,7 +1080,7 @@ app.post('/api/watermark/process-video', async (req, res) => {
         // Find file in uploads or output
         let inputPath = path.join(UPLOADS_DIR, sourceFilename);
         if (!fs.existsSync(inputPath)) {
-            inputPath = path.join(OUTPUT_DIR, sourceFilename);
+            inputPath = path.join(OUTPUTS_DIR, sourceFilename);
         }
         if (!fs.existsSync(inputPath)) {
             return res.status(404).json({ error: 'Không tìm thấy file nguồn trên máy chủ' });
@@ -1081,23 +1088,30 @@ app.post('/api/watermark/process-video', async (req, res) => {
 
         const jobId = `wm_${Date.now()}`;
         const outputFilename = `watermark_result_${Date.now()}.mp4`;
-        const outputPath = path.join(OUTPUT_DIR, outputFilename);
+        const outputPath = path.join(OUTPUTS_DIR, outputFilename);
 
         const isImage = /\.(jpe?g|png|webp|bmp)$/i.test(sourceFilename);
+        let totalDuration = 5;
+        try {
+            totalDuration = await getMediaDuration(inputPath);
+        } catch (e) {
+            totalDuration = 5;
+        }
 
-        renderJobs.set(jobId, {
+        const job = {
+            id: jobId,
             status: 'processing',
             progress: 10,
-            outputUrl: null,
+            outputUrl: `/outputs/${outputFilename}`,
             error: null,
             clients: []
-        });
+        };
+        activeJobs.set(jobId, job);
 
-        res.json({ success: true, jobId, outputUrl: `/output/${outputFilename}` });
+        res.json({ success: true, jobId, outputUrl: `/outputs/${outputFilename}` });
 
         // Build FFmpeg arguments asynchronously
         (async () => {
-            const job = renderJobs.get(jobId);
             try {
                 let ffmpegArgs = [];
 
@@ -1205,13 +1219,22 @@ app.post('/api/watermark/process-video', async (req, res) => {
                 }
 
                 console.log(`[Watermark Studio] Running FFmpeg: ffmpeg ${ffmpegArgs.join(' ')}`);
-                const ffmpegProcess = spawn(ffmpegPath, ffmpegArgs);
+                const ffmpegProcess = spawn('ffmpeg', ffmpegArgs);
 
                 ffmpegProcess.stderr.on('data', (chunk) => {
-                    const msg = chunk.toString();
-                    if (msg.includes('frame=')) {
-                        job.progress = Math.min(95, job.progress + 5);
-                        broadcastJobStatus(jobId, job);
+                    const str = chunk.toString();
+                    const timeMatch = str.match(/time=(\d{2}):(\d{2}):(\d{2}\.\d+)/);
+                    if (timeMatch && totalDuration > 0) {
+                        const hours = parseFloat(timeMatch[1]);
+                        const mins = parseFloat(timeMatch[2]);
+                        const secs = parseFloat(timeMatch[3]);
+                        const currentTime = (hours * 3600) + (mins * 60) + secs;
+                        const pct = Math.min(95, Math.max(10, Math.round((currentTime / totalDuration) * 95)));
+                        job.progress = pct;
+                        sendJobUpdate(job);
+                    } else if (str.includes('frame=')) {
+                        job.progress = Math.min(95, (job.progress || 10) + 5);
+                        sendJobUpdate(job);
                     }
                 });
 
@@ -1219,19 +1242,25 @@ app.post('/api/watermark/process-video', async (req, res) => {
                     if (code === 0) {
                         job.status = 'completed';
                         job.progress = 100;
-                        job.outputUrl = `/output/${outputFilename}`;
-                        broadcastJobStatus(jobId, job);
+                        job.outputUrl = `/outputs/${outputFilename}`;
+                        sendJobUpdate(job);
                     } else {
                         job.status = 'error';
                         job.error = `FFmpeg kết thúc với mã lỗi ${code}`;
-                        broadcastJobStatus(jobId, job);
+                        sendJobUpdate(job);
                     }
+                });
+
+                ffmpegProcess.on('error', (err) => {
+                    job.status = 'error';
+                    job.error = err.message || 'Lỗi khi khởi chạy FFmpeg';
+                    sendJobUpdate(job);
                 });
             } catch (err) {
                 console.error('[Watermark Studio Error]:', err);
                 job.status = 'error';
                 job.error = err.message || 'Lỗi trong quá trình xử lý';
-                broadcastJobStatus(jobId, job);
+                sendJobUpdate(job);
             }
         })();
     } catch (err) {
