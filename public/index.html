@@ -28,6 +28,9 @@
                 <button id="btn-open-project" class="btn btn-outline" title="Mở file dự án đã lưu (.json)">
                     <span class="icon">📂</span> Mở Dự Án
                 </button>
+                <button id="btn-audit-timeline" class="btn btn-ai" title="AI Đánh giá kịch bản, phân cảnh, nhịp điệu và âm thanh">
+                    <span class="icon">🧐</span> Đánh Giá Video (AI Audit)
+                </button>
                 <button id="btn-open-ai-modal" class="btn btn-ai">
                     <span class="icon">🤖</span> Khớp Kịch Bản (Gemini AI)
                 </button>
@@ -563,6 +566,11 @@
                             <button type="button" class="btn-pro-action" id="btn-toggle-find-replace" title="Mở bảng tìm kiếm và thay thế từ ngữ hàng loạt">
                                 🔍 Tìm & Thay Thế
                             </button>
+
+                            <!-- AI Subtitle & Sync Audit Button -->
+                            <button type="button" class="btn-pro-action btn-ai" id="btn-audit-subtitles" title="AI Kiểm định độ khớp Audio, tốc độ đọc và chất lượng phụ đề">
+                                🎯 Đánh Giá AI (Audit)
+                            </button>
                         </div>
 
                         <!-- Row 2: Find & Replace Bar (Collapsible) -->
@@ -877,6 +885,234 @@
                         </a>
                         <button class="btn btn-secondary" onclick="closeSubBurnModal()">
                             Tiếp Tục Chỉnh Sửa
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 1: AI Timeline & Script Audit Modal -->
+    <div id="timeline-audit-modal" class="modal hidden">
+        <div class="modal-backdrop" onclick="closeTimelineAuditModal()"></div>
+        <div class="modal-dialog audit-dialog">
+            <div class="modal-header">
+                <div class="modal-header-title">
+                    <span class="ai-badge">AI Video Auditor</span>
+                    <h3>🧐 Đánh Giá Chất Lượng Video & Khớp Kịch Bản</h3>
+                </div>
+                <button class="btn-close" onclick="closeTimelineAuditModal()">✕</button>
+            </div>
+            <div class="modal-body audit-body">
+                <!-- State: Loading / Auditing -->
+                <div id="timeline-audit-loading" class="audit-loading-state">
+                    <div class="spinner-neon"></div>
+                    <p class="mt-3">🤖 Gemini AI đang phân tích toàn bộ timeline, nhịp điệu và kịch bản...</p>
+                </div>
+
+                <!-- State: Results -->
+                <div id="timeline-audit-result" class="audit-result-content hidden">
+                    <!-- Top Score Summary Banner -->
+                    <div class="audit-score-card">
+                        <div class="audit-score-circle">
+                            <span id="audit-timeline-score-val" class="score-number">85</span>
+                            <span class="score-label">/100</span>
+                        </div>
+                        <div class="audit-score-meta">
+                            <h4 id="audit-timeline-verdict" class="audit-verdict-text">Video có chất lượng tốt!</h4>
+                            <p class="text-xs text-dim mt-1" id="audit-timeline-submeta">Đã phân tích 12 phân cảnh • Thời lượng 54.0s</p>
+                        </div>
+                    </div>
+
+                    <!-- 4 Category Breakdown Cards -->
+                    <div class="audit-categories-grid mt-3">
+                        <div class="category-card">
+                            <div class="category-header">
+                                <span class="category-icon">📜</span>
+                                <span class="category-name">Khớp Kịch Bản</span>
+                            </div>
+                            <div class="category-score-bar">
+                                <div id="bar-script-alignment" class="category-progress" style="width: 85%;"></div>
+                            </div>
+                            <span id="score-script-alignment" class="category-score-num">85%</span>
+                        </div>
+
+                        <div class="category-card">
+                            <div class="category-header">
+                                <span class="category-icon">⏱️</span>
+                                <span class="category-name">Nhịp Điệu & Thời Lượng</span>
+                            </div>
+                            <div class="category-score-bar">
+                                <div id="bar-pacing" class="category-progress" style="width: 80%;"></div>
+                            </div>
+                            <span id="score-pacing" class="category-score-num">80%</span>
+                        </div>
+
+                        <div class="category-card">
+                            <div class="category-header">
+                                <span class="category-icon">🎬</span>
+                                <span class="category-name">Đa Dạng Chuyển Động</span>
+                            </div>
+                            <div class="category-score-bar">
+                                <div id="bar-visual-variety" class="category-progress" style="width: 75%;"></div>
+                            </div>
+                            <span id="score-visual-variety" class="category-score-num">75%</span>
+                        </div>
+
+                        <div class="category-card">
+                            <div class="category-header">
+                                <span class="category-icon">🎵</span>
+                                <span class="category-name">Âm Thanh & Nhạc Nền</span>
+                            </div>
+                            <div class="category-score-bar">
+                                <div id="bar-audio-balance" class="category-progress" style="width: 90%;"></div>
+                            </div>
+                            <span id="score-audio-balance" class="category-score-num">90%</span>
+                        </div>
+                    </div>
+
+                    <!-- Strengths, Warnings & Recommendations -->
+                    <div class="audit-details-grid mt-3">
+                        <!-- Strengths -->
+                        <div class="audit-box strengths-box">
+                            <h5>🌟 Điểm Nổi Bật</h5>
+                            <ul id="audit-timeline-strengths" class="audit-list"></ul>
+                        </div>
+
+                        <!-- Warnings / Areas of Improvement -->
+                        <div class="audit-box warnings-box">
+                            <h5>⚠️ Cần Cải Thiện & Chú Ý</h5>
+                            <ul id="audit-timeline-warnings" class="audit-list"></ul>
+                        </div>
+                    </div>
+
+                    <!-- AI Recommendations -->
+                    <div class="audit-box recs-box mt-3">
+                        <h5>💡 Gợi Ý Tối Ưu Hóa Từ Đạo Diễn AI</h5>
+                        <ul id="audit-timeline-recs" class="audit-list"></ul>
+                    </div>
+
+                    <!-- Footer Action Buttons -->
+                    <div class="audit-footer mt-3">
+                        <button type="button" id="btn-audit-autofix-motion" class="btn btn-secondary btn-small" title="Tự động phân bổ chuyển động ngẫu nhiên cho phong phú">
+                            🎲 Phân Bổ Ngẫu Nhiên Chuyển Động
+                        </button>
+                        <button type="button" class="btn btn-primary btn-small" onclick="closeTimelineAuditModal()">
+                            Đã Hiểu & Tiếp Tục
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: AI Subtitle & Audio Sync Audit Modal -->
+    <div id="subtitle-audit-modal" class="modal hidden">
+        <div class="modal-backdrop" onclick="closeSubtitleAuditModal()"></div>
+        <div class="modal-dialog audit-dialog">
+            <div class="modal-header">
+                <div class="modal-header-title">
+                    <span class="ai-badge">AI Subtitle Inspector</span>
+                    <h3>🎯 Kiểm Định Chất Lượng: Video ➔ Audio ➔ Phụ Đề</h3>
+                </div>
+                <button class="btn-close" onclick="closeSubtitleAuditModal()">✕</button>
+            </div>
+            <div class="modal-body audit-body">
+                <!-- State: Loading / Auditing -->
+                <div id="subtitle-audit-loading" class="audit-loading-state">
+                    <div class="spinner-neon"></div>
+                    <p class="mt-3">🤖 Đang tính toán tốc độ đọc (WPM), mốc thời gian và ngữ pháp phụ đề...</p>
+                </div>
+
+                <!-- State: Results -->
+                <div id="subtitle-audit-result" class="audit-result-content hidden">
+                    <!-- Top Score Summary Banner -->
+                    <div class="audit-score-card">
+                        <div class="audit-score-circle">
+                            <span id="audit-sub-score-val" class="score-number">90</span>
+                            <span class="score-label">/100</span>
+                        </div>
+                        <div class="audit-score-meta">
+                            <h4 id="audit-sub-verdict" class="audit-verdict-text">Phụ đề chuẩn xác và khớp giọng đọc!</h4>
+                            <p class="text-xs text-dim mt-1" id="audit-sub-stats-label">Tốc độ đọc trung bình: 155 WPM • 0 câu trùng lấn</p>
+                        </div>
+                    </div>
+
+                    <!-- 4 Category Breakdown Cards -->
+                    <div class="audit-categories-grid mt-3">
+                        <div class="category-card">
+                            <div class="category-header">
+                                <span class="category-icon">🎙️</span>
+                                <span class="category-name">Độ Khớp Audio (Sync)</span>
+                            </div>
+                            <div class="category-score-bar">
+                                <div id="bar-sub-sync" class="category-progress" style="width: 90%;"></div>
+                            </div>
+                            <span id="score-sub-sync" class="category-score-num">90%</span>
+                        </div>
+
+                        <div class="category-card">
+                            <div class="category-header">
+                                <span class="category-icon">⚡</span>
+                                <span class="category-name">Tốc Độ Đọc (Pacing)</span>
+                            </div>
+                            <div class="category-score-bar">
+                                <div id="bar-sub-speed" class="category-progress" style="width: 85%;"></div>
+                            </div>
+                            <span id="score-sub-speed" class="category-score-num">85%</span>
+                        </div>
+
+                        <div class="category-card">
+                            <div class="category-header">
+                                <span class="category-icon">👁️</span>
+                                <span class="category-name">Dễ Nhìn & Vùng An Toàn</span>
+                            </div>
+                            <div class="category-score-bar">
+                                <div id="bar-sub-readability" class="category-progress" style="width: 88%;"></div>
+                            </div>
+                            <span id="score-sub-readability" class="category-score-num">88%</span>
+                        </div>
+
+                        <div class="category-card">
+                            <div class="category-header">
+                                <span class="category-icon">✍️</span>
+                                <span class="category-name">Chính Tả & Dấu Câu</span>
+                            </div>
+                            <div class="category-score-bar">
+                                <div id="bar-sub-typography" class="category-progress" style="width: 92%;"></div>
+                            </div>
+                            <span id="score-sub-typography" class="category-score-num">92%</span>
+                        </div>
+                    </div>
+
+                    <!-- Strengths, Warnings & Flagged Cues -->
+                    <div class="audit-details-grid mt-3">
+                        <!-- Strengths -->
+                        <div class="audit-box strengths-box">
+                            <h5>🌟 Điểm Tốt Của Bộ Phụ Đề</h5>
+                            <ul id="audit-sub-strengths" class="audit-list"></ul>
+                        </div>
+
+                        <!-- Warnings / Flagged Cues -->
+                        <div class="audit-box warnings-box">
+                            <h5>⚠️ Cảnh Báo & Phân Đoạn Cần Chú Ý</h5>
+                            <ul id="audit-sub-warnings" class="audit-list"></ul>
+                        </div>
+                    </div>
+
+                    <!-- AI Recommendations -->
+                    <div class="audit-box recs-box mt-3">
+                        <h5>💡 Đề Xuất Tối Ưu Hóa Phụ Đề</h5>
+                        <ul id="audit-sub-recs" class="audit-list"></ul>
+                    </div>
+
+                    <!-- Footer Action Buttons -->
+                    <div class="audit-footer mt-3">
+                        <button type="button" id="btn-audit-autochunk" class="btn btn-secondary btn-small" title="Tự động chia nhỏ các câu dài thành 3-4 từ để người xem dễ đọc">
+                            ✂️ Chia Nhỏ Phân Đoạn (3-4 từ)
+                        </button>
+                        <button type="button" class="btn btn-primary btn-small" onclick="closeSubtitleAuditModal()">
+                            Đã Hiểu & Tiếp Tục
                         </button>
                     </div>
                 </div>

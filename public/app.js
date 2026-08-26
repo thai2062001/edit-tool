@@ -1378,10 +1378,136 @@ function applyLoadedProject(project) {
     renderMediaList();
 }
 
+// =========================================================================
+// AI TIMELINE & SCRIPT AUDIT SYSTEM (TAB 1)
+// =========================================================================
+const btnAuditTimeline = document.getElementById('btn-audit-timeline');
+const timelineAuditModal = document.getElementById('timeline-audit-modal');
+const timelineAuditLoading = document.getElementById('timeline-audit-loading');
+const timelineAuditResult = document.getElementById('timeline-audit-result');
+const btnAuditAutofixMotion = document.getElementById('btn-audit-autofix-motion');
+
+if (btnAuditTimeline) {
+    btnAuditTimeline.addEventListener('click', openTimelineAuditModal);
+}
+
+if (btnAuditAutofixMotion) {
+    btnAuditAutofixMotion.addEventListener('click', () => {
+        if (typeof randomizeMotions === 'function') {
+            randomizeMotions();
+        } else {
+            const btnRand = document.getElementById('btn-randomize-motions');
+            if (btnRand) btnRand.click();
+        }
+        alert('✨ Đã phân bổ ngẫu nhiên lại hiệu ứng cho các cảnh!');
+        closeTimelineAuditModal();
+    });
+}
+
+async function openTimelineAuditModal() {
+    if (mediaItems.length === 0) {
+        alert('Chưa có phân đoạn nào trên timeline để đánh giá! Hãy thêm ảnh/video trước.');
+        return;
+    }
+
+    timelineAuditModal.classList.remove('hidden');
+    timelineAuditLoading.classList.remove('hidden');
+    timelineAuditResult.classList.add('hidden');
+
+    const scriptText = document.getElementById('script-textarea') ? document.getElementById('script-textarea').value : '';
+    const key = document.getElementById('input-gemini-key') ? document.getElementById('input-gemini-key').value.trim() : '';
+
+    try {
+        const res = await fetch('/api/ai/audit-timeline', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                items: mediaItems,
+                bgm: bgmTrack,
+                scriptText: scriptText,
+                settings: currentSettings,
+                customApiKey: key
+            })
+        });
+
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+
+        renderTimelineAuditResult(data);
+    } catch (err) {
+        alert('Lỗi đánh giá AI: ' + err.message);
+        closeTimelineAuditModal();
+    }
+}
+
+function renderTimelineAuditResult(data) {
+    timelineAuditLoading.classList.add('hidden');
+    timelineAuditResult.classList.remove('hidden');
+
+    const audit = data.audit || {};
+    const stats = data.stats || {};
+
+    // Overall Score & Verdict
+    const scoreVal = document.getElementById('audit-timeline-score-val');
+    const verdictEl = document.getElementById('audit-timeline-verdict');
+    const submetaEl = document.getElementById('audit-timeline-submeta');
+
+    if (scoreVal) scoreVal.textContent = audit.overallScore || 85;
+    if (verdictEl) verdictEl.textContent = audit.verdict || 'Video có cấu trúc hoàn chỉnh.';
+    if (submetaEl) submetaEl.textContent = `Đã phân tích ${stats.itemCount || mediaItems.length} phân cảnh • Tổng thời lượng ${(stats.totalDuration || 0).toFixed(1)}s • ${stats.hasBgm ? 'Có nhạc nền' : 'Chưa có nhạc nền'}`;
+
+    // Category scores
+    const cats = audit.categoryScores || {};
+    setCategoryScore('script-alignment', cats.scriptAlignment || 85);
+    setCategoryScore('pacing', cats.pacing || 80);
+    setCategoryScore('visual-variety', cats.visualVariety || 75);
+    setCategoryScore('audio-balance', cats.audioBalance || (stats.hasBgm ? 90 : 50));
+
+    // Strengths
+    const strengthsUl = document.getElementById('audit-timeline-strengths');
+    if (strengthsUl) {
+        strengthsUl.innerHTML = (audit.strengths || ['Phân cảnh có bố cục rõ ràng.']).map(s => `<li>${escapeHtml(s)}</li>`).join('');
+    }
+
+    // Warnings
+    const warningsUl = document.getElementById('audit-timeline-warnings');
+    if (warningsUl) {
+        const list = (audit.warnings && audit.warnings.length > 0) ? audit.warnings : ['Không phát hiện lỗi nghiêm trọng nào.'];
+        warningsUl.innerHTML = list.map(w => `<li>${escapeHtml(w)}</li>`).join('');
+    }
+
+    // Recommendations
+    const recsUl = document.getElementById('audit-timeline-recs');
+    if (recsUl) {
+        const list = (audit.recommendations && audit.recommendations.length > 0) ? audit.recommendations : ['Có thể chuyển sang Tab 2 để tạo phụ đề tự động bằng AI.'];
+        recsUl.innerHTML = list.map(r => `<li>${escapeHtml(r)}</li>`).join('');
+    }
+}
+
+function setCategoryScore(id, score) {
+    const bar = document.getElementById(`bar-${id}`);
+    const num = document.getElementById(`score-${id}`);
+    if (bar) bar.style.width = `${Math.min(100, Math.max(10, score))}%`;
+    if (num) num.textContent = `${score}%`;
+}
+
+function closeTimelineAuditModal() {
+    if (timelineAuditModal) timelineAuditModal.classList.add('hidden');
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// Expose modal close to window
+window.closeTimelineAuditModal = closeTimelineAuditModal;
+
 // Initialize Auto-Save check on page load
 document.addEventListener('DOMContentLoaded', () => {
     checkAutoSaveOnLoad();
 });
 setTimeout(checkAutoSaveOnLoad, 300);
+
 
 

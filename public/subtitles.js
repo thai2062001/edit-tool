@@ -328,6 +328,13 @@
             // Render modal quick-jump
             btnSendToSubtitles: document.getElementById('btn-send-to-subtitles'),
 
+            // Subtitle AI Audit Modal
+            btnAuditSubtitles: document.getElementById('btn-audit-subtitles'),
+            subAuditModal: document.getElementById('subtitle-audit-modal'),
+            subAuditLoading: document.getElementById('subtitle-audit-loading'),
+            subAuditResult: document.getElementById('subtitle-audit-result'),
+            btnAuditAutochunk: document.getElementById('btn-audit-autochunk'),
+
             // Burn Modal
             subBurnModal: document.getElementById('sub-burn-modal'),
             subBurnPercent: document.getElementById('sub-burn-percent'),
@@ -527,6 +534,17 @@
         }
         if (dom.btnSubReplaceAll) {
             dom.btnSubReplaceAll.addEventListener('click', handleReplaceAllSubtitles);
+        }
+
+        // Subtitle AI Audit Modal
+        if (dom.btnAuditSubtitles) {
+            dom.btnAuditSubtitles.addEventListener('click', openSubtitleAuditModal);
+        }
+        if (dom.btnAuditAutochunk) {
+            dom.btnAuditAutochunk.addEventListener('click', () => {
+                smartChunkSegments(4);
+                closeSubtitleAuditModal();
+            });
         }
 
         // Style controls
@@ -1948,6 +1966,107 @@ Hương thơm cà phê nóng hổi xua tan giá lạnh.`;
             setTimeout(() => toast.remove(), 300);
         }, 3200);
     }
+
+    // =========================================================================
+    // SUBTITLE & AUDIO AI AUDIT MODAL (TAB 2)
+    // =========================================================================
+    async function openSubtitleAuditModal() {
+        if (!SubState.segments || SubState.segments.length === 0) {
+            alert('Chưa có phân đoạn phụ đề nào để đánh giá! Hãy tạo phụ đề bằng AI hoặc nạp file SRT trước.');
+            return;
+        }
+
+        if (dom.subAuditModal) dom.subAuditModal.classList.remove('hidden');
+        if (dom.subAuditLoading) dom.subAuditLoading.classList.remove('hidden');
+        if (dom.subAuditResult) dom.subAuditResult.classList.add('hidden');
+
+        const key = dom.subAiApiKey ? dom.subAiApiKey.value.trim() : '';
+
+        try {
+            const res = await fetch('/api/ai/audit-subtitles', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    segments: SubState.segments,
+                    mediaDuration: SubState.currentMedia ? SubState.currentMedia.duration : 0,
+                    style: SubState.style,
+                    customApiKey: key
+                })
+            });
+
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+
+            renderSubtitleAuditResult(data);
+        } catch (err) {
+            alert('Lỗi kiểm định phụ đề AI: ' + err.message);
+            closeSubtitleAuditModal();
+        }
+    }
+
+    function renderSubtitleAuditResult(data) {
+        if (dom.subAuditLoading) dom.subAuditLoading.classList.add('hidden');
+        if (dom.subAuditResult) dom.subAuditResult.classList.remove('hidden');
+
+        const audit = data.audit || {};
+        const stats = data.stats || {};
+
+        // Overall Score & Verdict
+        const scoreVal = document.getElementById('audit-sub-score-val');
+        const verdictEl = document.getElementById('audit-sub-verdict');
+        const statsLabel = document.getElementById('audit-sub-stats-label');
+
+        if (scoreVal) scoreVal.textContent = audit.overallScore || 90;
+        if (verdictEl) verdictEl.textContent = audit.verdict || 'Phụ đề chuẩn xác và khớp giọng đọc!';
+        if (statsLabel) statsLabel.textContent = `Tốc độ đọc trung bình: ${stats.avgWpm || 150} WPM • ${stats.totalWords || 0} từ • ${stats.fastSegmentsCount || 0} câu đọc nhanh • ${stats.overlappingCount || 0} câu trùng lấn`;
+
+        // Category scores
+        const cats = audit.categoryScores || {};
+        setCategoryScoreSub('sub-sync', cats.syncAccuracy || 90);
+        setCategoryScoreSub('sub-speed', cats.readingSpeed || 85);
+        setCategoryScoreSub('sub-readability', cats.visualReadability || 88);
+        setCategoryScoreSub('sub-typography', cats.typography || 92);
+
+        // Strengths
+        const strengthsUl = document.getElementById('audit-sub-strengths');
+        if (strengthsUl) {
+            strengthsUl.innerHTML = (audit.strengths || ['Phụ đề có cấu trúc câu chuẩn.']).map(s => `<li>${escapeHtml(s)}</li>`).join('');
+        }
+
+        // Warnings / Flagged Cues
+        const warningsUl = document.getElementById('audit-sub-warnings');
+        if (warningsUl) {
+            let list = [];
+            if (audit.warnings && audit.warnings.length > 0) {
+                list = audit.warnings;
+            } else if (stats.fastSegments && stats.fastSegments.length > 0) {
+                list = stats.fastSegments.map(f => `Câu #${f.id}: "${f.text}" (${f.wps} từ/s) - quá nhanh so với thời lượng ${f.duration}s`);
+            } else {
+                list = ['Không có câu nào bị trùng lấn thời gian hoặc đọc quá nhanh.'];
+            }
+            warningsUl.innerHTML = list.map(w => `<li>${escapeHtml(w)}</li>`).join('');
+        }
+
+        // Recommendations
+        const recsUl = document.getElementById('audit-sub-recs');
+        if (recsUl) {
+            const list = (audit.recommendations && audit.recommendations.length > 0) ? audit.recommendations : ['Có thể bấm "⚡ Gắn Phụ Đề Vào Video (Burn-in)" để xuất video hoàn chỉnh.'];
+            recsUl.innerHTML = list.map(r => `<li>${escapeHtml(r)}</li>`).join('');
+        }
+    }
+
+    function setCategoryScoreSub(id, score) {
+        const bar = document.getElementById(`bar-${id}`);
+        const num = document.getElementById(`score-${id}`);
+        if (bar) bar.style.width = `${Math.min(100, Math.max(10, score))}%`;
+        if (num) num.textContent = `${score}%`;
+    }
+
+    function closeSubtitleAuditModal() {
+        if (dom.subAuditModal) dom.subAuditModal.classList.add('hidden');
+    }
+
+    window.closeSubtitleAuditModal = closeSubtitleAuditModal;
 
     function escapeHtml(str) {
         if (!str) return '';

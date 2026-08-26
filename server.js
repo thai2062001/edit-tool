@@ -281,6 +281,287 @@ Motion gồm: 'zoom_in', 'zoom_out', 'pan_left', 'pan_right', 'zoom_pan', 'none'
     }
 });
 
+// =========================================================================
+// AI AUDIT: TAB 1 VIDEO TIMELINE & SCRIPT QUALITY EVALUATION
+// =========================================================================
+app.post('/api/ai/audit-timeline', async (req, res) => {
+    try {
+        const { items, bgm, scriptText, settings, customApiKey } = req.body;
+        const apiKey = (customApiKey && customApiKey.trim()) ? customApiKey.trim() : DEFAULT_GEMINI_API_KEY;
+
+        if (!items || items.length === 0) {
+            return res.status(400).json({ error: 'Chưa có phân đoạn nào trên timeline để đánh giá' });
+        }
+
+        // 1. Local Rule-based Analysis
+        let totalDuration = 0;
+        let shortScenes = 0;
+        let longScenes = 0;
+        const motionCount = {};
+        let textOverlayCount = 0;
+
+        items.forEach((item, idx) => {
+            const dur = Number(item.settings?.duration || 5.0);
+            totalDuration += dur;
+            if (dur < 2.0) shortScenes++;
+            if (dur > 8.0) longScenes++;
+            const m = item.settings?.motion || 'zoom_in';
+            motionCount[m] = (motionCount[m] || 0) + 1;
+            if (item.settings?.overlayText && item.settings.overlayText.trim()) textOverlayCount++;
+        });
+
+        const motionTypes = Object.keys(motionCount).length;
+        const hasBgm = Boolean(bgm && bgm.filename);
+        const bgmDuration = Number(bgm?.duration || 0);
+
+        // 2. Gemini AI Deep Content & Alignment Assessment
+        const ai = new GoogleGenAI({ apiKey });
+        const timelineSummary = items.map((it, idx) => ({
+            index: idx + 1,
+            type: it.type,
+            name: it.originalName,
+            duration: Number(it.settings?.duration || 5.0),
+            motion: it.settings?.motion || 'zoom_in',
+            overlayText: it.settings?.overlayText || ''
+        }));
+
+        const promptText = `
+Bạn là Đạo diễn Hậu kỳ Video chuyên nghiệp (Senior Video Editor & Quality Auditor).
+Hãy đánh giá chất lượng của Timeline Video sau đây dựa trên cấu trúc, nhịp điệu và nội dung kịch bản:
+
+THÔNG TIN VIDEO:
+- Tổng số phân cảnh: ${items.length}
+- Tổng thời lượng: ${totalDuration.toFixed(1)}s
+- Tỷ lệ khung hình: ${settings?.aspectRatio || '16:9'}
+- Nhạc nền (BGM): ${hasBgm ? `Có (${bgmDuration.toFixed(1)}s)` : 'Chưa có'}
+- Số cảnh có tiêu đề chữ (Overlay Text): ${textOverlayCount}/${items.length}
+- Các hiệu ứng chuyển động sử dụng: ${JSON.stringify(motionCount)}
+
+KỊCH BẢN GỐC (nếu có):
+${(scriptText && scriptText.trim()) ? scriptText.trim().slice(0, 5000) : '(Người dùng chưa cung cấp kịch bản gốc - hãy đánh giá dựa trên cấu trúc và nhịp điệu hình ảnh)'}
+
+DANH SÁCH CÁC PHÂN CẢNH TRÊN TIMELINE:
+${JSON.stringify(timelineSummary.slice(0, 30), null, 2)}
+
+YÊU CẦU: Trả về kết quả JSON chính xác với cấu trúc sau:
+{
+  "overallScore": 85,
+  "verdict": "Đánh giá tổng quan 1-2 câu súc tích",
+  "categoryScores": {
+    "scriptAlignment": 90,
+    "pacing": 80,
+    "visualVariety": 85,
+    "audioBalance": 75
+  },
+  "strengths": [
+    "Điểm mạnh 1",
+    "Điểm mạnh 2"
+  ],
+  "warnings": [
+    "Điểm cảnh báo/yếu 1 (nếu có)",
+    "Điểm cảnh báo/yếu 2 (nếu có)"
+  ],
+  "recommendations": [
+    "Đề xuất cải tiến hành động 1",
+    "Đề xuất cải tiến hành động 2"
+  ]
+}
+`;
+
+        let auditResult = {
+            overallScore: 80,
+            verdict: 'Video có cấu trúc ổn định.',
+            categoryScores: { scriptAlignment: 80, pacing: 80, visualVariety: 75, audioBalance: hasBgm ? 85 : 50 },
+            strengths: ['Thời lượng video cân đối.'],
+            warnings: [],
+            recommendations: []
+        };
+
+        try {
+            const response = await ai.models.generateContent({
+                model: 'gemini-3.6-flash',
+                contents: [{ text: promptText }],
+                config: { responseMimeType: 'application/json' }
+            });
+            const cleanJson = (response.text || '').replace(/```json/g, '').replace(/```/g, '').trim();
+            auditResult = JSON.parse(cleanJson);
+        } catch (aiErr) {
+            console.warn('AI audit fallback to rule-based evaluation:', aiErr.message);
+            // Rule-based fallback if AI call fails
+            let baseScore = 75;
+            if (hasBgm) baseScore += 10;
+            if (motionTypes >= 3) baseScore += 10;
+            if (shortScenes > 0) baseScore -= 5;
+            auditResult.overallScore = Math.min(95, baseScore);
+            if (!hasBgm) auditResult.warnings.push('Chưa có nhạc nền (BGM) cho video');
+            if (shortScenes > 0) auditResult.warnings.push(`Có ${shortScenes} cảnh thời lượng < 2.0s đọc quá nhanh`);
+            if (motionTypes === 1) auditResult.warnings.push('Tất cả các cảnh chỉ dùng 1 hiệu ứng duy nhất, nên bấm "Phân Bổ Ngẫu Nhiên" để sinh động');
+        }
+
+        res.json({
+            success: true,
+            stats: {
+                totalDuration,
+                itemCount: items.length,
+                motionTypes,
+                hasBgm,
+                textOverlayCount
+            },
+            audit: auditResult
+        });
+    } catch (err) {
+        console.error('Audit timeline error:', err);
+        res.status(500).json({ error: err.message || 'Lỗi khi đánh giá video' });
+    }
+});
+
+// =========================================================================
+// AI AUDIT: TAB 2 SUBTITLE, AUDIO & SYNC QUALITY EVALUATION
+// =========================================================================
+app.post('/api/ai/audit-subtitles', async (req, res) => {
+    try {
+        const { segments, mediaDuration, style, customApiKey } = req.body;
+        const apiKey = (customApiKey && customApiKey.trim()) ? customApiKey.trim() : DEFAULT_GEMINI_API_KEY;
+
+        if (!segments || segments.length === 0) {
+            return res.status(400).json({ error: 'Chưa có phân đoạn phụ đề nào để đánh giá' });
+        }
+
+        // 1. Fast Computational Metrics & Local Checks
+        let totalWords = 0;
+        let fastSegments = [];
+        let overlappingCount = 0;
+        let gapCount = 0;
+        let lastEnd = 0;
+
+        segments.forEach((seg, idx) => {
+            const dur = Math.max(0.1, (seg.end - seg.start));
+            const words = (seg.text || '').trim().split(/\s+/).filter(Boolean);
+            totalWords += words.length;
+            const wps = words.length / dur; // Words Per Second
+            const cps = (seg.text || '').length / dur; // Chars Per Second
+
+            // Flag if reading speed is too fast (WPS > 4.5 or CPS > 22)
+            if (wps > 4.2 || cps > 22) {
+                fastSegments.push({
+                    id: seg.id || idx + 1,
+                    text: seg.text,
+                    wps: parseFloat(wps.toFixed(1)),
+                    duration: parseFloat(dur.toFixed(2)),
+                    reason: `Đọc quá nhanh (${wps.toFixed(1)} từ/giây). Người xem khó đọc kịp.`
+                });
+            }
+
+            if (idx > 0 && seg.start < lastEnd - 0.05) {
+                overlappingCount++;
+            }
+            if (idx > 0 && seg.start > lastEnd + 4.0) {
+                gapCount++;
+            }
+            lastEnd = seg.end;
+        });
+
+        const avgWpm = totalWords > 0 && lastEnd > 0 ? Math.round((totalWords / lastEnd) * 60) : 150;
+
+        // 2. Gemini AI Deep Language & Readability Analysis
+        const ai = new GoogleGenAI({ apiKey });
+        const sampleCues = segments.slice(0, 25).map(s => ({
+            id: s.id,
+            start: s.start,
+            end: s.end,
+            text: s.text
+        }));
+
+        const promptText = `
+Bạn là Chuyên gia Kiểm định Phụ đề Video (Subtitles & Caption Quality Inspector).
+Hãy phân tích chất lượng của bộ phụ đề sau:
+
+THÔNG TIN PHỤ ĐỀ:
+- Số câu phụ đề: ${segments.length}
+- Tổng số từ: ${totalWords}
+- Tốc độ đọc trung bình: ${avgWpm} WPM
+- Tỷ lệ khung hình: ${style?.aspectRatio || '16:9'}
+- Cỡ chữ: ${style?.fontSize || 38}px, Font: ${style?.fontFamily || 'Arial'}
+- Số câu bị trùng lấn thời gian (overlap): ${overlappingCount}
+- Số câu đọc quá nhanh bị phát hiện: ${fastSegments.length}
+
+MẪU PHÂN ĐOẠN PHỤ ĐỀ:
+${JSON.stringify(sampleCues, null, 2)}
+
+YÊU CẦU: Trả về JSON chính xác theo cấu trúc sau:
+{
+  "overallScore": 88,
+  "verdict": "Đánh giá tổng quan chất lượng phụ đề 1-2 câu",
+  "categoryScores": {
+    "syncAccuracy": 90,
+    "readingSpeed": 85,
+    "visualReadability": 85,
+    "typography": 90
+  },
+  "strengths": [
+    "Điểm tốt 1",
+    "Điểm tốt 2"
+  ],
+  "warnings": [
+    "Cảnh báo lỗi phụ đề 1 (nếu có)",
+    "Cảnh báo lỗi phụ đề 2 (nếu có)"
+  ],
+  "recommendations": [
+    "Gợi ý tối ưu 1 (ví dụ: dùng Smart Chunking 3-4 từ)",
+    "Gợi ý tối ưu 2"
+  ]
+}
+`;
+
+        let auditResult = {
+            overallScore: 85,
+            verdict: 'Bộ phụ đề có chất lượng tốt.',
+            categoryScores: { syncAccuracy: 85, readingSpeed: fastSegments.length > 0 ? 70 : 90, visualReadability: 85, typography: 90 },
+            strengths: ['Phụ đề có cấu trúc rõ ràng.'],
+            warnings: [],
+            recommendations: []
+        };
+
+        try {
+            const response = await ai.models.generateContent({
+                model: 'gemini-3.6-flash',
+                contents: [{ text: promptText }],
+                config: { responseMimeType: 'application/json' }
+            });
+            const cleanJson = (response.text || '').replace(/```json/g, '').replace(/```/g, '').trim();
+            auditResult = JSON.parse(cleanJson);
+        } catch (aiErr) {
+            console.warn('Subtitle AI audit fallback to rule-based evaluation:', aiErr.message);
+            let score = 90;
+            if (fastSegments.length > 0) score -= Math.min(25, fastSegments.length * 5);
+            if (overlappingCount > 0) score -= 15;
+            auditResult.overallScore = Math.max(50, score);
+            if (fastSegments.length > 0) {
+                auditResult.warnings.push(`Có ${fastSegments.length} câu phụ đề nói quá nhanh, đề xuất dùng công cụ "Chia nhỏ từ (Smart Chunking)"`);
+            }
+            if (overlappingCount > 0) {
+                auditResult.warnings.push(`Có ${overlappingCount} đoạn phụ đề bị trùng mốc thời gian`);
+            }
+        }
+
+        res.json({
+            success: true,
+            stats: {
+                totalCues: segments.length,
+                totalWords,
+                avgWpm,
+                fastSegmentsCount: fastSegments.length,
+                overlappingCount,
+                fastSegments: fastSegments.slice(0, 5)
+            },
+            audit: auditResult
+        });
+    } catch (err) {
+        console.error('Audit subtitles error:', err);
+        res.status(500).json({ error: err.message || 'Lỗi khi kiểm định phụ đề' });
+    }
+});
+
 // Calculate output width & height based on qualityPreset & aspectRatio
 function getOutputDimensionsAndEncoding(aspectRatio, qualityPreset, customFps) {
     let w = 1920, h = 1080, fps = customFps || 30, crf = '20', preset = 'fast';
