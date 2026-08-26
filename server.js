@@ -564,24 +564,26 @@ YÊU CẦU: Trả về JSON chính xác theo cấu trúc sau:
 
 // Calculate output width & height based on qualityPreset & aspectRatio
 function getOutputDimensionsAndEncoding(aspectRatio, qualityPreset, customFps) {
-    let w = 1920, h = 1080, fps = customFps || 30, crf = '20', preset = 'fast';
+    let w = 1920, h = 1080;
+    let fps = customFps ? parseInt(customFps) : 30;
+    let crf = '20';
+    let preset = 'fast';
 
     if (qualityPreset === 'fast_720p') {
-        fps = 30;
         crf = '26';
         preset = 'veryfast';
         if (aspectRatio === '9:16') { w = 720; h = 1280; }
         else if (aspectRatio === '1:1') { w = 720; h = 720; }
         else { w = 1280; h = 720; }
     } else if (qualityPreset === 'high_1080p_60fps') {
-        fps = 60;
+        fps = customFps ? parseInt(customFps) : 60;
         crf = '18';
         preset = 'medium';
         if (aspectRatio === '9:16') { w = 1080; h = 1920; }
         else if (aspectRatio === '1:1') { w = 1080; h = 1080; }
         else { w = 1920; h = 1080; }
     } else if (qualityPreset === 'ultra_4k') {
-        fps = customFps || 60;
+        fps = customFps ? parseInt(customFps) : 60;
         crf = '16';
         preset = 'medium';
         if (aspectRatio === '9:16') { w = 2160; h = 3840; }
@@ -589,7 +591,6 @@ function getOutputDimensionsAndEncoding(aspectRatio, qualityPreset, customFps) {
         else { w = 3840; h = 2160; }
     } else {
         // standard_1080p
-        fps = customFps || 30;
         crf = '20';
         preset = 'fast';
         if (aspectRatio === '9:16') { w = 1080; h = 1920; }
@@ -612,7 +613,7 @@ app.post('/api/render', async (req, res) => {
     const outputFilename = `output_${Date.now()}.mp4`;
     const outputPath = path.join(OUTPUTS_DIR, outputFilename);
 
-    const aspectRatio = settings?.aspectRatio || '16:9';
+    const aspectRatio = settings?.aspectRatio || settings?.ratio || '16:9';
     const qualityPreset = settings?.qualityPreset || 'standard_1080p';
     const reframeMode = settings?.reframeMode || 'cover'; // 'cover', 'contain_blur', 'contain_black'
     const customFps = settings?.fps ? parseInt(settings.fps) : null;

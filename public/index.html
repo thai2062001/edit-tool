@@ -231,35 +231,38 @@
                         <h3>⚡ Tùy Chỉnh Thời Lượng & Hiệu Ứng Nhanh</h3>
                     </div>
                     <div class="batch-settings-body">
+                        <!-- Batch Duration Slider -->
                         <div class="setting-row">
                             <div class="slider-label">
                                 <span>⏱️ Thời lượng mỗi ảnh:</span>
-                                <strong id="batch-duration-val">5.0s</strong>
+                                <strong id="batch-duration-val" style="color: var(--accent-cyan);">5.0s</strong>
                             </div>
                             <div class="input-with-btn">
                                 <input type="range" id="batch-duration-slider" min="1.0" max="15.0" step="0.5" value="5.0" class="custom-range">
-                                <button type="button" id="btn-apply-duration-all" class="btn btn-xs btn-outline" title="Áp dụng thời lượng này cho tất cả ảnh trên Timeline">
-                                    Áp Dụng Cho Tất Cả
+                                <button type="button" id="btn-apply-duration-all" class="btn btn-secondary" title="Áp dụng thời lượng này cho tất cả ảnh trên Timeline">
+                                    Áp Dụng
                                 </button>
                             </div>
                             <small class="text-xs text-dim">Mặc định ban đầu 5.0s (chậm rãi, êm dịu hơn)</small>
                         </div>
 
-                        <div class="setting-row mt-3">
-                            <label for="batch-motion-intensity">🌊 Tốc độ / Cường độ Zoom & Pan:</label>
+                        <!-- Batch Motion Intensity -->
+                        <div class="setting-row mt-2">
+                            <label for="batch-motion-intensity">🌊 Cường độ Zoom & Pan:</label>
                             <div class="input-with-btn">
                                 <select id="batch-motion-intensity" class="custom-select">
                                     <option value="1.15">🌿 Rất chậm & Êm dịu (15% zoom)</option>
                                     <option value="1.25" selected>✨ Mượt mà chuẩn (25% zoom)</option>
                                     <option value="1.40">⚡ Nhanh & Kịch tính (40% zoom)</option>
                                 </select>
-                                <button type="button" id="btn-apply-intensity-all" class="btn btn-xs btn-outline" title="Áp dụng cường độ chuyển động cho tất cả ảnh">
+                                <button type="button" id="btn-apply-intensity-all" class="btn btn-secondary" title="Áp dụng cường độ chuyển động cho tất cả ảnh">
                                     Áp Dụng
                                 </button>
                             </div>
                         </div>
 
-                        <div class="setting-row mt-3">
+                        <!-- Batch Motion Type -->
+                        <div class="setting-row mt-2">
                             <label for="batch-motion-select">🎬 Gán hiệu ứng chuyển động:</label>
                             <div class="input-with-btn">
                                 <select id="batch-motion-select" class="custom-select">
@@ -274,21 +277,28 @@
                                     <option value="zoom_in_right">↗️ Zoom Góc Phải</option>
                                     <option value="none">⏹️ Tĩnh (Không zoom)</option>
                                 </select>
-                                <button type="button" id="btn-apply-motion-all" class="btn btn-xs btn-outline" title="Đổi tất cả ảnh sang hiệu ứng này">
+                                <button type="button" id="btn-apply-motion-all" class="btn btn-secondary" title="Đổi tất cả ảnh sang hiệu ứng này">
                                     Đổi Hết
                                 </button>
                             </div>
-                            <button type="button" id="btn-randomize-motions" class="btn btn-small btn-secondary w-100 mt-2">
+                            <button type="button" id="btn-randomize-motions" class="btn btn-small btn-secondary w-100 mt-2" style="background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.4);">
                                 🎲 Phân Bổ Ngẫu Nhiên Hiệu Ứng Cho Mọi Ảnh
                             </button>
                         </div>
                         
-                        <div class="setting-row mt-3">
-                            <label>✨ Hiệu ứng Fade In / Out:</label>
-                            <div class="flex-row-gap">
-                                <input type="number" id="batch-fade-in" class="form-control" style="width: 70px" min="0" max="3" step="0.1" value="0.8" placeholder="In (s)">
-                                <input type="number" id="batch-fade-out" class="form-control" style="width: 70px" min="0" max="3" step="0.1" value="0.8" placeholder="Out (s)">
-                                <button type="button" id="btn-apply-fade-all" class="btn btn-xs btn-outline">Áp Dụng</button>
+                        <!-- Batch Fade In/Out -->
+                        <div class="setting-row mt-2">
+                            <label>✨ Hiệu ứng Fade In / Out (giây):</label>
+                            <div class="fade-inputs-grid">
+                                <div class="fade-input-item">
+                                    <span>In:</span>
+                                    <input type="number" id="batch-fade-in" min="0" max="3" step="0.1" value="0.8">
+                                </div>
+                                <div class="fade-input-item">
+                                    <span>Out:</span>
+                                    <input type="number" id="batch-fade-out" min="0" max="3" step="0.1" value="0.8">
+                                </div>
+                                <button type="button" id="btn-apply-fade-all" class="btn btn-secondary">Áp Dụng</button>
                             </div>
                         </div>
                     </div>

@@ -52,6 +52,13 @@ const selectExportQuality = document.getElementById('select-export-quality');
 if (selectExportQuality) {
     selectExportQuality.addEventListener('change', (e) => {
         currentSettings.qualityPreset = e.target.value;
+        if (e.target.value === 'high_1080p_60fps' || e.target.value === 'ultra_4k') {
+            if (selectFps) selectFps.value = '60';
+            currentSettings.fps = 60;
+        } else if (e.target.value === 'fast_720p' || e.target.value === 'standard_1080p') {
+            // keep user's selected FPS or match preset
+            if (selectFps) currentSettings.fps = parseInt(selectFps.value) || 30;
+        }
         triggerAutoSave();
     });
 }
