@@ -21,6 +21,13 @@
                 </div>
             </div>
             <div class="nav-actions">
+                <input type="file" id="input-project-file" accept=".json,.edtproject" hidden>
+                <button id="btn-save-project" class="btn btn-outline" title="Lưu toàn bộ dự án (Ảnh, thời lượng, hiệu ứng, chữ) thành file .json về máy">
+                    <span class="icon">💾</span> Lưu Dự Án
+                </button>
+                <button id="btn-open-project" class="btn btn-outline" title="Mở file dự án đã lưu (.json)">
+                    <span class="icon">📂</span> Mở Dự Án
+                </button>
                 <button id="btn-open-ai-modal" class="btn btn-ai">
                     <span class="icon">🤖</span> Khớp Kịch Bản (Gemini AI)
                 </button>
@@ -43,6 +50,17 @@
                 <span class="tab-badge">MỚI</span>
             </button>
         </nav>
+
+        <!-- Auto-save notification banner -->
+        <div id="autosave-banner" class="autosave-banner hidden">
+            <div class="autosave-content">
+                <span>💾 Tìm thấy dự án tự động lưu gần nhất từ phiên làm việc trước (<span id="autosave-time-label">vừa xong</span>).</span>
+                <div class="autosave-actions">
+                    <button id="btn-restore-autosave" class="btn btn-small btn-primary">🔄 Khôi Phục Ngay</button>
+                    <button id="btn-dismiss-autosave" class="btn btn-small btn-ghost">Bỏ qua</button>
+                </div>
+            </div>
+        </div>
 
         <!-- TAB 1: Main Video Editor Workspace -->
         <div id="tab-pane-editor" class="tab-pane active">
@@ -93,10 +111,10 @@
 
             <!-- Right Sidebar: Settings & Audio -->
             <aside class="sidebar-settings">
-                <!-- Aspect Ratio & Resolution -->
+                <!-- Aspect Ratio & Resolution & Quality -->
                 <div class="settings-card">
                     <div class="card-header">
-                        <h3>📐 Tỉ Lệ Khung Hình & Chất Lượng</h3>
+                        <h3>📐 Tỉ Lệ Khung Hình & Chất Lượng Xuất</h3>
                     </div>
                     <div class="aspect-ratio-selector">
                         <label class="ratio-option active" data-ratio="16:9" data-width="1920" data-height="1080">
@@ -125,10 +143,33 @@
                         </label>
                     </div>
 
+                    <!-- Quality Presets -->
                     <div class="setting-row mt-3">
-                        <label for="select-fps">Tốc độ khung hình:</label>
+                        <label for="select-export-quality">Chất lượng & Tốc độ:</label>
+                        <select id="select-export-quality" class="custom-select">
+                            <option value="standard_1080p" selected>🌟 Chuẩn Full HD (1080p - Khuyên dùng)</option>
+                            <option value="fast_720p">⚡ Xuất Nhanh (720p - Xem thử siêu tốc)</option>
+                            <option value="high_1080p_60fps">🚀 Full HD 60fps (1080p - Siêu mượt)</option>
+                            <option value="ultra_4k">💎 Ultra 4K (2160p 60fps - Tối đa chi tiết)</option>
+                        </select>
+                    </div>
+
+                    <!-- Smart Reframe Mode -->
+                    <div class="setting-row mt-2">
+                        <label for="select-reframe-mode" title="Tự động xử lý khi ảnh/clip ngang chuyển sang khung hình dọc 9:16 hoặc 1:1">
+                            Cắt/Căn khung hình (Reframe):
+                        </label>
+                        <select id="select-reframe-mode" class="custom-select">
+                            <option value="cover" selected>🎯 Smart Center Crop (Cắt căn giữa bao trùm)</option>
+                            <option value="contain_blur">✨ Blurred Backdrop (Nền mờ - Chuẩn TikTok)</option>
+                            <option value="contain_black">⬛ Letterbox (Viền đen truyền thống)</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-row mt-2">
+                        <label for="select-fps">Tốc độ khung hình (FPS):</label>
                         <select id="select-fps" class="custom-select">
-                            <option value="30" selected>30 FPS (Khuyên dùng)</option>
+                            <option value="30" selected>30 FPS (Chuẩn mượt)</option>
                             <option value="60">60 FPS (Siêu mượt)</option>
                         </select>
                     </div>

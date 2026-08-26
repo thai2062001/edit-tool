@@ -281,6 +281,44 @@ Motion gồm: 'zoom_in', 'zoom_out', 'pan_left', 'pan_right', 'zoom_pan', 'none'
     }
 });
 
+// Calculate output width & height based on qualityPreset & aspectRatio
+function getOutputDimensionsAndEncoding(aspectRatio, qualityPreset, customFps) {
+    let w = 1920, h = 1080, fps = customFps || 30, crf = '20', preset = 'fast';
+
+    if (qualityPreset === 'fast_720p') {
+        fps = 30;
+        crf = '26';
+        preset = 'veryfast';
+        if (aspectRatio === '9:16') { w = 720; h = 1280; }
+        else if (aspectRatio === '1:1') { w = 720; h = 720; }
+        else { w = 1280; h = 720; }
+    } else if (qualityPreset === 'high_1080p_60fps') {
+        fps = 60;
+        crf = '18';
+        preset = 'medium';
+        if (aspectRatio === '9:16') { w = 1080; h = 1920; }
+        else if (aspectRatio === '1:1') { w = 1080; h = 1080; }
+        else { w = 1920; h = 1080; }
+    } else if (qualityPreset === 'ultra_4k') {
+        fps = customFps || 60;
+        crf = '16';
+        preset = 'medium';
+        if (aspectRatio === '9:16') { w = 2160; h = 3840; }
+        else if (aspectRatio === '1:1') { w = 2160; h = 2160; }
+        else { w = 3840; h = 2160; }
+    } else {
+        // standard_1080p
+        fps = customFps || 30;
+        crf = '20';
+        preset = 'fast';
+        if (aspectRatio === '9:16') { w = 1080; h = 1920; }
+        else if (aspectRatio === '1:1') { w = 1080; h = 1080; }
+        else { w = 1920; h = 1080; }
+    }
+
+    return { width: w, height: h, fps, crf, preset };
+}
+
 // Render Video API
 app.post('/api/render', async (req, res) => {
     const { items, bgm, settings } = req.body;
@@ -293,9 +331,12 @@ app.post('/api/render', async (req, res) => {
     const outputFilename = `output_${Date.now()}.mp4`;
     const outputPath = path.join(OUTPUTS_DIR, outputFilename);
 
-    const width = settings?.width || 1920;
-    const height = settings?.height || 1080;
-    const fps = settings?.fps || 30;
+    const aspectRatio = settings?.aspectRatio || '16:9';
+    const qualityPreset = settings?.qualityPreset || 'standard_1080p';
+    const reframeMode = settings?.reframeMode || 'cover'; // 'cover', 'contain_blur', 'contain_black'
+    const customFps = settings?.fps ? parseInt(settings.fps) : null;
+
+    const { width, height, fps, crf, preset } = getOutputDimensionsAndEncoding(aspectRatio, qualityPreset, customFps);
 
     // Calculate total duration
     let totalDuration = 0;
@@ -323,10 +364,10 @@ app.post('/api/render', async (req, res) => {
     };
 
     activeJobs.set(jobId, job);
-    res.json({ jobId, outputFilename, totalDuration });
+    res.json({ jobId, outputFilename, totalDuration, width, height, fps });
 
     // Start background FFmpeg execution
-    executeFFmpegRender(job, items, bgm, { width, height, fps, outputPath });
+    executeFFmpegRender(job, items, bgm, { width, height, fps, crf, preset, reframeMode, aspectRatio, outputPath });
 });
 
 // Helper to build FFmpeg drawtext filter for Text Overlay
@@ -381,7 +422,7 @@ function buildDrawtextFilter(settings, width, height) {
 // Function to render a single batch/chunk of items
 function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, config) {
     return new Promise((resolve, reject) => {
-        const { width, height, fps } = config;
+        const { width, height, fps, crf, preset, reframeMode } = config;
         const args = ['-y'];
 
         chunkItems.forEach((item) => {
@@ -451,6 +492,7 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
                     yExpr = 'ih/2-(ih/zoom/2)';
                 }
 
+                // Smart Reframe for images: High-res scaling with cover crop and center zoompan
                 const preScale = `scale=w=${width * 2}:h=${height * 2}:force_original_aspect_ratio=increase,crop=${width * 2}:${height * 2}`;
                 const zoompan = `zoompan=z='${zExpr}':x='${xExpr}':y='${yExpr}':d=${frames}:s=${width}x${height}:fps=${fps}`;
 
@@ -480,7 +522,17 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
                 const videoDur = Math.max(0.5, trimEnd - trimStart);
                 const vol = Number(item.settings?.videoVolume ?? 1.0);
 
-                let vFilters = `trim=start=${trimStart}:end=${trimEnd},setpts=PTS-STARTPTS,scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:black,setsar=1,fps=${fps},format=yuv420p`;
+                // Video Smart Reframe modes
+                let reframeFilter = '';
+                if (reframeMode === 'cover') {
+                    reframeFilter = `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height}`;
+                } else if (reframeMode === 'contain_blur') {
+                    reframeFilter = `split=2[rawmain][rawbg];[rawbg]scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},boxblur=25:5[bgblur];[rawmain]scale=${width}:${height}:force_original_aspect_ratio=decrease[fg];[bgblur][fg]overlay=(W-w)/2:(H-h)/2`;
+                } else {
+                    reframeFilter = `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:black`;
+                }
+
+                let vFilters = `trim=start=${trimStart}:end=${trimEnd},setpts=PTS-STARTPTS,${reframeFilter},setsar=1,fps=${fps},format=yuv420p`;
 
                 if (fadeIn > 0) {
                     vFilters += `,fade=t=in:st=0:d=${fadeIn}`;
@@ -517,7 +569,7 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
         args.push('-filter_complex', filterComplex.join('; '));
         args.push('-map', '[v_concat]');
         args.push('-map', '[a_concat]');
-        args.push('-c:v', 'libx264', '-preset', 'fast', '-crf', '22', '-pix_fmt', 'yuv420p');
+        args.push('-c:v', 'libx264', '-preset', preset || 'fast', '-crf', crf || '20', '-pix_fmt', 'yuv420p');
         args.push('-c:a', 'aac', '-b:a', '192k', '-ar', '44100', '-ac', '2', '-movflags', '+faststart');
         args.push(chunkOutputPath);
 

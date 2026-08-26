@@ -5,7 +5,9 @@ let currentSettings = {
     ratio: '16:9',
     width: 1920,
     height: 1080,
-    fps: 30
+    fps: 30,
+    qualityPreset: 'standard_1080p',
+    reframeMode: 'cover'
 };
 
 // DOM Elements
@@ -19,6 +21,13 @@ const btnRenderAll = document.getElementById('btn-render-all');
 const btnClearAll = document.getElementById('btn-clear-all');
 const btnSampleDemo = document.getElementById('btn-sample-demo');
 
+// Project Save & Load Elements
+const btnSaveProject = document.getElementById('btn-save-project');
+const btnOpenProject = document.getElementById('btn-open-project');
+const inputProjectFile = document.getElementById('input-project-file');
+const btnRestoreAutosave = document.getElementById('btn-restore-autosave');
+const btnDismissAutosave = document.getElementById('btn-dismiss-autosave');
+
 // Aspect ratio selector
 document.querySelectorAll('.ratio-option').forEach(option => {
     option.addEventListener('click', () => {
@@ -27,12 +36,57 @@ document.querySelectorAll('.ratio-option').forEach(option => {
         currentSettings.ratio = option.dataset.ratio;
         currentSettings.width = parseInt(option.dataset.width);
         currentSettings.height = parseInt(option.dataset.height);
+        triggerAutoSave();
     });
 });
 
-document.getElementById('select-fps').addEventListener('change', (e) => {
-    currentSettings.fps = parseInt(e.target.value);
-});
+const selectFps = document.getElementById('select-fps');
+if (selectFps) {
+    selectFps.addEventListener('change', (e) => {
+        currentSettings.fps = parseInt(e.target.value);
+        triggerAutoSave();
+    });
+}
+
+const selectExportQuality = document.getElementById('select-export-quality');
+if (selectExportQuality) {
+    selectExportQuality.addEventListener('change', (e) => {
+        currentSettings.qualityPreset = e.target.value;
+        triggerAutoSave();
+    });
+}
+
+const selectReframeMode = document.getElementById('select-reframe-mode');
+if (selectReframeMode) {
+    selectReframeMode.addEventListener('change', (e) => {
+        currentSettings.reframeMode = e.target.value;
+        triggerAutoSave();
+    });
+}
+
+// Project Save / Open Event Listeners
+if (btnSaveProject) {
+    btnSaveProject.addEventListener('click', exportProjectToFile);
+}
+if (btnOpenProject) {
+    btnOpenProject.addEventListener('click', () => {
+        if (inputProjectFile) inputProjectFile.click();
+    });
+}
+if (inputProjectFile) {
+    inputProjectFile.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+            importProjectFromFile(e.target.files[0]);
+            inputProjectFile.value = '';
+        }
+    });
+}
+if (btnRestoreAutosave) {
+    btnRestoreAutosave.addEventListener('click', restoreAutoSave);
+}
+if (btnDismissAutosave) {
+    btnDismissAutosave.addEventListener('click', dismissAutoSave);
+}
 
 // Drag and drop handling
 uploadZone.addEventListener('dragover', (e) => {
@@ -323,6 +377,7 @@ function renderMediaList() {
     });
 
     totalDurationEl.innerText = `${totalDur.toFixed(1)}s`;
+    triggerAutoSave();
 }
 
 // Drag and Drop Reordering Handlers
@@ -400,6 +455,7 @@ function updateItemSetting(index, key, val) {
             });
             totalDurationEl.innerText = `${totalDur.toFixed(1)}s`;
         }
+        triggerAutoSave();
     }
 }
 
@@ -1184,4 +1240,148 @@ btnApplyAiTimeline.addEventListener('click', () => {
         alert('🎉 Đã áp dụng thành công kịch bản và tự động sắp xếp lại Timeline theo gợi ý của Gemini AI!');
     }
 });
+
+// =========================================================================
+// PROJECT AUTO-SAVE, EXPORT & IMPORT SYSTEM
+// =========================================================================
+let autoSaveTimer = null;
+
+function triggerAutoSave() {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(() => {
+        if (mediaItems.length === 0 && !bgmTrack) return;
+        try {
+            const projectData = {
+                version: '1.0',
+                timestamp: Date.now(),
+                mediaItems,
+                bgmTrack,
+                currentSettings
+            };
+            localStorage.setItem('edt_project_autosave', JSON.stringify(projectData));
+        } catch (e) {
+            console.warn('Auto-save error:', e);
+        }
+    }, 800);
+}
+
+function checkAutoSaveOnLoad() {
+    try {
+        const saved = localStorage.getItem('edt_project_autosave');
+        if (!saved) return;
+        const project = JSON.parse(saved);
+        if (project && project.mediaItems && project.mediaItems.length > 0 && mediaItems.length === 0) {
+            const banner = document.getElementById('autosave-banner');
+            const timeLabel = document.getElementById('autosave-time-label');
+            if (banner && timeLabel) {
+                const date = new Date(project.timestamp || Date.now());
+                timeLabel.textContent = `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')} (${project.mediaItems.length} ảnh/clip)`;
+                banner.classList.remove('hidden');
+            }
+        }
+    } catch (e) {}
+}
+
+function restoreAutoSave() {
+    try {
+        const saved = localStorage.getItem('edt_project_autosave');
+        if (!saved) return;
+        const project = JSON.parse(saved);
+        applyLoadedProject(project);
+        const banner = document.getElementById('autosave-banner');
+        if (banner) banner.classList.add('hidden');
+        alert(`🎉 Đã khôi phục thành công dự án với ${project.mediaItems.length} phân đoạn!`);
+    } catch (e) {
+        alert('Lỗi khôi phục: ' + e.message);
+    }
+}
+
+function dismissAutoSave() {
+    const banner = document.getElementById('autosave-banner');
+    if (banner) banner.classList.add('hidden');
+}
+
+// Export Project File (.json / .edtproject)
+function exportProjectToFile() {
+    if (mediaItems.length === 0 && !bgmTrack) {
+        alert('Dự án hiện đang trống! Hãy thêm ít nhất 1 ảnh hoặc video để lưu dự án.');
+        return;
+    }
+
+    const projectData = {
+        appName: 'Antigravity Video Editor',
+        version: '1.0',
+        exportedAt: new Date().toISOString(),
+        currentSettings,
+        mediaItems,
+        bgmTrack
+    };
+
+    const jsonStr = JSON.stringify(projectData, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const dateStr = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `DuAn_Video_${dateStr}_${Date.now().toString().slice(-4)}.edtproject`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// Import Project File
+function importProjectFromFile(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const project = JSON.parse(e.target.result);
+            if (!project || (!project.mediaItems && !Array.isArray(project))) {
+                alert('Tệp dự án không đúng định dạng!');
+                return;
+            }
+            applyLoadedProject(project);
+            alert(`🎉 Đã nạp thành công dự án với ${mediaItems.length} phân đoạn!`);
+        } catch (err) {
+            alert('Lỗi đọc tệp dự án: ' + err.message);
+        }
+    };
+    reader.readAsText(file);
+}
+
+function applyLoadedProject(project) {
+    const items = project.mediaItems || (Array.isArray(project) ? project : []);
+    mediaItems = items;
+    window.mediaItems = items;
+    if (project.bgmTrack) {
+        bgmTrack = project.bgmTrack;
+        updateBgmUI();
+    }
+    if (project.currentSettings) {
+        currentSettings = { ...currentSettings, ...project.currentSettings };
+        // Update ratio UI
+        document.querySelectorAll('.ratio-option').forEach(o => {
+            o.classList.toggle('active', o.dataset.ratio === currentSettings.ratio);
+        });
+        if (selectExportQuality && currentSettings.qualityPreset) {
+            selectExportQuality.value = currentSettings.qualityPreset;
+        }
+        if (selectReframeMode && currentSettings.reframeMode) {
+            selectReframeMode.value = currentSettings.reframeMode;
+        }
+        const selectFpsEl = document.getElementById('select-fps');
+        if (selectFpsEl && currentSettings.fps) {
+            selectFpsEl.value = currentSettings.fps;
+        }
+    }
+    renderMediaList();
+}
+
+// Initialize Auto-Save check on page load
+document.addEventListener('DOMContentLoaded', () => {
+    checkAutoSaveOnLoad();
+});
+setTimeout(checkAutoSaveOnLoad, 300);
+
 
