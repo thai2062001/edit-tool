@@ -10,7 +10,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Default API Key
-const DEFAULT_GEMINI_API_KEY = 'AQ.Ab8RN6JMEe8jCjohN1xaI2N70KtihaOv6Jd_Q-Ke2baWI6n-nA';
+const DEFAULT_GEMINI_API_KEY = 'AQ.Ab8RN6L9WwF4De3rEa4B08uhBkkzhc6Kf59yMn2ew0-GeG9fHQ';
 
 // Directories
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
