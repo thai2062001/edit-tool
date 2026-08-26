@@ -84,11 +84,11 @@ app.post('/api/upload', upload.array('files'), async (req, res) => {
             const isAudio = ['.mp3', '.wav', '.m4a', '.aac', '.ogg'].includes(ext);
 
             let type = 'unknown';
-            let duration = 3.0; // default for images
+            let duration = 5.0; // default for images (5.0s for smooth, elegant pacing)
 
             if (isImage) {
                 type = 'image';
-                duration = 3.5;
+                duration = 5.0;
             } else if (isVideo) {
                 type = 'video';
                 duration = await getMediaDuration(file.path);
@@ -106,9 +106,9 @@ app.post('/api/upload', upload.array('files'), async (req, res) => {
                 type,
                 duration: parseFloat(duration.toFixed(2)),
                 settings: {
-                    duration: type === 'image' ? 3.5 : parseFloat(duration.toFixed(2)),
-                    motion: 'zoom_in', // zoom_in, zoom_out, pan_left, pan_right, zoom_pan, none
-                    zoomIntensity: 1.3,
+                    duration: type === 'image' ? 5.0 : parseFloat(duration.toFixed(2)),
+                    motion: 'zoom_in', // zoom_in, zoom_out, pan_left, pan_right, pan_up, pan_down, zoom_pan, zoom_in_left, zoom_in_right, none
+                    zoomIntensity: 1.25,
                     fadeIn: 0.8,
                     fadeOut: 0.8,
                     fitMode: 'cover', // cover, contain
@@ -296,7 +296,7 @@ app.post('/api/render', async (req, res) => {
     let totalDuration = 0;
     items.forEach(item => {
         if (item.type === 'image') {
-            totalDuration += Number(item.settings?.duration || 3.5);
+            totalDuration += Number(item.settings?.duration || 5.0);
         } else if (item.type === 'video') {
             const start = Number(item.settings?.trimStart || 0);
             const end = Number(item.settings?.trimEnd || item.duration || 5);
@@ -342,11 +342,13 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
         chunkItems.forEach((item, idx) => {
             const vTag = `v_${idx}`;
             const aTag = `a_${idx}`;
-            const dur = Number(item.settings?.duration || 3.5);
+            const dur = Number(item.settings?.duration || 5.0);
             const frames = Math.round(dur * fps);
             const fadeIn = Number(item.settings?.fadeIn || 0);
             const fadeOut = Number(item.settings?.fadeOut || 0);
             const motion = item.settings?.motion || 'zoom_in';
+            const zoomIntensity = Math.max(1.05, Math.min(2.0, Number(item.settings?.zoomIntensity || 1.25)));
+            const delta = zoomIntensity - 1.0;
 
             if (item.type === 'image') {
                 let zExpr = '1.0';
@@ -354,25 +356,45 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
                 let yExpr = 'ih/2-(ih/zoom/2)';
 
                 if (motion === 'zoom_in') {
-                    zExpr = `1.0+(0.3*(on/${frames}))`;
+                    zExpr = `1.0+(${delta}*(on/${frames}))`;
                     xExpr = 'iw/2-(iw/zoom/2)';
                     yExpr = 'ih/2-(ih/zoom/2)';
                 } else if (motion === 'zoom_out') {
-                    zExpr = `1.3-(0.3*(on/${frames}))`;
+                    zExpr = `${zoomIntensity}-(${delta}*(on/${frames}))`;
                     xExpr = 'iw/2-(iw/zoom/2)';
                     yExpr = 'ih/2-(ih/zoom/2)';
                 } else if (motion === 'pan_left') {
-                    zExpr = '1.2';
+                    zExpr = `${zoomIntensity}`;
                     xExpr = `(iw-iw/zoom)*(1-(on/${frames}))`;
                     yExpr = 'ih/2-(ih/zoom/2)';
                 } else if (motion === 'pan_right') {
-                    zExpr = '1.2';
+                    zExpr = `${zoomIntensity}`;
                     xExpr = `(iw-iw/zoom)*(on/${frames})`;
                     yExpr = 'ih/2-(ih/zoom/2)';
+                } else if (motion === 'pan_up') {
+                    zExpr = `${zoomIntensity}`;
+                    xExpr = 'iw/2-(iw/zoom/2)';
+                    yExpr = `(ih-ih/zoom)*(1-(on/${frames}))`;
+                } else if (motion === 'pan_down') {
+                    zExpr = `${zoomIntensity}`;
+                    xExpr = 'iw/2-(iw/zoom/2)';
+                    yExpr = `(ih-ih/zoom)*(on/${frames})`;
+                } else if (motion === 'zoom_in_left') {
+                    zExpr = `1.0+(${delta}*(on/${frames}))`;
+                    xExpr = '0';
+                    yExpr = '0';
+                } else if (motion === 'zoom_in_right') {
+                    zExpr = `1.0+(${delta}*(on/${frames}))`;
+                    xExpr = '(iw-iw/zoom)';
+                    yExpr = '0';
                 } else if (motion === 'zoom_pan') {
-                    zExpr = `1.0+(0.25*(on/${frames}))`;
+                    zExpr = `1.0+(${delta}*(on/${frames}))`;
                     xExpr = `(iw-iw/zoom)*(on/${frames})`;
                     yExpr = `(ih-ih/zoom)*(on/${frames})`;
+                } else {
+                    zExpr = '1.0';
+                    xExpr = 'iw/2-(iw/zoom/2)';
+                    yExpr = 'ih/2-(ih/zoom/2)';
                 }
 
                 const preScale = `scale=w=${width * 2}:h=${height * 2}:force_original_aspect_ratio=increase,crop=${width * 2}:${height * 2}`;

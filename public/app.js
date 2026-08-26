@@ -217,17 +217,29 @@ function renderMediaList() {
                         <div class="form-group">
                             <label>Hiệu ứng Motion:</label>
                             <select class="form-control" onchange="updateItemSetting(${index}, 'motion', this.value)">
-                                <option value="zoom_in" ${item.settings.motion === 'zoom_in' ? 'selected' : ''}>🔍 Zoom In (Phóng to vào tâm)</option>
-                                <option value="zoom_out" ${item.settings.motion === 'zoom_out' ? 'selected' : ''}>🔎 Zoom Out (Thu nhỏ ra ngoài)</option>
+                                <option value="zoom_in" ${item.settings.motion === 'zoom_in' ? 'selected' : ''}>🔍 Zoom In (Phóng to tâm)</option>
+                                <option value="zoom_out" ${item.settings.motion === 'zoom_out' ? 'selected' : ''}>🔎 Zoom Out (Thu nhỏ tâm)</option>
                                 <option value="pan_left" ${item.settings.motion === 'pan_left' ? 'selected' : ''}>⬅️ Pan Trái</option>
                                 <option value="pan_right" ${item.settings.motion === 'pan_right' ? 'selected' : ''}>➡️ Pan Phải</option>
+                                <option value="pan_up" ${item.settings.motion === 'pan_up' ? 'selected' : ''}>⬆️ Pan Lên Trên</option>
+                                <option value="pan_down" ${item.settings.motion === 'pan_down' ? 'selected' : ''}>⬇️ Pan Xuống Dưới</option>
                                 <option value="zoom_pan" ${item.settings.motion === 'zoom_pan' ? 'selected' : ''}>🎯 Zoom + Pan Chéo</option>
+                                <option value="zoom_in_left" ${item.settings.motion === 'zoom_in_left' ? 'selected' : ''}>↖️ Zoom Góc Trái</option>
+                                <option value="zoom_in_right" ${item.settings.motion === 'zoom_in_right' ? 'selected' : ''}>↗️ Zoom Góc Phải</option>
                                 <option value="none" ${item.settings.motion === 'none' ? 'selected' : ''}>⏹️ Tĩnh (Không zoom)</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label>Thời lượng (giây):</label>
-                            <input type="number" class="form-control" min="1" max="30" step="0.5" value="${item.settings.duration}" onchange="updateItemSetting(${index}, 'duration', parseFloat(this.value))">
+                            <input type="number" class="form-control" min="1" max="30" step="0.5" value="${item.settings.duration || 5.0}" onchange="updateItemSetting(${index}, 'duration', parseFloat(this.value))">
+                        </div>
+                        <div class="form-group">
+                            <label>Tốc độ / Cường độ:</label>
+                            <select class="form-control" onchange="updateItemSetting(${index}, 'zoomIntensity', parseFloat(this.value))">
+                                <option value="1.15" ${(item.settings.zoomIntensity || 1.25) === 1.15 ? 'selected' : ''}>🌿 Rất chậm (15%)</option>
+                                <option value="1.25" ${(item.settings.zoomIntensity || 1.25) === 1.25 ? 'selected' : ''}>✨ Chuẩn mượt (25%)</option>
+                                <option value="1.40" ${(item.settings.zoomIntensity || 1.25) === 1.40 ? 'selected' : ''}>⚡ Kịch tính (40%)</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label>Fade In (giây):</label>
@@ -329,13 +341,149 @@ btnClearAll.addEventListener('click', () => {
     }
 });
 
+// ==========================================
+// BATCH CONTROLS FOR TAB 1
+// ==========================================
+const batchDurationSlider = document.getElementById('batch-duration-slider');
+const batchDurationVal = document.getElementById('batch-duration-val');
+const btnApplyDurationAll = document.getElementById('btn-apply-duration-all');
+const batchMotionIntensity = document.getElementById('batch-motion-intensity');
+const btnApplyIntensityAll = document.getElementById('btn-apply-intensity-all');
+const batchMotionSelect = document.getElementById('batch-motion-select');
+const btnApplyMotionAll = document.getElementById('btn-apply-motion-all');
+const btnRandomizeMotions = document.getElementById('btn-randomize-motions');
+const batchFadeIn = document.getElementById('batch-fade-in');
+const batchFadeOut = document.getElementById('batch-fade-out');
+const btnApplyFadeAll = document.getElementById('btn-apply-fade-all');
+
+if (batchDurationSlider) {
+    batchDurationSlider.addEventListener('input', (e) => {
+        batchDurationVal.innerText = `${parseFloat(e.target.value).toFixed(1)}s`;
+    });
+}
+
+if (btnApplyDurationAll) {
+    btnApplyDurationAll.addEventListener('click', () => {
+        const val = parseFloat(batchDurationSlider.value);
+        let count = 0;
+        mediaItems.forEach(item => {
+            if (item.type === 'image') {
+                if (!item.settings) item.settings = {};
+                item.settings.duration = val;
+                count++;
+            }
+        });
+        if (count > 0) {
+            renderMediaList();
+            alert(`✨ Đã đặt thời lượng ${val}s cho toàn bộ ${count} ảnh!`);
+        } else {
+            alert('Chưa có ảnh nào trên timeline!');
+        }
+    });
+}
+
+if (btnApplyIntensityAll) {
+    btnApplyIntensityAll.addEventListener('click', () => {
+        const val = parseFloat(batchMotionIntensity.value);
+        let count = 0;
+        mediaItems.forEach(item => {
+            if (item.type === 'image') {
+                if (!item.settings) item.settings = {};
+                item.settings.zoomIntensity = val;
+                count++;
+            }
+        });
+        if (count > 0) {
+            renderMediaList();
+            alert(`✨ Đã áp dụng cường độ chuyển động cho toàn bộ ${count} ảnh!`);
+        } else {
+            alert('Chưa có ảnh nào trên timeline!');
+        }
+    });
+}
+
+if (btnApplyMotionAll) {
+    btnApplyMotionAll.addEventListener('click', () => {
+        const motion = batchMotionSelect.value;
+        let count = 0;
+        mediaItems.forEach(item => {
+            if (item.type === 'image') {
+                if (!item.settings) item.settings = {};
+                item.settings.motion = motion;
+                count++;
+            }
+        });
+        if (count > 0) {
+            renderMediaList();
+            alert(`✨ Đã chuyển toàn bộ ${count} ảnh sang hiệu ứng: ${motion.replace('_', ' ').toUpperCase()}!`);
+        } else {
+            alert('Chưa có ảnh nào trên timeline!');
+        }
+    });
+}
+
+if (btnRandomizeMotions) {
+    btnRandomizeMotions.addEventListener('click', () => {
+        const availableMotions = [
+            'zoom_in', 'zoom_out', 'pan_left', 'pan_right', 
+            'pan_up', 'pan_down', 'zoom_pan', 'zoom_in_left', 'zoom_in_right'
+        ];
+        let count = 0;
+        let lastMotion = '';
+        mediaItems.forEach(item => {
+            if (item.type === 'image') {
+                if (!item.settings) item.settings = {};
+                // Pick a motion different from the previous one for visual variety
+                let candidates = availableMotions.filter(m => m !== lastMotion);
+                let chosen = candidates[Math.floor(Math.random() * candidates.length)];
+                item.settings.motion = chosen;
+                lastMotion = chosen;
+                count++;
+            }
+        });
+        if (count > 0) {
+            renderMediaList();
+            alert(`🎲 Đã phân bổ ngẫu nhiên các hiệu ứng đa dạng cho ${count} ảnh thành công!`);
+        } else {
+            alert('Chưa có ảnh nào trên timeline!');
+        }
+    });
+}
+
+if (btnApplyFadeAll) {
+    btnApplyFadeAll.addEventListener('click', () => {
+        const fIn = parseFloat(batchFadeIn.value) || 0;
+        const fOut = parseFloat(batchFadeOut.value) || 0;
+        let count = 0;
+        mediaItems.forEach(item => {
+            if (!item.settings) item.settings = {};
+            item.settings.fadeIn = fIn;
+            item.settings.fadeOut = fOut;
+            count++;
+        });
+        if (count > 0) {
+            renderMediaList();
+            alert(`✨ Đã áp dụng Fade In (${fIn}s) & Fade Out (${fOut}s) cho ${count} phân đoạn!`);
+        } else {
+            alert('Chưa có phân đoạn nào trên timeline!');
+        }
+    });
+}
+
 // Live Canvas Motion Preview
 let previewAnimFrame = null;
+let previewCurrentIndex = -1;
 const previewModal = document.getElementById('preview-modal');
 const previewCanvas = document.getElementById('preview-canvas');
 const ctx = previewCanvas.getContext('2d');
 const previewEffectName = document.getElementById('preview-effect-name');
 const previewTimeDisplay = document.getElementById('preview-time-display');
+const modalPreviewMotion = document.getElementById('modal-preview-motion');
+const modalPreviewDuration = document.getElementById('modal-preview-duration');
+const modalPreviewIntensity = document.getElementById('modal-preview-intensity');
+const modalPreviewFadeIn = document.getElementById('modal-preview-fadein');
+const modalPreviewFadeOut = document.getElementById('modal-preview-fadeout');
+const btnSavePreviewSettings = document.getElementById('btn-save-preview-settings');
 let previewImg = new Image();
 let previewItemData = null;
 
@@ -343,8 +491,17 @@ function previewItemMotion(index) {
     const item = mediaItems[index];
     if (!item || item.type !== 'image') return;
 
-    previewItemData = item;
-    previewEffectName.innerText = item.settings.motion.replace('_', ' ').toUpperCase();
+    previewCurrentIndex = index;
+    previewItemData = JSON.parse(JSON.stringify(item)); // clone for modal preview
+
+    // Sync modal input controls
+    if (modalPreviewMotion) modalPreviewMotion.value = previewItemData.settings.motion || 'zoom_in';
+    if (modalPreviewDuration) modalPreviewDuration.value = previewItemData.settings.duration || 5.0;
+    if (modalPreviewIntensity) modalPreviewIntensity.value = previewItemData.settings.zoomIntensity || 1.25;
+    if (modalPreviewFadeIn) modalPreviewFadeIn.value = previewItemData.settings.fadeIn ?? 0.8;
+    if (modalPreviewFadeOut) modalPreviewFadeOut.value = previewItemData.settings.fadeOut ?? 0.8;
+
+    previewEffectName.innerText = (previewItemData.settings.motion || 'zoom_in').replace('_', ' ').toUpperCase();
     previewModal.classList.remove('hidden');
 
     previewImg = new Image();
@@ -355,13 +512,42 @@ function previewItemMotion(index) {
     };
 }
 
+// Attach live changes inside Preview Modal
+[modalPreviewMotion, modalPreviewDuration, modalPreviewIntensity, modalPreviewFadeIn, modalPreviewFadeOut].forEach(el => {
+    if (el) {
+        el.addEventListener('input', () => {
+            if (!previewItemData) return;
+            previewItemData.settings.motion = modalPreviewMotion.value;
+            previewItemData.settings.duration = parseFloat(modalPreviewDuration.value) || 5.0;
+            previewItemData.settings.zoomIntensity = parseFloat(modalPreviewIntensity.value) || 1.25;
+            previewItemData.settings.fadeIn = parseFloat(modalPreviewFadeIn.value) || 0;
+            previewItemData.settings.fadeOut = parseFloat(modalPreviewFadeOut.value) || 0;
+            previewEffectName.innerText = previewItemData.settings.motion.replace('_', ' ').toUpperCase();
+            startPreviewAnimation();
+        });
+    }
+});
+
+if (btnSavePreviewSettings) {
+    btnSavePreviewSettings.addEventListener('click', () => {
+        if (previewCurrentIndex >= 0 && mediaItems[previewCurrentIndex] && previewItemData) {
+            mediaItems[previewCurrentIndex].settings = JSON.parse(JSON.stringify(previewItemData.settings));
+            renderMediaList();
+            alert('💾 Đã lưu cài đặt cho phân đoạn này!');
+        }
+    });
+}
+
 function startPreviewAnimation() {
     if (previewAnimFrame) cancelAnimationFrame(previewAnimFrame);
+    if (!previewItemData) return;
 
-    const dur = previewItemData.settings.duration || 3.5;
+    const dur = previewItemData.settings.duration || 5.0;
     const fadeIn = previewItemData.settings.fadeIn || 0;
     const fadeOut = previewItemData.settings.fadeOut || 0;
     const motion = previewItemData.settings.motion || 'zoom_in';
+    const zoomIntensity = previewItemData.settings.zoomIntensity || 1.25;
+    const delta = zoomIntensity - 1.0;
 
     const startTime = performance.now();
     const totalMs = dur * 1000;
@@ -382,19 +568,37 @@ function startPreviewAnimation() {
         let offsetY = 0;
 
         if (motion === 'zoom_in') {
-            zoom = 1.0 + (0.35 * progress);
+            zoom = 1.0 + (delta * progress);
         } else if (motion === 'zoom_out') {
-            zoom = 1.35 - (0.35 * progress);
+            zoom = zoomIntensity - (delta * progress);
         } else if (motion === 'pan_left') {
-            zoom = 1.2;
-            offsetX = (1 - progress) * (previewCanvas.width * 0.15);
+            zoom = zoomIntensity;
+            offsetX = (1 - progress) * (previewCanvas.width * delta * 0.5);
         } else if (motion === 'pan_right') {
-            zoom = 1.2;
-            offsetX = -progress * (previewCanvas.width * 0.15);
+            zoom = zoomIntensity;
+            offsetX = -progress * (previewCanvas.width * delta * 0.5);
+        } else if (motion === 'pan_up') {
+            zoom = zoomIntensity;
+            offsetY = (1 - progress) * (previewCanvas.height * delta * 0.5);
+        } else if (motion === 'pan_down') {
+            zoom = zoomIntensity;
+            offsetY = -progress * (previewCanvas.height * delta * 0.5);
+        } else if (motion === 'zoom_in_left') {
+            zoom = 1.0 + (delta * progress);
+            offsetX = (zoom - 1.0) * (previewCanvas.width * 0.45);
+            offsetY = (zoom - 1.0) * (previewCanvas.height * 0.45);
+        } else if (motion === 'zoom_in_right') {
+            zoom = 1.0 + (delta * progress);
+            offsetX = -(zoom - 1.0) * (previewCanvas.width * 0.45);
+            offsetY = (zoom - 1.0) * (previewCanvas.height * 0.45);
         } else if (motion === 'zoom_pan') {
-            zoom = 1.0 + (0.3 * progress);
-            offsetX = progress * (previewCanvas.width * 0.1);
-            offsetY = progress * (previewCanvas.height * 0.1);
+            zoom = 1.0 + (delta * progress);
+            offsetX = progress * (previewCanvas.width * 0.08);
+            offsetY = progress * (previewCanvas.height * 0.08);
+        } else {
+            zoom = 1.0;
+            offsetX = 0;
+            offsetY = 0;
         }
 
         // Draw image scaled
@@ -580,7 +784,8 @@ btnSampleDemo.addEventListener('click', async () => {
             if (data.success && data.files[0]) {
                 const item = data.files[0];
                 item.settings.motion = s.motion;
-                item.settings.duration = 4.0;
+                item.settings.duration = 5.0;
+                item.settings.zoomIntensity = 1.25;
                 item.settings.fadeIn = s.fadeIn;
                 item.settings.fadeOut = s.fadeOut;
                 uploadedSamples.push(item);
