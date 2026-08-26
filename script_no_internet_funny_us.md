@@ -16,9 +16,9 @@ Lúc này bạn mới tá hỏa bới tung cái balo: bên trong ngoài 3 cái t
 
 Tại Mỹ — cái xứ sở mà người ta có thể sống cả năm trời không thèm nhìn thấy một tờ tiền mặt — hàng triệu "con nghiện cà phê" bỗng chốc rơi vào cảnh trắng tay đúng nghĩa đen. Tại các cây ATM của Chase hay Bank of America, hàng dài người xếp hàng vòng quanh 3 dãy nhà đứng chắp tay cầu nguyện, nhưng màn hình ATM chỉ trơ trọi dòng chữ lạnh lùng: "System Offline".
 
-Ở các tiệm gà rán Popeyes hay burger In-N-Out, các làn xe Drive-Thru kẹt cứng dài cả dặm vì khách không quẹt thẻ được còn nhân viên thì không mở nổi ngăn kéo tính tiền tự động.
+Ở các tiệm gà rán Popeyes hay burger In-N-Out, các làn xe Drive-Thru kẹt cứng dài cả dặm vì khách chẳng ai có sẵn tiền mặt, màn hình gọi món tự động thì tê liệt hoàn toàn khiến nhân viên phải chạy lăng xăng ra từng xe để ghi chép bằng sổ tay.
 
-Nhưng bi kịch tâm lý cay đắng nhất chính là: Bạn muốn đăng ngay một dòng tweet lên X (Twitter) để gào thét rằng "Bro thế giới này toang thật rồi, no cap!" mà... không có mạng để đăng! Cảm giác vừa hốt hoảng vừa bất lực mà không được lên mạng than thở nó bức bối đến mức muốn đập đầu vào tường!
+Nhưng bi kịch tâm lý cay đắng nhất chính là: Bạn muốn đăng ngay một dòng tweet lên X (Twitter) để gào thét rằng "Thế giới này toang thật rồi!" mà... không có mạng để đăng! Cảm giác vừa hốt hoảng vừa bất lực mà không được lên mạng than thở nó bức bối đến mức muốn đập đầu vào tường!
 
 Chưa dừng lại ở đó, thảm họa tiếp theo gọi tên "hội mù đường sinh ra đã phó mặc cuộc đời cho Google Maps và Apple Maps".
 
@@ -28,7 +28,7 @@ Những cuốn bản đồ giấy khổng lồ của hội AAA vốn chỉ để
 
 Trong khi đó, hội "nghiện Amazon Prime" rơi vào trạng thái sốc nhiệt tập thể. Không còn cái cảnh đặt hàng lúc nửa đêm và hôm sau chiếc hộp các-tông dán băng dính mặt cười của Jeff Bezos đã nằm trước hiên nhà.
 
-Giờ đây, nếu muốn có đồ ăn hay quần áo mặc, người Mỹ buộc phải tự vác thân ra Walmart hay Costco. Bạn phải học lại những kỹ năng sinh tồn mà trước giờ chưa từng biết: làm sao để tự chọn từng quả bơ, xếp hàng rồng rắn cả tiếng đồng hồ chờ nhân viên bấm máy tính tiền cơ học.
+Giờ đây, nếu muốn có đồ ăn hay quần áo mặc, người Mỹ buộc phải tự vác thân ra Walmart hay Costco. Bạn phải học lại những kỹ năng sinh tồn mà trước giờ chưa từng biết: làm sao để tự chọn từng quả bơ tươi, xếp hàng rồng rắn cả tiếng đồng hồ chờ thu ngân nhập giá tiền thủ công bằng tay.
 
 Thị trường việc làm tại Thung lũng Silicon cũng chứng kiến một cuộc thanh trừng thế kỷ.
 
