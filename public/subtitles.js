@@ -17,6 +17,7 @@
         activeMode: 'sync', // 'sync' or 'transcribe'
         style: {
             preset: 'standard_clean',
+            aspectRatio: '16:9', // '16:9', '9:16', '1:1'
             fontFamily: 'Arial',
             fontSize: 40,
             primaryColor: '#FFFFFF',
@@ -248,6 +249,7 @@
             // Media & Player
             subVideoPlayer: document.getElementById('sub-video-player'),
             subVideoContainer: document.getElementById('sub-video-container'),
+            btnAspectChips: document.querySelectorAll('.btn-aspect-chip'),
             subWordOverlay: document.getElementById('sub-word-overlay'),
             subCaptionBox: document.getElementById('sub-caption-box'),
             subBtnPlayPause: document.getElementById('sub-btn-play-pause'),
@@ -285,6 +287,26 @@
             subBtnApplyTimeline: document.getElementById('sub-btn-apply-timeline'),
             subBtnAddCue: document.getElementById('sub-btn-add-cue'),
             subBtnClearCues: document.getElementById('sub-btn-clear-cues'),
+
+            // Pro Toolbar Elements (Smart Chunking, Find & Replace, Time Shift)
+            btnChunkChips: document.querySelectorAll('.btn-chunk-chip'),
+            btnShiftMinus500: document.getElementById('btn-shift-minus-500'),
+            btnShiftMinus100: document.getElementById('btn-shift-minus-100'),
+            btnShiftPlus100: document.getElementById('btn-shift-plus-100'),
+            btnShiftPlus500: document.getElementById('btn-shift-plus-500'),
+            btnToggleTimeScale: document.getElementById('btn-toggle-time-scale'),
+            subTimeScaleBar: document.getElementById('sub-time-scale-bar'),
+            btnScaleChips: document.querySelectorAll('.btn-scale-chip'),
+            subCustomShiftSec: document.getElementById('sub-custom-shift-sec'),
+            btnApplyCustomShift: document.getElementById('btn-apply-custom-shift'),
+            btnToggleFindReplace: document.getElementById('btn-toggle-find-replace'),
+            subFindReplaceBar: document.getElementById('sub-find-replace-bar'),
+            subFindInput: document.getElementById('sub-find-input'),
+            subReplaceInput: document.getElementById('sub-replace-input'),
+            subFindCount: document.getElementById('sub-find-count'),
+            subFindCaseSensitive: document.getElementById('sub-find-case-sensitive'),
+            btnSubReplaceAll: document.getElementById('btn-sub-replace-all'),
+            btnCloseFindReplace: document.getElementById('btn-close-find-replace'),
 
             // Presets & Styling Controls
             subPresetsContainer: document.getElementById('sub-presets-container'),
@@ -334,6 +356,16 @@
                 if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
                     uploadLocalMediaFile(e.dataTransfer.files[0]);
                 }
+            });
+        }
+
+        // Aspect Ratio Preset Switcher
+        if (dom.btnAspectChips) {
+            dom.btnAspectChips.forEach(chip => {
+                chip.addEventListener('click', () => {
+                    const ratio = chip.dataset.ratio || '16:9';
+                    setAspectRatioPreset(ratio);
+                });
             });
         }
 
@@ -424,6 +456,79 @@
             dom.subBtnClearCues.addEventListener('click', clearAllCues);
         }
 
+        // --- PRO TOOLBAR EVENT BINDINGS ---
+        // 3. Smart Word Chunking Chips
+        if (dom.btnChunkChips) {
+            dom.btnChunkChips.forEach(chip => {
+                chip.addEventListener('click', () => {
+                    const chunkVal = parseInt(chip.dataset.chunk) || 4;
+                    smartChunkSegments(chunkVal);
+                });
+            });
+        }
+
+        // 5. Time Shift Quick Buttons
+        if (dom.btnShiftMinus500) dom.btnShiftMinus500.addEventListener('click', () => shiftAllCuesTime(-0.5));
+        if (dom.btnShiftMinus100) dom.btnShiftMinus100.addEventListener('click', () => shiftAllCuesTime(-0.1));
+        if (dom.btnShiftPlus100) dom.btnShiftPlus100.addEventListener('click', () => shiftAllCuesTime(0.1));
+        if (dom.btnShiftPlus500) dom.btnShiftPlus500.addEventListener('click', () => shiftAllCuesTime(0.5));
+
+        // Toggle Time Scale Bar & Custom Shift
+        if (dom.btnToggleTimeScale) {
+            dom.btnToggleTimeScale.addEventListener('click', () => {
+                if (dom.subTimeScaleBar) dom.subTimeScaleBar.classList.toggle('hidden');
+                dom.btnToggleTimeScale.classList.toggle('active');
+            });
+        }
+        if (dom.btnScaleChips) {
+            dom.btnScaleChips.forEach(chip => {
+                chip.addEventListener('click', () => {
+                    const scaleFactor = parseFloat(chip.dataset.scale) || 1.0;
+                    scaleAllCuesDuration(scaleFactor);
+                });
+            });
+        }
+        if (dom.btnApplyCustomShift) {
+            dom.btnApplyCustomShift.addEventListener('click', () => {
+                const customSec = parseFloat(dom.subCustomShiftSec ? dom.subCustomShiftSec.value : 0);
+                if (!isNaN(customSec) && customSec !== 0) {
+                    shiftAllCuesTime(customSec);
+                } else {
+                    alert('Vui lòng nhập số giây hợp lệ (ví dụ: +0.3 hoặc -0.2)!');
+                }
+            });
+        }
+
+        // 4. Find & Replace Toggle & Actions
+        if (dom.btnToggleFindReplace) {
+            dom.btnToggleFindReplace.addEventListener('click', () => {
+                if (dom.subFindReplaceBar) {
+                    dom.subFindReplaceBar.classList.toggle('hidden');
+                    const isVisible = !dom.subFindReplaceBar.classList.contains('hidden');
+                    dom.btnToggleFindReplace.classList.toggle('active', isVisible);
+                    if (isVisible && dom.subFindInput) {
+                        dom.subFindInput.focus();
+                        updateFindCount();
+                    }
+                }
+            });
+        }
+        if (dom.btnCloseFindReplace) {
+            dom.btnCloseFindReplace.addEventListener('click', () => {
+                if (dom.subFindReplaceBar) dom.subFindReplaceBar.classList.add('hidden');
+                if (dom.btnToggleFindReplace) dom.btnToggleFindReplace.classList.remove('active');
+            });
+        }
+        if (dom.subFindInput) {
+            dom.subFindInput.addEventListener('input', updateFindCount);
+        }
+        if (dom.subFindCaseSensitive) {
+            dom.subFindCaseSensitive.addEventListener('change', updateFindCount);
+        }
+        if (dom.btnSubReplaceAll) {
+            dom.btnSubReplaceAll.addEventListener('click', handleReplaceAllSubtitles);
+        }
+
         // Style controls
         if (dom.subFontLang) {
             dom.subFontLang.addEventListener('change', (e) => {
@@ -476,6 +581,33 @@
         if (dom.syncTimelineImgCount) {
             dom.syncTimelineImgCount.textContent = `${count} ảnh`;
         }
+    }
+
+    // Aspect Ratio Presets Switcher
+    function setAspectRatioPreset(ratio) {
+        SubState.style.aspectRatio = ratio;
+
+        // Update chip active states
+        if (dom.btnAspectChips) {
+            dom.btnAspectChips.forEach(c => {
+                c.classList.toggle('active', c.dataset.ratio === ratio);
+            });
+        }
+
+        // Update video container classes for live visual safe zones
+        if (dom.subVideoContainer) {
+            dom.subVideoContainer.classList.remove('ratio-16-9', 'ratio-9-16', 'ratio-1-1');
+            if (ratio === '9:16') {
+                dom.subVideoContainer.classList.add('ratio-9-16');
+            } else if (ratio === '1:1') {
+                dom.subVideoContainer.classList.add('ratio-1-1');
+            } else {
+                dom.subVideoContainer.classList.add('ratio-16-9');
+            }
+        }
+
+        const label = ratio === '9:16' ? '📱 9:16 Dọc (TikTok/Shorts/Reels - Safe Zone)' : (ratio === '1:1' ? '⏹️ 1:1 Vuông (Instagram Feed)' : '🖥️ 16:9 Ngang (YouTube/Web)');
+        showToast(`📐 Khung hình: ${label}`);
     }
 
     // Audio file upload for Sync Mode
@@ -600,7 +732,7 @@
         }
     }
 
-    // Apply Aligned Cues Durations to Tab 1 Video Editor Timeline
+    // Apply Aligned Cues Durations & Text Overlays to Tab 1 Video Editor Timeline
     function applyCuesToTimeline() {
         if (!SubState.segments || SubState.segments.length === 0) {
             alert('Chưa có danh sách phân đoạn nào để áp dụng!');
@@ -608,34 +740,44 @@
         }
 
         if (!window.mediaItems || window.mediaItems.length === 0) {
-            alert('Chưa có ảnh nào trên Timeline ở Tab 1 để áp dụng. Hãy sang Tab 1 tải ảnh lên trước nhé!');
+            alert('Chưa có ảnh/video nào trên Timeline ở Tab 1 để áp dụng. Hãy sang Tab 1 tải ảnh lên trước nhé!');
             return;
         }
 
         let updatedCount = 0;
-        SubState.segments.forEach((cue) => {
-            const imgIdx = typeof cue.imageIndex === 'number' ? cue.imageIndex : -1;
+        SubState.segments.forEach((cue, cIdx) => {
+            // Find matched image or round-robin if not directly mapped
+            let imgIdx = (typeof cue.imageIndex === 'number' && cue.imageIndex >= 0) ? cue.imageIndex : (cIdx % window.mediaItems.length);
             if (imgIdx >= 0 && window.mediaItems[imgIdx]) {
                 const targetItem = window.mediaItems[imgIdx];
                 const dur = parseFloat(Number(cue.duration || (cue.end - cue.start)).toFixed(2));
                 targetItem.duration = dur;
                 if (!targetItem.settings) targetItem.settings = {};
                 targetItem.settings.duration = dur;
+
+                // 2-WAY SYNC: Automatically assign Subtitle text to Text Overlay of Tab 1!
+                const cueText = cue.text || (cue.words && cue.words.map(w => w.word).join(' ')) || '';
+                if (cueText) {
+                    targetItem.settings.overlayText = cueText;
+                    targetItem.settings.textPosition = SubState.style.position || 'bottom';
+                    targetItem.settings.textStyle = SubState.style.boxBg !== 'transparent' ? 'banner' : 'outline';
+                    targetItem.settings.fontSize = Math.min(64, Math.max(36, SubState.style.fontSize || 48));
+                }
                 updatedCount++;
             }
         });
 
         // If we have sync audio, set it as active BGM / Voiceover track in Tab 1
         const audioFile = SubState.syncAudio || SubState.currentMedia;
-        if (audioFile && audioFile.filename) {
+        if (audioFile && audioFile.filename && (audioFile.type === 'audio' || audioFile.type === 'video')) {
             window.bgmTrack = {
                 filename: audioFile.filename,
                 originalName: audioFile.originalName || 'Voiceover Audio',
                 duration: audioFile.duration || 10,
                 volume: 0.8
             };
-            if (typeof window.updateBgmUi === 'function') {
-                window.updateBgmUi();
+            if (typeof window.updateBgmUI === 'function') {
+                window.updateBgmUI();
             }
         }
 
@@ -647,7 +789,10 @@
             window.updateTotalDuration();
         }
 
-        showToast(`🎉 Đã áp dụng thời lượng ${updatedCount} ảnh khớp 100% với giọng đọc vào Timeline Dựng Phim!`);
+        // Automatically switch back to Tab 1 so user sees the fully updated timeline with Text Overlays
+        switchTab('editor');
+
+        showToast(`🎉 Đã áp dụng ${updatedCount} phân cảnh & tự động gán toàn bộ Phụ đề vào Text Overlay của Timeline Tab 1!`);
     }
 
     // Tab Switching Logic
@@ -891,6 +1036,7 @@
     }
 
     function grabEditorVideo(silent = false) {
+        // 1. Check if user has already rendered a full video in Tab 1
         const renderedPlayer = document.getElementById('rendered-video-player');
         if (renderedPlayer && renderedPlayer.src && !renderedPlayer.src.endsWith('#')) {
             const url = renderedPlayer.src;
@@ -907,6 +1053,7 @@
             return;
         }
 
+        // 2. Check if user has uploaded a video file on Tab 1 Timeline
         if (window.mediaItems && window.mediaItems.length > 0) {
             const firstVideo = window.mediaItems.find(i => i.type === 'video');
             if (firstVideo) {
@@ -918,28 +1065,77 @@
                     source: 'tab1_timeline',
                     originalName: firstVideo.originalName || 'Video từ Timeline'
                 });
-                if (!silent) showToast('🎬 Đã lấy video từ danh sách Timeline!');
+                if (!silent) showToast('🎬 Đã lấy video từ danh sách Timeline Tab 1!');
                 return;
             }
         }
 
+        // 3. NEW: Check if user has BGM / Audio Track in Tab 1
+        if (window.bgmTrack && window.bgmTrack.filename) {
+            const bgm = window.bgmTrack;
+            setSubMedia({
+                filename: bgm.filename,
+                url: `/uploads/${bgm.filename}`,
+                duration: bgm.duration || 10,
+                type: 'audio',
+                source: 'tab1_bgm',
+                originalName: `Nhạc nền/Giọng đọc từ Tab 1 (${bgm.originalName || bgm.filename})`
+            });
+            SubState.syncAudio = SubState.currentMedia;
+            updateTimelineImageCount();
+            if (!silent) showToast('🎶 Đã lấy nhạc nền/giọng đọc từ Tab 1 để đồng bộ phụ đề!');
+            return;
+        }
+
+        // 4. NEW: Check if user has image items on Tab 1 Timeline (preview & timeline sync without full render)
+        if (window.mediaItems && window.mediaItems.length > 0) {
+            const imgCount = window.mediaItems.filter(i => i.type === 'image').length;
+            let totalDur = 0;
+            window.mediaItems.forEach(i => {
+                totalDur += Number(i.settings?.duration || i.duration || 5.0);
+            });
+            const firstImg = window.mediaItems[0];
+            setSubMedia({
+                filename: firstImg.filename,
+                url: firstImg.url,
+                duration: totalDur,
+                type: 'image',
+                source: 'tab1_timeline_images',
+                originalName: `Timeline Tab 1 (${imgCount} ảnh, ~${totalDur.toFixed(1)}s)`
+            });
+            updateTimelineImageCount();
+            if (!silent) showToast(`🖼️ Đã nạp ${imgCount} ảnh từ Timeline Tab 1! Bạn có thể tải thêm file Audio hoặc kịch bản SRT để đồng bộ.`);
+            return;
+        }
+
         if (!silent) {
-            alert('Chưa có video nào được xuất ở Tab 1. Bạn có thể bấm "Tải Từ Máy (PC)" hoặc kéo thả file video/audio vào đây!');
+            alert('Chưa có dữ liệu nào ở Tab 1. Bạn có thể bấm "Tải Từ Máy (PC)" hoặc kéo thả file video/audio vào đây!');
         }
     }
 
     function setSubMedia(fileObj) {
         SubState.currentMedia = fileObj;
         if (dom.subVideoPlayer) {
-            dom.subVideoPlayer.src = fileObj.url;
-            dom.subVideoPlayer.load();
+            if (fileObj.type === 'image') {
+                dom.subVideoPlayer.poster = fileObj.url;
+                dom.subVideoPlayer.src = '';
+            } else {
+                dom.subVideoPlayer.poster = '';
+                dom.subVideoPlayer.src = fileObj.url;
+                dom.subVideoPlayer.load();
+            }
         }
         if (dom.subMediaNameLabel) {
-            const sourceBadge = fileObj.source === 'tab1_render' 
-                ? '<span class="badge-score-high">🎬 Nguồn: Video Render Tab 1</span>'
-                : (fileObj.source === 'local' 
-                    ? '<span class="badge-score-med">📁 Nguồn: Máy tính (PC Local)</span>'
-                    : '<span class="badge-accent">🔊 Nguồn: Audio/Video</span>');
+            let sourceBadge = '<span class="badge-accent">🔊 Nguồn: Audio/Video</span>';
+            if (fileObj.source === 'tab1_render') {
+                sourceBadge = '<span class="badge-score-high">🎬 Nguồn: Video Render Tab 1</span>';
+            } else if (fileObj.source === 'local') {
+                sourceBadge = '<span class="badge-score-med">📁 Nguồn: Máy tính (PC Local)</span>';
+            } else if (fileObj.source === 'tab1_bgm') {
+                sourceBadge = '<span class="badge-score-high">🎶 Nguồn: Nhạc nền/Audio Tab 1</span>';
+            } else if (fileObj.source === 'tab1_timeline_images') {
+                sourceBadge = '<span class="badge-score-high">🖼️ Nguồn: Timeline Tab 1</span>';
+            }
 
             dom.subMediaNameLabel.innerHTML = `${sourceBadge} <strong>${escapeHtml(fileObj.originalName || fileObj.filename)}</strong> (${fileObj.duration ? fileObj.duration.toFixed(1) + 's' : ''})`;
         }
@@ -1208,6 +1404,199 @@
         }
     }
 
+    // =========================================================================
+    // PRO EDITING TOOLS: 3. Smart Chunking, 4. Find & Replace, 5. Time Shift
+    // =========================================================================
+
+    // 3. Smart Word Chunking (1-2 words / 3-4 words / 5-7 words)
+    function smartChunkSegments(maxWords) {
+        if (!SubState.segments || SubState.segments.length === 0) {
+            alert('Chưa có phân đoạn phụ đề nào để chia nhỏ! Hãy nạp file SRT hoặc dùng AI tạo phụ đề trước nhé.');
+            return;
+        }
+
+        const targetChunkSize = parseInt(maxWords) || 4;
+        const newSegments = [];
+        let newId = 1;
+
+        SubState.segments.forEach((seg) => {
+            let words = seg.words || [];
+
+            // If no word array, construct from text and distribute duration
+            if (words.length === 0 && seg.text) {
+                const rawWords = seg.text.split(/\s+/).filter(Boolean);
+                const dur = Math.max(0.15, (seg.end - seg.start) / Math.max(1, rawWords.length));
+                words = rawWords.map((w, idx) => ({
+                    word: w,
+                    start: parseFloat((seg.start + idx * dur).toFixed(2)),
+                    end: parseFloat((seg.start + (idx + 1) * dur).toFixed(2))
+                }));
+            }
+
+            if (words.length <= targetChunkSize) {
+                // Already small enough, keep as is
+                newSegments.push({
+                    ...JSON.parse(JSON.stringify(seg)),
+                    id: newId++
+                });
+                return;
+            }
+
+            // Split into chunks of size targetChunkSize
+            for (let i = 0; i < words.length; i += targetChunkSize) {
+                const chunkWords = words.slice(i, i + targetChunkSize);
+                const chunkStart = chunkWords[0].start;
+                let chunkEnd = chunkWords[chunkWords.length - 1].end;
+                if (chunkEnd <= chunkStart) {
+                    chunkEnd = parseFloat((chunkStart + 0.5).toFixed(2));
+                }
+                const chunkText = chunkWords.map(w => w.word).join(' ');
+
+                newSegments.push({
+                    id: newId++,
+                    start: chunkStart,
+                    end: chunkEnd,
+                    duration: parseFloat(Math.max(0.2, chunkEnd - chunkStart).toFixed(2)),
+                    text: chunkText,
+                    imageIndex: seg.imageIndex,
+                    imageOriginalName: seg.imageOriginalName,
+                    imageUrl: seg.imageUrl,
+                    matchScore: seg.matchScore || 90,
+                    matchReason: seg.matchReason || 'Chia nhỏ phân đoạn',
+                    words: chunkWords
+                });
+            }
+        });
+
+        SubState.segments = newSegments;
+        renderCuesList();
+        showToast(`✂️ Đã chia nhỏ phụ đề thành ${newSegments.length} phân đoạn (${targetChunkSize} từ/câu)!`);
+    }
+
+    // 4. Find & Replace in Subtitles
+    function updateFindCount() {
+        if (!dom.subFindInput || !dom.subFindCount) return;
+        const findText = dom.subFindInput.value;
+        if (!findText || !findText.trim()) {
+            dom.subFindCount.textContent = '0 kết quả';
+            dom.subFindCount.style.color = 'var(--text-dim)';
+            return;
+        }
+
+        const isCaseSensitive = dom.subFindCaseSensitive ? dom.subFindCaseSensitive.checked : false;
+        const escaped = findText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(escaped, isCaseSensitive ? 'g' : 'gi');
+
+        let totalMatches = 0;
+        SubState.segments.forEach(seg => {
+            const text = seg.text || '';
+            const matches = text.match(regex);
+            if (matches) totalMatches += matches.length;
+        });
+
+        dom.subFindCount.textContent = `${totalMatches} kết quả`;
+        dom.subFindCount.style.color = totalMatches > 0 ? 'var(--accent-cyan)' : 'var(--accent-rose)';
+    }
+
+    function handleReplaceAllSubtitles() {
+        if (!SubState.segments || SubState.segments.length === 0) {
+            alert('Chưa có danh sách phụ đề nào để thay thế!');
+            return;
+        }
+
+        const findText = dom.subFindInput ? dom.subFindInput.value : '';
+        const replaceText = dom.subReplaceInput ? dom.subReplaceInput.value : '';
+
+        if (!findText) {
+            alert('Vui lòng nhập từ khóa cần tìm!');
+            return;
+        }
+
+        const isCaseSensitive = dom.subFindCaseSensitive ? dom.subFindCaseSensitive.checked : false;
+        const escaped = findText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+        let replaceCount = 0;
+        SubState.segments.forEach(seg => {
+            if (seg.text) {
+                const textRegex = new RegExp(escaped, isCaseSensitive ? 'g' : 'gi');
+                const matches = seg.text.match(textRegex);
+                if (matches) {
+                    replaceCount += matches.length;
+                    seg.text = seg.text.replace(textRegex, replaceText);
+                }
+            }
+            if (seg.words && Array.isArray(seg.words)) {
+                seg.words.forEach(w => {
+                    if (w.word) {
+                        const wordRegex = new RegExp(escaped, isCaseSensitive ? 'g' : 'gi');
+                        w.word = w.word.replace(wordRegex, replaceText);
+                    }
+                });
+            }
+        });
+
+        if (replaceCount > 0) {
+            renderCuesList();
+            updateFindCount();
+            showToast(`🎉 Đã thay thế thành công ${replaceCount} vị trí "${findText}" ➔ "${replaceText}"!`);
+        } else {
+            alert(`Không tìm thấy từ khóa "${findText}" trong phụ đề!`);
+        }
+    }
+
+    // 5. Time Shift & Scale Duration Tool
+    function shiftAllCuesTime(deltaSec) {
+        if (!SubState.segments || SubState.segments.length === 0) {
+            alert('Chưa có phân đoạn phụ đề nào để dịch chuyển!');
+            return;
+        }
+
+        const delta = parseFloat(deltaSec);
+        if (isNaN(delta) || delta === 0) return;
+
+        SubState.segments.forEach(seg => {
+            seg.start = Math.max(0, parseFloat((seg.start + delta).toFixed(2)));
+            seg.end = Math.max(parseFloat((seg.start + 0.1).toFixed(2)), parseFloat((seg.end + delta).toFixed(2)));
+            seg.duration = parseFloat(Math.max(0.1, seg.end - seg.start).toFixed(2));
+
+            if (seg.words && Array.isArray(seg.words)) {
+                seg.words.forEach(w => {
+                    w.start = Math.max(0, parseFloat((w.start + delta).toFixed(2)));
+                    w.end = Math.max(parseFloat((w.start + 0.05).toFixed(2)), parseFloat((w.end + delta).toFixed(2)));
+                });
+            }
+        });
+
+        renderCuesList();
+        showToast(`⏱️ Đã dời toàn bộ phụ đề ${delta > 0 ? '+' : ''}${delta}s!`);
+    }
+
+    function scaleAllCuesDuration(factor) {
+        if (!SubState.segments || SubState.segments.length === 0) {
+            alert('Chưa có phân đoạn phụ đề nào để co giãn!');
+            return;
+        }
+
+        const scale = parseFloat(factor);
+        if (isNaN(scale) || scale <= 0) return;
+
+        SubState.segments.forEach(seg => {
+            seg.start = parseFloat((seg.start * scale).toFixed(2));
+            seg.end = Math.max(parseFloat((seg.start + 0.1).toFixed(2)), parseFloat((seg.end * scale).toFixed(2)));
+            seg.duration = parseFloat(Math.max(0.1, seg.end - seg.start).toFixed(2));
+
+            if (seg.words && Array.isArray(seg.words)) {
+                seg.words.forEach(w => {
+                    w.start = parseFloat((w.start * scale).toFixed(2));
+                    w.end = Math.max(parseFloat((w.start + 0.05).toFixed(2)), parseFloat((w.end * scale).toFixed(2)));
+                });
+            }
+        });
+
+        renderCuesList();
+        showToast(`⚡ Đã co giãn thời lượng toàn bộ phụ đề theo tỉ lệ ${Math.round(scale * 100)}%!`);
+    }
+
     // Presets & Styling Management
     function renderPresetButtons() {
         if (!dom.subPresetsContainer) return;
@@ -1238,8 +1627,10 @@
         const preset = SubState.presets[presetKey];
         if (!preset) return;
 
+        const currentAspect = SubState.style.aspectRatio || '16:9';
         SubState.style.preset = presetKey;
         Object.assign(SubState.style, preset);
+        SubState.style.aspectRatio = currentAspect;
 
         // Update UI controls
         loadGoogleFontDynamically(preset.fontFamily);
@@ -1303,6 +1694,10 @@
             return;
         }
 
+        const ratio = SubState.style.aspectRatio || '16:9';
+        const videoWidth = ratio === '9:16' ? 1080 : (ratio === '1:1' ? 1080 : 1920);
+        const videoHeight = ratio === '9:16' ? 1920 : 1080;
+
         try {
             const res = await fetch('/api/subtitles/export', {
                 method: 'POST',
@@ -1311,8 +1706,8 @@
                     segments: SubState.segments,
                     format: format,
                     style: SubState.style,
-                    videoWidth: 1080,
-                    videoHeight: 1920
+                    videoWidth: videoWidth,
+                    videoHeight: videoHeight
                 })
             });
 
@@ -1344,6 +1739,10 @@
             return;
         }
 
+        const ratio = SubState.style.aspectRatio || '16:9';
+        const videoWidth = ratio === '9:16' ? 1080 : (ratio === '1:1' ? 1080 : 1920);
+        const videoHeight = ratio === '9:16' ? 1920 : 1080;
+
         openBurnModal();
 
         try {
@@ -1354,8 +1753,8 @@
                     videoFilename: SubState.currentMedia.filename,
                     segments: SubState.segments,
                     style: SubState.style,
-                    videoWidth: 1080,
-                    videoHeight: 1920
+                    videoWidth: videoWidth,
+                    videoHeight: videoHeight
                 })
             });
 

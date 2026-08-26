@@ -840,11 +840,76 @@ function hexToAssColor(hex, defaultAss = '&H00FFFFFF&') {
 }
 
 /**
- * Generate Advanced SubStation Alpha (.ass) with Word-Level Karaoke Animation
+ * Windows Safe System Font Map for FFmpeg libass subtitle burning
+ */
+const FONT_SYSTEM_MAP = {
+    'montserrat': 'Segoe UI',
+    'inter': 'Segoe UI',
+    'roboto': 'Arial',
+    'poppins': 'Segoe UI',
+    'outfit': 'Segoe UI',
+    'oswald': 'Impact',
+    'bebas neue': 'Impact',
+    'anton': 'Impact',
+    'righteous': 'Arial Black',
+    'cinzel': 'Times New Roman',
+    'rubik': 'Segoe UI',
+    'bungee': 'Impact',
+    'jetbrains mono': 'Consolas',
+    'noto sans kr': 'Malgun Gothic',
+    'gowun dodum': 'Malgun Gothic',
+    'nanum gothic': 'Malgun Gothic',
+    'black han sans': 'Malgun Gothic',
+    'do hyeon': 'Malgun Gothic',
+    'noto sans jp': 'MS Gothic',
+    'noto sans sc': 'Microsoft YaHei',
+    'noto sans ru': 'Arial'
+};
+
+function resolveSafeSystemFont(fontName) {
+    if (!fontName) return 'Arial';
+    const clean = fontName.trim().toLowerCase();
+    return FONT_SYSTEM_MAP[clean] || fontName.trim();
+}
+
+/**
+ * Generate Advanced SubStation Alpha (.ass) with Word-Level Karaoke Animation & Aspect Ratio Safe Zones
  */
 function generateAssSubtitle(segments, style, videoWidth = 1080, videoHeight = 1920) {
-    const fontName = style.fontFamily || 'Arial';
-    const fontSize = parseInt(style.fontSize) || Math.round(videoHeight * 0.042);
+    const ratio = style.aspectRatio || '16:9';
+    let resX = videoWidth;
+    let resY = videoHeight;
+    let defaultMarginV = Math.round(resY * 0.10);
+    let defaultMarginL = 40;
+    let defaultMarginR = 40;
+
+    if (ratio === '9:16' || (resY > resX)) {
+        resX = 1080;
+        resY = 1920;
+        // Safe zone for TikTok / Shorts / Reels (avoids right like/share buttons and bottom caption/sound bar)
+        defaultMarginV = style.position === 'center' ? 0 : (style.position === 'top' ? 180 : 380);
+        defaultMarginL = 60;
+        defaultMarginR = 140; // Avoid TikTok right-hand action column
+    } else if (ratio === '1:1') {
+        resX = 1080;
+        resY = 1080;
+        defaultMarginV = style.position === 'center' ? 0 : (style.position === 'top' ? 80 : 140);
+        defaultMarginL = 50;
+        defaultMarginR = 50;
+    } else {
+        // 16:9
+        resX = 1920;
+        resY = 1080;
+        defaultMarginV = style.position === 'center' ? 0 : (style.position === 'top' ? 80 : 100);
+        defaultMarginL = 60;
+        defaultMarginR = 60;
+    }
+
+    const rawFontName = style.fontFamily || 'Arial';
+    const fontName = resolveSafeSystemFont(rawFontName);
+    const baseFontSize = parseInt(style.fontSize) || 40;
+    const scaledFontSize = Math.round(baseFontSize * (resY / 1080));
+
     const primaryColor = hexToAssColor(style.primaryColor, '&H00FFFFFF&');
     const highlightColor = hexToAssColor(style.highlightColor || '#FFDD00', '&H0000FFFF&');
     const outlineColor = hexToAssColor(style.outlineColor || '#000000', '&H00000000&');
@@ -852,7 +917,9 @@ function generateAssSubtitle(segments, style, videoWidth = 1080, videoHeight = 1
     const outline = parseInt(style.outlineWidth) || 3;
     const shadow = parseInt(style.shadow) || 2;
     const alignment = style.position === 'top' ? 8 : (style.position === 'center' ? 5 : 2);
-    const marginV = parseInt(style.marginV) || (style.position === 'center' ? 0 : Math.round(videoHeight * 0.12));
+    const marginV = parseInt(style.marginV) || defaultMarginV;
+    const marginL = parseInt(style.marginL) || defaultMarginL;
+    const marginR = parseInt(style.marginR) || defaultMarginR;
 
     const animationType = style.animationType || 'karaoke_fill'; // 'karaoke_fill', 'bounce', 'pop', 'word_flash'
 
@@ -862,13 +929,13 @@ ScriptType: v4.00+
 WrapStyle: 0
 ScaledBorderAndShadow: yes
 YCbCr Matrix: TV.601
-PlayResX: ${videoWidth}
-PlayResY: ${videoHeight}
+PlayResX: ${resX}
+PlayResY: ${resY}
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,${fontName},${fontSize},${primaryColor},${highlightColor},${outlineColor},${backColor},-1,0,0,0,100,100,1,0,1,${outline},${shadow},${alignment},40,40,${marginV},1
-Style: Highlight,${fontName},${fontSize},${highlightColor},${primaryColor},${outlineColor},${backColor},-1,0,0,0,100,100,1,0,1,${outline},${shadow},${alignment},40,40,${marginV},1
+Style: Default,${fontName},${scaledFontSize},${primaryColor},${highlightColor},${outlineColor},${backColor},-1,0,0,0,100,100,1,0,1,${outline},${shadow},${alignment},${marginL},${marginR},${marginV},1
+Style: Highlight,${fontName},${scaledFontSize},${highlightColor},${primaryColor},${outlineColor},${backColor},-1,0,0,0,100,100,1,0,1,${outline},${shadow},${alignment},${marginL},${marginR},${marginV},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text

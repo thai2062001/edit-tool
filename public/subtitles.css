@@ -91,6 +91,46 @@
     gap: 16px;
 }
 
+/* Aspect Ratio Switcher Bar */
+.sub-aspect-ratio-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.aspect-ratio-btn-group {
+    display: inline-flex;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 2px;
+    gap: 2px;
+}
+
+.btn-aspect-chip {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-aspect-chip:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #FFFFFF;
+}
+
+.btn-aspect-chip.active {
+    background: var(--primary);
+    color: #FFFFFF;
+    box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
+}
+
 .sub-video-container {
     position: relative;
     width: 100%;
@@ -102,6 +142,13 @@
     align-items: center;
     justify-content: center;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    transition: aspect-ratio 0.3s ease, max-height 0.3s ease;
+}
+
+.sub-video-container.ratio-16-9 {
+    aspect-ratio: 16 / 9;
+    max-height: 440px;
+    margin: 0 auto;
 }
 
 .sub-video-container.ratio-9-16 {
@@ -123,7 +170,7 @@
     background: #000;
 }
 
-/* Word-Level Live Overlay */
+/* Word-Level Live Overlay with Safe Zones */
 .sub-word-overlay {
     position: absolute;
     inset: 0;
@@ -134,6 +181,7 @@
     align-items: center;
     padding: 24px;
     z-index: 10;
+    transition: all 0.2s ease;
 }
 
 .sub-word-overlay.pos-top {
@@ -150,9 +198,25 @@
     padding-bottom: 40px;
 }
 
+/* Safe Zone Padding for 9:16 Vertical Video (TikTok, Shorts, Reels) */
+.sub-video-container.ratio-9-16 .sub-word-overlay.pos-bottom {
+    padding-bottom: 95px; /* avoids TikTok bottom description & sound banner */
+    padding-right: 48px;  /* avoids TikTok right action icons (like/share/bookmark) */
+    padding-left: 20px;
+}
+
+.sub-video-container.ratio-9-16 .sub-word-overlay.pos-top {
+    padding-top: 55px;   /* avoids TikTok top header tabs */
+}
+
+/* Safe Zone Padding for 1:1 Square Video */
+.sub-video-container.ratio-1-1 .sub-word-overlay.pos-bottom {
+    padding-bottom: 48px;
+}
+
 .sub-caption-box {
     text-align: center;
-    max-width: 82%;
+    max-width: 86%;
     display: inline-flex;
     flex-wrap: wrap;
     justify-content: center;
@@ -588,4 +652,197 @@
     border-radius: 4px;
     max-width: 130px;
 }
+
+/* ==========================================================================
+   PRO EDITING TOOLBAR (Smart Chunking, Find & Replace, Time Shift)
+   ========================================================================== */
+.sub-pro-toolbar {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pro-toolbar-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.pro-tool-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.pro-tool-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.pro-btn-group {
+    display: inline-flex;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    padding: 2px;
+    gap: 2px;
+}
+
+.btn-pro-chip {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-pro-chip:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #FFFFFF;
+}
+
+.btn-pro-chip.active {
+    background: var(--primary);
+    color: #FFFFFF;
+    box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
+}
+
+.btn-pro-action {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--text-main);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-pro-action:hover, .btn-pro-action.active {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: var(--primary);
+    color: #FFFFFF;
+}
+
+/* Find & Replace Bar */
+.sub-find-replace-bar {
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    animation: fadeIn 0.2s ease;
+}
+
+.find-replace-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.find-input-wrap, .replace-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.find-icon, .replace-icon {
+    position: absolute;
+    left: 8px;
+    font-size: 12px;
+    color: var(--text-dim);
+    pointer-events: none;
+}
+
+.find-input-wrap input, .replace-input-wrap input {
+    padding-left: 28px !important;
+    padding-right: 70px !important;
+    width: 100%;
+}
+
+.find-count-badge {
+    position: absolute;
+    right: 8px;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    background: rgba(6, 182, 212, 0.15);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.find-replace-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.find-case-checkbox {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.btn-close-chip {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: color 0.2s ease;
+}
+
+.btn-close-chip:hover {
+    color: #FFFFFF;
+}
+
+/* Time Scale Bar */
+.sub-time-scale-bar {
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px dashed rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    padding: 8px 12px;
+    animation: fadeIn 0.2s ease;
+}
+
+.time-scale-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+    .find-replace-inputs {
+        grid-template-columns: 1fr;
+    }
+}
+
 

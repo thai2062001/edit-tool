@@ -268,8 +268,26 @@
                         </div>
                     </div>
 
-                    <div id="sub-media-name-label" class="text-xs text-dim">
-                        💡 Hỗ trợ cả 2 nguồn: Bấm <strong>"Tải Từ Máy (PC)"</strong> hoặc <strong>"Lấy Video Từ Tab 1"</strong> (hoặc kéo thả video trực tiếp vào khung dưới).
+                    <div class="flex-between align-center mt-1 flex-wrap gap-xs">
+                        <div id="sub-media-name-label" class="text-xs text-dim">
+                            💡 Hỗ trợ cả 2 nguồn: Bấm <strong>"Tải Từ Máy (PC)"</strong> hoặc <strong>"Lấy Video Từ Tab 1"</strong>.
+                        </div>
+
+                        <!-- Aspect Ratio Presets Switcher -->
+                        <div class="sub-aspect-ratio-wrap">
+                            <span class="text-xs text-muted" style="font-weight: 600;">📐 Khung hình:</span>
+                            <div class="aspect-ratio-btn-group">
+                                <button type="button" class="btn-aspect-chip active" data-ratio="16:9" title="Chuẩn 16:9 Ngang (YouTube / Facebook / Web)">
+                                    🖥️ 16:9
+                                </button>
+                                <button type="button" class="btn-aspect-chip" data-ratio="9:16" title="Chuẩn 9:16 Dọc (TikTok / Shorts / Reels) - Căn vùng an toàn tránh che nút Like/Share">
+                                    📱 9:16 (TikTok)
+                                </button>
+                                <button type="button" class="btn-aspect-chip" data-ratio="1:1" title="Chuẩn 1:1 Vuông (Instagram / Feed)">
+                                    ⏹️ 1:1
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Video Container with Live Word-Level Overlay -->
@@ -466,11 +484,83 @@
                     <div class="card-header flex-between">
                         <h4>📝 Danh Sách Phân Đoạn & Ảnh Khớp (<span id="sub-cues-count-badge">0 câu</span>)</h4>
                         <div class="header-actions">
-                            <button id="sub-btn-apply-timeline" class="btn btn-small btn-primary" title="Tự động cập nhật thời lượng các ảnh trên Timeline theo đúng giọng đọc Audio">
+                            <button id="sub-btn-apply-timeline" class="btn btn-small btn-primary" title="Tự động cập nhật thời lượng các ảnh trên Timeline theo đúng giọng đọc Audio và gán Text Overlay">
                                 ✅ Áp Dụng Vào Timeline Dựng Phim
                             </button>
                             <button id="sub-btn-add-cue" class="btn btn-small btn-secondary">+ Thêm</button>
-                            <button id="sub-btn-clear-cues" class="btn btn-small btn-ghost">🗑️</button>
+                            <button id="sub-btn-clear-cues" class="btn btn-small btn-ghost" title="Xóa tất cả phân đoạn">🗑️</button>
+                        </div>
+                    </div>
+
+                    <!-- Pro Editing Toolbar (Smart Chunking, Find & Replace, Time Shift) -->
+                    <div class="sub-pro-toolbar">
+                        <!-- Row 1: Action Groups -->
+                        <div class="pro-toolbar-row">
+                            <!-- 3. Smart Word Chunking -->
+                            <div class="pro-tool-group">
+                                <span class="pro-tool-label">✂️ Chia từ:</span>
+                                <div class="pro-btn-group">
+                                    <button type="button" class="btn-pro-chip btn-chunk-chip" data-chunk="2" title="Tối ưu cho TikTok / Shorts (1-2 từ/màn hình)">1-2 từ</button>
+                                    <button type="button" class="btn-pro-chip btn-chunk-chip" data-chunk="4" title="Tiêu chuẩn (3-4 từ/màn hình)">3-4 từ</button>
+                                    <button type="button" class="btn-pro-chip btn-chunk-chip" data-chunk="7" title="Câu vừa (5-7 từ/màn hình)">5-7 từ</button>
+                                </div>
+                            </div>
+
+                            <!-- 5. Time Shift Quick Buttons -->
+                            <div class="pro-tool-group">
+                                <span class="pro-tool-label">⏱️ Dời nhịp:</span>
+                                <div class="pro-btn-group">
+                                    <button type="button" class="btn-pro-chip" id="btn-shift-minus-500" title="Dời toàn bộ phụ đề sớm hơn 0.5s">-0.5s</button>
+                                    <button type="button" class="btn-pro-chip" id="btn-shift-minus-100" title="Dời toàn bộ phụ đề sớm hơn 0.1s">-0.1s</button>
+                                    <button type="button" class="btn-pro-chip" id="btn-shift-plus-100" title="Dời toàn bộ phụ đề muộn hơn 0.1s">+0.1s</button>
+                                    <button type="button" class="btn-pro-chip" id="btn-shift-plus-500" title="Dời toàn bộ phụ đề muộn hơn 0.5s">+0.5s</button>
+                                </div>
+                                <button type="button" class="btn-pro-action" id="btn-toggle-time-scale" title="Mở rộng công cụ co giãn thời gian & nhập giây tùy ý">⚙️ Co Giãn</button>
+                            </div>
+
+                            <!-- 4. Toggle Find & Replace -->
+                            <button type="button" class="btn-pro-action" id="btn-toggle-find-replace" title="Mở bảng tìm kiếm và thay thế từ ngữ hàng loạt">
+                                🔍 Tìm & Thay Thế
+                            </button>
+                        </div>
+
+                        <!-- Row 2: Find & Replace Bar (Collapsible) -->
+                        <div id="sub-find-replace-bar" class="sub-find-replace-bar hidden">
+                            <div class="find-replace-inputs">
+                                <div class="find-input-wrap">
+                                    <span class="find-icon">🔍</span>
+                                    <input type="text" id="sub-find-input" class="form-control form-control-sm" placeholder="Tìm từ hoặc cụm từ...">
+                                    <span id="sub-find-count" class="find-count-badge">0 kết quả</span>
+                                </div>
+                                <div class="replace-input-wrap">
+                                    <span class="replace-icon">✏️</span>
+                                    <input type="text" id="sub-replace-input" class="form-control form-control-sm" placeholder="Thay thế bằng...">
+                                </div>
+                            </div>
+                            <div class="find-replace-actions">
+                                <label class="find-case-checkbox">
+                                    <input type="checkbox" id="sub-find-case-sensitive"> Phân biệt hoa/thường
+                                </label>
+                                <button type="button" id="btn-sub-replace-all" class="btn btn-small btn-accent">⚡ Thay Thế Tất Cả</button>
+                                <button type="button" id="btn-close-find-replace" class="btn-close-chip" title="Đóng thanh tìm kiếm">✕</button>
+                            </div>
+                        </div>
+
+                        <!-- Row 3: Time Scale/Stretch Bar (Collapsible) -->
+                        <div id="sub-time-scale-bar" class="sub-time-scale-bar hidden">
+                            <div class="time-scale-content">
+                                <span class="text-xs text-dim">⚡ Tinh chỉnh tốc độ toàn bộ Sub:</span>
+                                <div class="flex-row gap-xs align-center flex-wrap">
+                                    <button type="button" class="btn-pro-chip btn-scale-chip" data-scale="0.95" title="Co ngắn 5% (Sub chạy nhanh hơn)">⚡ Co 95%</button>
+                                    <button type="button" class="btn-pro-chip btn-scale-chip" data-scale="1.05" title="Kéo giãn 5% (Sub chạy chậm hơn)">🐢 Giãn 105%</button>
+                                    <button type="button" class="btn-pro-chip btn-scale-chip" data-scale="1.10" title="Kéo giãn 10%">🐢 Giãn 110%</button>
+                                    <div class="flex-row align-center gap-xs ml-2">
+                                        <span class="text-xs">Dời tùy chỉnh:</span>
+                                        <input type="number" id="sub-custom-shift-sec" class="form-control form-control-sm" style="width: 80px;" placeholder="+/- s" step="0.05">
+                                        <button type="button" id="btn-apply-custom-shift" class="btn btn-small btn-secondary">Áp Dụng</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
