@@ -1037,6 +1037,209 @@ app.get('/api/progress/:jobId', (req, res) => {
     });
 });
 
+// =========================================================================
+// TAB 3: LOGO & WATERMARK STUDIO APIS
+// =========================================================================
+
+// Upload Logo File
+app.post('/api/watermark/upload-logo', upload.single('logo'), (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'Chưa chọn file logo' });
+        }
+        res.json({
+            success: true,
+            file: {
+                filename: req.file.filename,
+                originalName: req.file.originalname,
+                url: `/uploads/${req.file.filename}`,
+                size: req.file.size
+            }
+        });
+    } catch (err) {
+        console.error('Logo upload error:', err);
+        res.status(500).json({ error: err.message || 'Lỗi tải logo' });
+    }
+});
+
+// Process Watermark / Delogo on Video or Image
+app.post('/api/watermark/process-video', async (req, res) => {
+    try {
+        const { sourceFilename, mode, logoSettings, delogoSettings } = req.body;
+        if (!sourceFilename) {
+            return res.status(400).json({ error: 'Chưa có file nguồn để xử lý' });
+        }
+
+        // Find file in uploads or output
+        let inputPath = path.join(UPLOADS_DIR, sourceFilename);
+        if (!fs.existsSync(inputPath)) {
+            inputPath = path.join(OUTPUT_DIR, sourceFilename);
+        }
+        if (!fs.existsSync(inputPath)) {
+            return res.status(404).json({ error: 'Không tìm thấy file nguồn trên máy chủ' });
+        }
+
+        const jobId = `wm_${Date.now()}`;
+        const outputFilename = `watermark_result_${Date.now()}.mp4`;
+        const outputPath = path.join(OUTPUT_DIR, outputFilename);
+
+        const isImage = /\.(jpe?g|png|webp|bmp)$/i.test(sourceFilename);
+
+        renderJobs.set(jobId, {
+            status: 'processing',
+            progress: 10,
+            outputUrl: null,
+            error: null,
+            clients: []
+        });
+
+        res.json({ success: true, jobId, outputUrl: `/output/${outputFilename}` });
+
+        // Build FFmpeg arguments asynchronously
+        (async () => {
+            const job = renderJobs.get(jobId);
+            try {
+                let ffmpegArgs = [];
+
+                if (mode === 'logo' && logoSettings && logoSettings.logoFilename) {
+                    const logoPath = path.join(UPLOADS_DIR, logoSettings.logoFilename);
+                    if (!fs.existsSync(logoPath)) throw new Error('Không tìm thấy file logo');
+
+                    const scalePct = Math.min(50, Math.max(5, Number(logoSettings.scalePercent || 18))) / 100;
+                    const opacity = Math.min(1.0, Math.max(0.1, Number(logoSettings.opacity || 0.9)));
+                    const margin = Math.max(5, Number(logoSettings.margin || 20));
+                    const pos = logoSettings.position || 'bottom_right';
+
+                    let overlayX = `main_w-w-${margin}`;
+                    let overlayY = `main_h-h-${margin}`;
+
+                    switch (pos) {
+                        case 'top_left': overlayX = `${margin}`; overlayY = `${margin}`; break;
+                        case 'top_center': overlayX = `(main_w-w)/2`; overlayY = `${margin}`; break;
+                        case 'top_right': overlayX = `main_w-w-${margin}`; overlayY = `${margin}`; break;
+                        case 'center_left': overlayX = `${margin}`; overlayY = `(main_h-h)/2`; break;
+                        case 'center': overlayX = `(main_w-w)/2`; overlayY = `(main_h-h)/2`; break;
+                        case 'center_right': overlayX = `main_w-w-${margin}`; overlayY = `(main_h-h)/2`; break;
+                        case 'bottom_left': overlayX = `${margin}`; overlayY = `main_h-h-${margin}`; break;
+                        case 'bottom_center': overlayX = `(main_w-w)/2`; overlayY = `main_h-h-${margin}`; break;
+                        case 'bottom_right': overlayX = `main_w-w-${margin}`; overlayY = `main_h-h-${margin}`; break;
+                    }
+
+                    if (isImage) {
+                        ffmpegArgs = [
+                            '-y',
+                            '-loop', '1',
+                            '-i', inputPath,
+                            '-i', logoPath,
+                            '-filter_complex',
+                            `[1:v]scale=main_w*${scalePct}:-1,format=rgba,colorchannelmixer=aa=${opacity}[logo];[0:v][logo]overlay=${overlayX}:${overlayY}[v]`,
+                            '-map', '[v]',
+                            '-t', '5',
+                            '-pix_fmt', 'yuv420p',
+                            '-c:v', 'libx264',
+                            '-preset', 'fast',
+                            outputPath
+                        ];
+                    } else {
+                        ffmpegArgs = [
+                            '-y',
+                            '-i', inputPath,
+                            '-i', logoPath,
+                            '-filter_complex',
+                            `[1:v]scale=main_w*${scalePct}:-1,format=rgba,colorchannelmixer=aa=${opacity}[logo];[0:v][logo]overlay=${overlayX}:${overlayY}[v]`,
+                            '-map', '[v]',
+                            '-map', '0:a?',
+                            '-pix_fmt', 'yuv420p',
+                            '-c:v', 'libx264',
+                            '-c:a', 'aac',
+                            '-preset', 'fast',
+                            outputPath
+                        ];
+                    }
+                } else if (mode === 'delogo' && delogoSettings) {
+                    const x = Math.max(0, parseInt(delogoSettings.x || 0));
+                    const y = Math.max(0, parseInt(delogoSettings.y || 0));
+                    const w = Math.max(10, parseInt(delogoSettings.w || 140));
+                    const h = Math.max(10, parseInt(delogoSettings.h || 60));
+                    const filterType = delogoSettings.filterType || 'delogo';
+
+                    let filterGraph = '';
+                    if (filterType === 'blur') {
+                        filterGraph = `split=2[main][crop];[crop]crop=${w}:${h}:${x}:${y},boxblur=20:5[blur];[main][blur]overlay=${x}:${y}[v]`;
+                    } else if (filterType === 'crop') {
+                        filterGraph = `scale=iw*1.05:ih*1.05,crop=iw/1.05:ih/1.05:0:0[v]`;
+                    } else {
+                        // Standard Delogo Interpolation
+                        filterGraph = `delogo=x=${x}:y=${y}:w=${w}:h=${h}:show=0[v]`;
+                    }
+
+                    if (isImage) {
+                        ffmpegArgs = [
+                            '-y',
+                            '-loop', '1',
+                            '-i', inputPath,
+                            '-filter_complex', filterGraph,
+                            '-map', '[v]',
+                            '-t', '5',
+                            '-pix_fmt', 'yuv420p',
+                            '-c:v', 'libx264',
+                            '-preset', 'fast',
+                            outputPath
+                        ];
+                    } else {
+                        ffmpegArgs = [
+                            '-y',
+                            '-i', inputPath,
+                            '-filter_complex', filterGraph,
+                            '-map', '[v]',
+                            '-map', '0:a?',
+                            '-pix_fmt', 'yuv420p',
+                            '-c:v', 'libx264',
+                            '-c:a', 'copy',
+                            '-preset', 'fast',
+                            outputPath
+                        ];
+                    }
+                } else {
+                    throw new Error('Cấu hình xử lý watermark không hợp lệ');
+                }
+
+                console.log(`[Watermark Studio] Running FFmpeg: ffmpeg ${ffmpegArgs.join(' ')}`);
+                const ffmpegProcess = spawn(ffmpegPath, ffmpegArgs);
+
+                ffmpegProcess.stderr.on('data', (chunk) => {
+                    const msg = chunk.toString();
+                    if (msg.includes('frame=')) {
+                        job.progress = Math.min(95, job.progress + 5);
+                        broadcastJobStatus(jobId, job);
+                    }
+                });
+
+                ffmpegProcess.on('close', (code) => {
+                    if (code === 0) {
+                        job.status = 'completed';
+                        job.progress = 100;
+                        job.outputUrl = `/output/${outputFilename}`;
+                        broadcastJobStatus(jobId, job);
+                    } else {
+                        job.status = 'error';
+                        job.error = `FFmpeg kết thúc với mã lỗi ${code}`;
+                        broadcastJobStatus(jobId, job);
+                    }
+                });
+            } catch (err) {
+                console.error('[Watermark Studio Error]:', err);
+                job.status = 'error';
+                job.error = err.message || 'Lỗi trong quá trình xử lý';
+                broadcastJobStatus(jobId, job);
+            }
+        })();
+    } catch (err) {
+        console.error('Process video error:', err);
+        res.status(500).json({ error: err.message || 'Lỗi hệ thống' });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`====================================================`);
     console.log(`🎬 Video Tool Web UI is running on: http://localhost:${PORT}`);

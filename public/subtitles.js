@@ -822,19 +822,18 @@
     }
 
     function switchTab(tabKey) {
+        document.querySelectorAll('.main-tab-nav .tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+
         if (tabKey === 'editor') {
-            dom.tabVideoEditor.classList.add('active');
-            dom.tabSubtitles.classList.remove('active');
-            dom.paneVideoEditor.classList.add('active');
-            dom.paneSubtitles.classList.remove('active');
+            if (dom.tabVideoEditor) dom.tabVideoEditor.classList.add('active');
+            if (dom.paneVideoEditor) dom.paneVideoEditor.classList.add('active');
             if (dom.subVideoPlayer && !dom.subVideoPlayer.paused) {
                 dom.subVideoPlayer.pause();
             }
-        } else {
-            dom.tabSubtitles.classList.add('active');
-            dom.tabVideoEditor.classList.remove('active');
-            dom.paneSubtitles.classList.add('active');
-            dom.paneVideoEditor.classList.remove('active');
+        } else if (tabKey === 'subtitles') {
+            if (dom.tabSubtitles) dom.tabSubtitles.classList.add('active');
+            if (dom.paneSubtitles) dom.paneSubtitles.classList.add('active');
 
             updateTimelineImageCount();
             if (!SubState.currentMedia) {

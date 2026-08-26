@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="subtitles.css">
+    <link rel="stylesheet" href="watermark.css">
 </head>
 <body>
     <div class="app-container">
@@ -62,6 +63,9 @@
             </button>
             <button id="tab-btn-subtitles" class="tab-btn">
                 <span>💬 Auto Subtitle AI (Word-Level)</span>
+            </button>
+            <button id="tab-btn-watermark" class="tab-btn">
+                <span>🛡️ Logo & Watermark Studio</span>
                 <span class="tab-badge">MỚI</span>
             </button>
         </nav>
@@ -664,6 +668,181 @@
             </div>
         </div>
         <!-- End TAB 2 -->
+
+        <!-- TAB 3: Logo & Watermark Studio -->
+        <div id="tab-pane-watermark" class="tab-pane">
+            <div class="watermark-layout-grid">
+                <!-- Left: Media Player & Live Overlay Preview -->
+                <div class="wm-preview-card">
+                    <div class="card-header flex-between flex-wrap gap-xs">
+                        <h3>👁️ Trình Xem Trước Đóng Dấu / Xóa Watermark</h3>
+                        <div class="header-actions">
+                            <input type="file" id="wm-file-input" accept="video/*,image/*" hidden>
+                            <button id="wm-btn-use-editor-video" class="btn btn-small btn-ai" title="Lấy video vừa dựng hoặc render xong từ Tab 1">
+                                <span class="icon">🎬</span> Lấy Từ Tab 1
+                            </button>
+                            <button class="btn btn-small btn-outline" onclick="document.getElementById('wm-file-input').click()" title="Tải video hoặc ảnh từ máy tính">
+                                <span class="icon">📁</span> Tải Từ Máy (PC)
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="wm-media-name-label" class="text-xs text-dim">
+                        💡 Hãy chọn video hoặc ảnh để bắt đầu đóng dấu logo hoặc xóa watermark.
+                    </div>
+
+                    <!-- Video Container with Live Overlay and Bounding Box Guide -->
+                    <div id="wm-video-container" class="wm-video-container">
+                        <video id="wm-video-player" class="wm-video-player" controls playsinline preload="auto"></video>
+                        <div id="wm-logo-overlay" class="wm-logo-overlay"></div>
+                        <div id="wm-delogo-guide" class="wm-delogo-box-guide"></div>
+                    </div>
+
+                    <!-- Process & Export Action Bar -->
+                    <div class="sub-actions-bar mt-2">
+                        <span class="text-xs text-muted">FFmpeg sẽ render xử lý trực tiếp trên file gốc</span>
+                        <button id="btn-process-watermark" class="btn btn-primary">
+                            <span class="icon">⚡</span> Xuất Video Với Logo Đã Chèn
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right: Control Panel (Mode 1: Logo Insert, Mode 2: Delogo / Inpaint) -->
+                <div class="wm-control-panel">
+                    <!-- Mode Switcher -->
+                    <div class="wm-mode-nav">
+                        <button type="button" id="btn-mode-logo" class="btn-wm-mode active">
+                            🌟 Chèn Logo Thương Hiệu
+                        </button>
+                        <button type="button" id="btn-mode-delogo" class="btn-wm-mode">
+                            🧹 Xóa / Làm Mờ Watermark
+                        </button>
+                    </div>
+
+                    <!-- Panel: Logo Insert -->
+                    <div id="wm-panel-logo" class="wm-mode-content">
+                        <!-- Upload Logo Box -->
+                        <div class="settings-card mt-2">
+                            <div class="card-header">
+                                <h4>📁 Tải Lên Logo Thương Hiệu (.PNG Không Nền)</h4>
+                            </div>
+                            <input type="file" id="wm-logo-input" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
+                            <div id="wm-logo-dropzone" class="wm-logo-dropzone mt-1">
+                                <img id="wm-logo-preview-img" class="wm-logo-preview hidden" alt="Logo preview">
+                                <p class="text-xs text-dim">Bấm hoặc Kéo thả file Logo PNG trong suốt vào đây</p>
+                            </div>
+                        </div>
+
+                        <!-- Logo Placement & Position Grid -->
+                        <div class="settings-card mt-2">
+                            <div class="card-header">
+                                <h4>📍 Vị Trí Đặt Logo (9 Điểm Neo)</h4>
+                            </div>
+                            <div class="wm-position-grid mt-2">
+                                <button type="button" class="pos-btn" data-pos="top_left" title="Trên Trái">↖</button>
+                                <button type="button" class="pos-btn" data-pos="top_center" title="Trên Giữa">↑</button>
+                                <button type="button" class="pos-btn" data-pos="top_right" title="Trên Phải">↗</button>
+                                <button type="button" class="pos-btn" data-pos="center_left" title="Giữa Trái">←</button>
+                                <button type="button" class="pos-btn" data-pos="center" title="Chính Giữa">🎯</button>
+                                <button type="button" class="pos-btn" data-pos="center_right" title="Giữa Phải">→</button>
+                                <button type="button" class="pos-btn" data-pos="bottom_left" title="Dưới Trái">↙</button>
+                                <button type="button" class="pos-btn" data-pos="bottom_center" title="Dưới Giữa">↓</button>
+                                <button type="button" class="pos-btn active" data-pos="bottom_right" title="Dưới Phải">↘</button>
+                            </div>
+                        </div>
+
+                        <!-- Logo Scale, Opacity & Margin Sliders -->
+                        <div class="settings-card mt-2">
+                            <div class="card-header">
+                                <h4>⚙️ Tùy Chỉnh Kích Thước & Độ Mờ</h4>
+                            </div>
+                            <div class="form-group mt-2">
+                                <div class="flex-between">
+                                    <label class="form-label-xs">Kích thước logo (Scale):</label>
+                                    <span id="wm-scale-val" class="text-xs font-mono text-cyan">18%</span>
+                                </div>
+                                <input type="range" id="wm-scale-slider" min="5" max="45" step="1" value="18" class="custom-range">
+                            </div>
+
+                            <div class="form-group mt-2">
+                                <div class="flex-between">
+                                    <label class="form-label-xs">Độ mờ đục (Opacity):</label>
+                                    <span id="wm-opacity-val" class="text-xs font-mono text-cyan">90%</span>
+                                </div>
+                                <input type="range" id="wm-opacity-slider" min="0.1" max="1.0" step="0.05" value="0.9" class="custom-range">
+                            </div>
+
+                            <div class="form-group mt-2">
+                                <div class="flex-between">
+                                    <label class="form-label-xs">Khoảng cách lề (Margin):</label>
+                                    <span id="wm-margin-val" class="text-xs font-mono text-cyan">20px</span>
+                                </div>
+                                <input type="range" id="wm-margin-slider" min="5" max="80" step="2" value="20" class="custom-range">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Panel: Delogo / Watermark Remover -->
+                    <div id="wm-panel-delogo" class="wm-mode-content hidden">
+                        <!-- Presets for AI Watermarks -->
+                        <div class="settings-card mt-2">
+                            <div class="card-header">
+                                <h4>🎯 Vị Trí Watermark Định Sẵn</h4>
+                            </div>
+                            <div class="delogo-presets-grid mt-2">
+                                <button type="button" class="delogo-preset-chip active" data-preset="gemini_br">
+                                    ✨ Góc Dưới Phải (Gemini/AI)
+                                </button>
+                                <button type="button" class="delogo-preset-chip" data-preset="bottom_left">
+                                    📱 Góc Dưới Trái (TikTok)
+                                </button>
+                                <button type="button" class="delogo-preset-chip" data-preset="top_right">
+                                    🔝 Góc Trên Phải
+                                </button>
+                                <button type="button" class="delogo-preset-chip" data-preset="custom">
+                                    ⚙️ Tùy Chỉnh Tọa Độ
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Delogo Algorithm & Options -->
+                        <div class="settings-card mt-2">
+                            <div class="card-header">
+                                <h4>🧹 Phương Pháp Xóa / Che</h4>
+                            </div>
+                            <div class="form-group mt-2">
+                                <label class="form-label-xs">Thuật toán xử lý FFmpeg:</label>
+                                <select id="delogo-filter-type" class="custom-select form-control-sm">
+                                    <option value="delogo" selected>✨ Nội suy điểm ảnh tự nhiên (FFmpeg Delogo Inpaint)</option>
+                                    <option value="blur">🌫️ Làm mờ mịn vùng chọn (BoxBlur)</option>
+                                    <option value="crop">✂️ Cắt bỏ rìa 5% chứa logo (Edge Crop)</option>
+                                </select>
+                            </div>
+
+                            <div class="delogo-coords-grid mt-3">
+                                <div class="form-group">
+                                    <label class="form-label-xs">Vị trí X (% ngang):</label>
+                                    <input type="number" id="delogo-x" class="form-control form-control-sm" min="0" max="100" value="82">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label-xs">Vị trí Y (% dọc):</label>
+                                    <input type="number" id="delogo-y" class="form-control form-control-sm" min="0" max="100" value="88">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label-xs">Chiều rộng W (%):</label>
+                                    <input type="number" id="delogo-w" class="form-control form-control-sm" min="1" max="50" value="15">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label-xs">Chiều cao H (%):</label>
+                                    <input type="number" id="delogo-h" class="form-control form-control-sm" min="1" max="50" value="9">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- End TAB 3 -->
     </div>
 
     <!-- Live Preview Modal -->
@@ -1166,5 +1345,6 @@
 
     <script src="app.js"></script>
     <script src="subtitles.js"></script>
+    <script src="watermark.js"></script>
 </body>
 </html>
