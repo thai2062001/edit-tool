@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="subtitles.css">
     <link rel="stylesheet" href="watermark.css">
+    <link rel="stylesheet" href="voice.css">
 </head>
 <body>
     <div class="app-container">
@@ -66,6 +67,9 @@
             </button>
             <button id="tab-btn-watermark" class="tab-btn">
                 <span>🛡️ Logo & Watermark Studio</span>
+            </button>
+            <button id="tab-btn-voice" class="tab-btn">
+                <span>🎙️ AI Voice Clone & TTS</span>
                 <span class="tab-badge">MỚI</span>
             </button>
         </nav>
@@ -843,6 +847,133 @@
             </div>
         </div>
         <!-- End TAB 3 -->
+
+        <!-- TAB 4: AI Voice Clone & TTS Studio -->
+        <div id="tab-pane-voice" class="tab-pane">
+            <div class="voice-layout-grid">
+                <!-- Left: 3-5s Instant Voice Clone Panel -->
+                <div class="voice-card-panel">
+                    <div class="card-header flex-between flex-wrap gap-xs">
+                        <h3>🧬 Nhân Bản Giọng Nói (Instant Clone 3-5s)</h3>
+                    </div>
+
+                    <!-- API Key Input Box -->
+                    <div class="setting-row">
+                        <label for="voice-api-key-input" class="text-xs text-dim">🔑 ElevenLabs API Key:</label>
+                        <input type="password" id="voice-api-key-input" class="form-control font-mono" placeholder="Nhập xi-api-key...">
+                        <span class="text-xs text-dim mt-1" style="display:block;">💡 Khóa được lưu an toàn trong trình duyệt của bạn.</span>
+                    </div>
+
+                    <!-- 3-5s In-Browser Mic Recorder -->
+                    <div class="voice-recorder-box mt-2">
+                        <h4>🎙️ Thu Âm Trực Tiếp Mẫu Giọng (3 - 5 Giây)</h4>
+                        <p class="text-xs text-dim">Chỉ cần nói 1 câu ngắn 3-5s để AI học âm sắc & nhịp điệu của bạn</p>
+                        <button type="button" id="btn-record-mic" class="btn-mic-record">
+                            🎙️ Bấm Bắt Đầu Thu Âm (3-5s)
+                        </button>
+                        <span id="record-timer-label" class="record-timer">0:00 / 0:05</span>
+                    </div>
+
+                    <!-- Audio Sample File Upload (Alternative) -->
+                    <div class="settings-card mt-2">
+                        <div class="card-header">
+                            <h4>📁 Hoặc Tải File Ghi Âm Có Sẵn (.mp3, .wav, .m4a)</h4>
+                        </div>
+                        <input type="file" id="voice-sample-input" accept="audio/*" hidden>
+                        <div class="flex-between align-center mt-2">
+                            <button type="button" class="btn btn-xs btn-outline" onclick="document.getElementById('voice-sample-input').click()">
+                                📂 Chọn Tệp Âm Thanh
+                            </button>
+                            <span id="voice-sample-name" class="sync-filename-tag">Chưa chọn tệp</span>
+                        </div>
+                    </div>
+
+                    <!-- Name & Clone Submit -->
+                    <div class="form-group mt-2">
+                        <label class="form-label-xs">Tên hiển thị của giọng đọc:</label>
+                        <input type="text" id="voice-custom-name-input" class="form-control form-control-sm" placeholder="Ví dụ: Giọng Review Phim Của Tôi">
+                    </div>
+
+                    <button type="button" id="btn-submit-clone" class="btn btn-ai-action w-full mt-2">
+                        <span class="icon">⚡</span> Bắt Đầu Clone Giọng Tức Thì
+                    </button>
+                    <span id="clone-status-label" class="text-xs text-dim mt-1 text-center">Sẵn sàng clone giọng từ mẫu 3-5s</span>
+
+                    <!-- Voice Library List -->
+                    <div class="settings-card mt-3">
+                        <div class="card-header flex-between">
+                            <h4>📚 Thư Viện Giọng Đọc (Đã Clone & Có Sẵn)</h4>
+                        </div>
+                        <div id="voice-list-grid" class="voice-list-grid mt-2">
+                            <!-- Cloned voices rendered here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Text-to-Speech Script Reader Panel -->
+                <div class="voice-card-panel">
+                    <div class="card-header flex-between flex-wrap gap-xs">
+                        <h3>🗣️ Đọc Kịch Bản Bằng Giọng Clone (Multilingual v2)</h3>
+                        <button type="button" id="btn-pull-script-tab1" class="btn btn-small btn-secondary" title="Tự động lấy câu thoại kịch bản từ Timeline Tab 1">
+                            <span class="icon">📜</span> Lấy Kịch Bản Tab 1
+                        </button>
+                    </div>
+
+                    <!-- Script Input Textarea -->
+                    <div class="form-group mt-2">
+                        <label class="form-label-xs">Nội dung kịch bản cần đọc:</label>
+                        <textarea id="voice-script-textarea" class="custom-textarea" rows="6" placeholder="Nhập câu thoại hoặc đoạn văn bản tiếng Việt bạn muốn AI đọc..."></textarea>
+                    </div>
+
+                    <!-- Voice Expression & Emotion Settings -->
+                    <div class="settings-card mt-2">
+                        <div class="card-header">
+                            <h4>🎭 Tinh Chỉnh Biểu Cảm Giọng Đọc</h4>
+                        </div>
+                        <div class="form-group mt-2">
+                            <div class="flex-between">
+                                <label class="form-label-xs">Độ ổn định (Stability):</label>
+                                <span id="val-stability" class="text-xs font-mono text-cyan">50%</span>
+                            </div>
+                            <input type="range" id="slider-stability" min="0.1" max="1.0" step="0.05" value="0.5" class="custom-range">
+                        </div>
+
+                        <div class="form-group mt-2">
+                            <div class="flex-between">
+                                <label class="form-label-xs">Độ giống giọng mẫu (Similarity Boost):</label>
+                                <span id="val-similarity" class="text-xs font-mono text-cyan">80%</span>
+                            </div>
+                            <input type="range" id="slider-similarity" min="0.1" max="1.0" step="0.05" value="0.8" class="custom-range">
+                        </div>
+                    </div>
+
+                    <!-- Generate TTS Action CTA -->
+                    <button type="button" id="btn-generate-tts" class="btn btn-primary btn-render-cta w-full mt-3">
+                        <span class="icon">🎙️</span> Đọc Kịch Bản Bằng Giọng Clone
+                    </button>
+                    <span id="tts-status-label" class="text-xs text-dim mt-1 text-center">Sẵn sàng đọc kịch bản bằng mô hình Eleven Multilingual v2</span>
+
+                    <!-- Generated Audio Result & 1-Click Action Box -->
+                    <div id="voice-result-box" class="voice-result-box mt-3 hidden">
+                        <div class="flex-between align-center">
+                            <h4>🎉 File Giọng Đọc AI Hoàn Tất</h4>
+                            <span class="badge-score-high">Đã Sẵn Sàng</span>
+                        </div>
+                        <audio id="voice-audio-player" class="w-full mt-1" controls></audio>
+
+                        <div class="voice-actions-row mt-2">
+                            <button type="button" id="btn-send-to-tab1-bgm" class="btn btn-small btn-primary">
+                                <span class="icon">🎬</span> Gán Làm Giọng Đọc Video (Tab 1)
+                            </button>
+                            <button type="button" id="btn-send-to-tab2-sub" class="btn btn-small btn-ai">
+                                <span class="icon">💬</span> Đồng Bộ Phụ Đề & Khớp Ảnh (Tab 2)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- End TAB 4 -->
     </div>
 
     <!-- Live Preview Modal -->
@@ -1346,5 +1477,6 @@
     <script src="app.js"></script>
     <script src="subtitles.js"></script>
     <script src="watermark.js"></script>
+    <script src="voice.js"></script>
 </body>
 </html>

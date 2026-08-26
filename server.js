@@ -1240,6 +1240,185 @@ app.post('/api/watermark/process-video', async (req, res) => {
     }
 });
 
+// =========================================================================
+// TAB 4: AI VOICE CLONE & TTS STUDIO APIS (ElevenLabs Instant Voice Clone)
+// =========================================================================
+
+// In-memory or persisted list of cloned voices
+const clonedVoicesStore = [
+    {
+        voice_id: '21m00Tcm4TlvDq8ikWAM',
+        name: 'Rachel (Nữ - Truyền cảm & Ấm áp)',
+        description: 'Giọng đọc nữ phổ biến, phù hợp kể chuyện và review',
+        category: 'premade'
+    },
+    {
+        voice_id: 'pNInz6obpgDQGcFmaJgB',
+        name: 'Adam (Nam - Trầm ấm & Rõ ràng)',
+        description: 'Giọng đọc nam MC, tự tin, chuyên nghiệp',
+        category: 'premade'
+    },
+    {
+        voice_id: 'ErXwobaYiN019PkySvjV',
+        name: 'Antoni (Nam - Trẻ trung & Năng động)',
+        description: 'Giọng đọc trẻ trung, phù hợp video TikTok / Shorts',
+        category: 'premade'
+    }
+];
+
+// List Available Voices
+app.get('/api/voice/list', (req, res) => {
+    res.json({ success: true, voices: clonedVoicesStore });
+});
+
+// Instant Clone Voice from 3-5s Audio Sample
+app.post('/api/voice/clone', upload.single('sample'), async (req, res) => {
+    try {
+        const { apiKey, voiceName, description } = req.body;
+        const key = apiKey || process.env.ELEVENLABS_API_KEY;
+
+        if (!key) {
+            return res.status(400).json({ error: 'Vui lòng nhập ElevenLabs API Key để tiến hành Clone Voice!' });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ error: 'Chưa có file mẫu âm thanh (3-5 giây) để clone' });
+        }
+
+        const samplePath = path.join(UPLOADS_DIR, req.file.filename);
+        const name = voiceName || `Giọng Clone ${new Date().toLocaleTimeString('vi-VN')}`;
+        const desc = description || 'Clone tức thì từ mẫu âm thanh 3-5 giây';
+
+        // Read audio file buffer
+        const fileBuffer = fs.readFileSync(samplePath);
+        const blob = new Blob([fileBuffer], { type: req.file.mimetype || 'audio/mpeg' });
+
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('description', desc);
+        formData.append('files', blob, req.file.originalname || 'sample.mp3');
+
+        console.log(`[Voice Studio] Sending Clone Voice request to ElevenLabs for "${name}"...`);
+
+        const response = await fetch('https://api.elevenlabs.io/v1/voices/add', {
+            method: 'POST',
+            headers: {
+                'xi-api-key': key
+            },
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error('[ElevenLabs Clone Error]:', data);
+            return res.status(response.status).json({
+                error: data.detail?.message || data.detail || 'Lỗi khi gọi ElevenLabs Clone Voice API'
+            });
+        }
+
+        const newVoice = {
+            voice_id: data.voice_id,
+            name: name,
+            description: desc,
+            category: 'cloned',
+            created_at: Date.now()
+        };
+
+        clonedVoicesStore.unshift(newVoice);
+
+        res.json({
+            success: true,
+            voice: newVoice,
+            message: `Clone giọng thành công! Đã tạo Voice ID: ${data.voice_id}`
+        });
+
+    } catch (err) {
+        console.error('Voice Clone error:', err);
+        res.status(500).json({ error: err.message || 'Lỗi xử lý Clone Voice' });
+    }
+});
+
+// Generate Text-to-Speech using Cloned Voice ID
+app.post('/api/voice/generate-tts', async (req, res) => {
+    try {
+        const { apiKey, voiceId, text, settings } = req.body;
+        const key = apiKey || process.env.ELEVENLABS_API_KEY;
+
+        if (!key) {
+            return res.status(400).json({ error: 'Vui lòng nhập ElevenLabs API Key!' });
+        }
+
+        if (!text || !text.trim()) {
+            return res.status(400).json({ error: 'Vui lòng nhập nội dung kịch bản cần đọc!' });
+        }
+
+        const targetVoiceId = voiceId || '21m00Tcm4TlvDq8ikWAM'; // Default Rachel
+        const stability = parseFloat(settings?.stability ?? 0.5);
+        const similarity = parseFloat(settings?.similarity ?? 0.8);
+        const style = parseFloat(settings?.style ?? 0.0);
+
+        console.log(`[Voice Studio] Generating TTS for voice ${targetVoiceId}, text length: ${text.length} chars...`);
+
+        const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${targetVoiceId}`, {
+            method: 'POST',
+            headers: {
+                'xi-api-key': key,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                text: text.trim(),
+                model_id: 'eleven_multilingual_v2',
+                voice_settings: {
+                    stability: stability,
+                    similarity_boost: similarity,
+                    style: style,
+                    use_speaker_boost: true
+                }
+            })
+        });
+
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            console.error('[ElevenLabs TTS Error]:', errData);
+            return res.status(response.status).json({
+                error: errData.detail?.message || errData.detail || 'Lỗi khi tạo giọng đọc từ ElevenLabs'
+            });
+        }
+
+        const audioArrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(audioArrayBuffer);
+
+        const filename = `tts_voice_${Date.now()}.mp3`;
+        const outputPath = path.join(UPLOADS_DIR, filename);
+        fs.writeFileSync(outputPath, buffer);
+
+        // Probe duration with ffprobe
+        let duration = 5.0;
+        try {
+            const probeData = await probeMedia(outputPath);
+            duration = probeData.duration || 5.0;
+        } catch (e) {
+            console.warn('Probe audio duration warning:', e.message);
+        }
+
+        res.json({
+            success: true,
+            file: {
+                filename: filename,
+                url: `/uploads/${filename}`,
+                duration: duration,
+                type: 'audio',
+                originalName: `Giọng AI (${filename})`
+            }
+        });
+
+    } catch (err) {
+        console.error('TTS Generation error:', err);
+        res.status(500).json({ error: err.message || 'Lỗi khi tạo giọng đọc' });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`====================================================`);
     console.log(`🎬 Video Tool Web UI is running on: http://localhost:${PORT}`);
