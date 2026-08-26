@@ -28,7 +28,19 @@ const inputProjectFile = document.getElementById('input-project-file');
 const btnRestoreAutosave = document.getElementById('btn-restore-autosave');
 const btnDismissAutosave = document.getElementById('btn-dismiss-autosave');
 
-// Aspect ratio selector
+// Aspect ratio selector & Smart Reframe Toggle
+const rowReframeMode = document.getElementById('row-reframe-mode');
+
+function updateReframeVisibility(ratio) {
+    if (rowReframeMode) {
+        if (ratio === '9:16' || ratio === '1:1') {
+            rowReframeMode.classList.remove('hidden');
+        } else {
+            rowReframeMode.classList.add('hidden');
+        }
+    }
+}
+
 document.querySelectorAll('.ratio-option').forEach(option => {
     option.addEventListener('click', () => {
         document.querySelectorAll('.ratio-option').forEach(o => o.classList.remove('active'));
@@ -36,9 +48,13 @@ document.querySelectorAll('.ratio-option').forEach(option => {
         currentSettings.ratio = option.dataset.ratio;
         currentSettings.width = parseInt(option.dataset.width);
         currentSettings.height = parseInt(option.dataset.height);
+        updateReframeVisibility(currentSettings.ratio);
         triggerAutoSave();
     });
 });
+
+// Initialize on page load
+updateReframeVisibility(currentSettings.ratio);
 
 const selectFps = document.getElementById('select-fps');
 if (selectFps) {
@@ -1411,6 +1427,7 @@ function applyLoadedProject(project) {
         if (selectFpsEl && currentSettings.fps) {
             selectFpsEl.value = currentSettings.fps;
         }
+        updateReframeVisibility(currentSettings.ratio);
     }
     renderMediaList();
 }
