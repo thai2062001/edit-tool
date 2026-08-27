@@ -1521,6 +1521,12 @@ let currentEventSource = null;
 btnRenderAll.addEventListener('click', async () => {
     if (mediaItems.length === 0) return;
 
+    const placeholderCount = mediaItems.filter(i => i.isPlaceholder).length;
+    if (placeholderCount > 0) {
+        const confirmRender = confirm(`⚠️ Hiện còn ${placeholderCount} phân cảnh trên Timeline chưa được bù ảnh (đang là thẻ giữ chỗ viền vàng).\n\nNếu tiếp tục, những cảnh này sẽ hiển thị nền tối kèm chữ phụ đề kịch bản.\n\nBạn có muốn tiếp tục xuất video không?`);
+        if (!confirmRender) return;
+    }
+
     updateWorkflowStep(3);
     renderModal.classList.remove('hidden');
     renderStateProcessing.classList.remove('hidden');
@@ -1787,6 +1793,19 @@ btnRunAiMatch.addEventListener('click', async () => {
         return;
     }
 
+    const scriptLines = script
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(line => line.length > 0 && !line.startsWith('---') && !line.startsWith('==='));
+
+    if (images.length < scriptLines.length) {
+        const missingCount = scriptLines.length - images.length;
+        const confirmMsg = `⚠️ Phát hiện kịch bản có ${scriptLines.length} phân cảnh, nhưng kho hiện chỉ có ${images.length} ảnh (đang thiếu ${missingCount} ảnh).\n\nBởi vì thiếu một lượng lớn ảnh so với kịch bản, các phân cảnh chưa có ảnh sẽ được đặt thành thẻ giữ chỗ (chờ bù ảnh) để bạn tự chọn/tải ảnh bù vào sau.\n\nBạn có muốn tiếp tục không?`;
+        if (!confirm(confirmMsg)) {
+            return;
+        }
+    }
+
     const key = inputGeminiKey.value.trim();
 
     btnRunAiMatch.disabled = true;
@@ -1981,6 +2000,12 @@ function renderAiScenesResult(scenes, meta = {}) {
 // Apply AI Match to Timeline (Preserves 100% of scenes with placeholders for empty slots)
 btnApplyAiTimeline.addEventListener('click', () => {
     if (!currentAiMatchedScenes || currentAiMatchedScenes.length === 0) return;
+
+    const emptyCount = currentAiMatchedScenes.filter(s => typeof s.imageIndex !== 'number' || s.imageIndex < 0).length;
+    if (emptyCount > 0) {
+        const confirmApply = confirm(`ℹ️ Kịch bản gồm ${currentAiMatchedScenes.length} phân cảnh, trong đó có ${emptyCount} phân cảnh chưa có ảnh (sẽ là thẻ chờ bù ảnh viền vàng).\n\nKhi đưa vào Timeline, bạn có thể tự chọn/bấm "➕ Bù ảnh" vào những cảnh còn thiếu này.\n\nBạn có muốn tiếp tục áp dụng vào Timeline không?`);
+        if (!confirmApply) return;
+    }
 
     const sourceItems = (window.mediaItems && window.mediaItems.length > 0) ? window.mediaItems : mediaItems;
     const newTimeline = [];

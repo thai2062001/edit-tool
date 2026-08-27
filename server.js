@@ -249,49 +249,53 @@ app.post('/api/ai/match-script', async (req, res) => {
             }
         });
 
-        // Advanced AI Director Prompt strictly forbidding duplicate image reuse
+        // Parse script into clean sequential scene lines
+        const scriptLines = scriptText
+            .split(/\r?\n/)
+            .map(line => line.trim())
+            .filter(line => line.length > 0 && !line.startsWith('---') && !line.startsWith('==='));
+
+        const formattedScriptNumbered = scriptLines.map((line, idx) => `[SCENE ${idx + 1}]: ${line}`).join('\n\n');
+
+        // Advanced AI Director Prompt strictly preserving all script lines 1-to-1 without merging
         const promptText = `
 Bạn là một Đạo Diễn Dựng Phim & Biên Tập Video Chuyên Nghiệp (Senior Film Director & AI Video Editor).
-Nhiệm vụ của bạn là: Đọc kịch bản dưới đây, phân tích câu chuyện thành các phân cảnh logic theo mạch diễn tiến thời gian, và chọn bức ảnh phù hợp nhất từ kho ảnh có sẵn (index 0 đến ${imageItems.length - 1}).
+Tác giả đã phân chia kịch bản thành CHÍNH XÁC ${scriptLines.length} PHÂN ĐOẠN / CÂU THOẠI (từ SCENE 1 đến SCENE ${scriptLines.length}).
 
---- NỘI DUNG KỊCH BẢN ---
-${scriptText.trim().slice(0, 15000)}
+--- NỘI DUNG KỊCH BẢN ĐÃ CHIA SẴN (${scriptLines.length} PHÂN ĐOẠN) ---
+${formattedScriptNumbered}
 ---
 
-=== CÁC NGUYÊN TẮC BẮT BUỘC ĐỂ TRÁNH NHÀM CHÁN (STRICT CRITICAL RULES) ===
-1. 🛑 NGUYÊN TẮC 1: TUYỆT ĐỐI KHÔNG DÙNG TRÙNG ẢNH (ZERO DUPLICATE IMAGES)
-   - Mỗi ảnh trong kho (index từ 0 đến ${imageItems.length - 1}) CHỈ ĐƯỢC SỬ DỤNG TỐI ĐA 1 LẦN DUY NHẤT trong toàn bộ video.
-   - Khi một ảnh index [i] đã được gán cho một phân cảnh nào đó rồi, thì TUYỆT ĐỐI KHÔNG ĐƯỢC PHÉP dùng lại ở bất kỳ phân cảnh nào khác!
+=== CÁC NGUYÊN TẮC BẮT BUỘC (CRITICAL MANDATORY RULES) ===
+1. 🛑 NGUYÊN TẮC 1: BẢO TOÀN ĐỦ ${scriptLines.length} PHÂN CẢNH (1-TO-1 MAPPING - ZERO MERGING)
+   - Kết quả JSON trả về BẮT BUỘC PHẢI CÓ ĐÚNG CHÍNH XÁC ${scriptLines.length} PHẦN TỬ mảng (mỗi phần tử tương ứng 1-to-1 với [SCENE 1] đến [SCENE ${scriptLines.length}]).
+   - TUYỆT ĐỐI KHÔNG ĐƯỢC GỘP các câu lại với nhau, KHÔNG ĐƯỢC BỎ SÓT bất kỳ câu nào!
 
-2. 🛑 NGUYÊN TẮC 2: ĐỂ TRỐNG (imageIndex: -1) NẾU KHÔNG CÓ ẢNH PHÙ HỢP HOẶC ẢNH TƯƠNG TỰ ĐÃ DÙNG
-   - Nếu phân cảnh đó KHÔNG CÓ ảnh nào thực sự khớp với nội dung câu thoại;
-   - HOẶC nếu các ảnh còn lại trong kho có bối cảnh/nội dung/nhân vật quá giống với ảnh đã dùng trước đó gây cảm giác trùng lặp, nhàm chán;
-   - HOẶC khi kho ảnh đã hết ảnh mới chưa dùng:
-   👉 BẮT BUỘC đặt "imageIndex": -1 (ĐỂ TRỐNG).
-   👉 TUYỆT ĐỐI KHÔNG fill lại ảnh cũ đã dùng, KHÔNG cố gán bừa ảnh không liên quan!
+2. 🛑 NGUYÊN TẮC 2: TUYỆT ĐỐI KHÔNG DÙNG TRÙNG ẢNH (ZERO DUPLICATE IMAGES)
+   - Mỗi ảnh trong kho (index từ 0 đến ${imageItems.length - 1}) CHỈ ĐƯỢC SỬ DỤNG TỐI ĐA 1 LẦN DUY NHẤT.
+   - Khi một ảnh index [i] đã được gán cho một phân cảnh nào đó rồi, thì TUYỆT ĐỐI KHÔNG DÙNG LẠI ở phân cảnh khác!
 
-3. 🛑 NGUYÊN TẮC 3: GIỮ NGUYÊN 100% NGÔN NGỮ KỊCH BẢN CHO PHỤ ĐỀ (sceneText)
-   - Trường "sceneText" sẽ được dùng trực tiếp làm PHỤ ĐỀ (subtitle / overlay text) hiển thị trên video.
-   - BẮT BUỘC PHẢI GIỮ NGUYÊN 100% NGÔN NGỮ GỐC của kịch bản đầu vào:
-     👉 Nếu kịch bản nhập vào là TIẾNG ANH (English) -> "sceneText" PHẢI LÀ TIẾNG ANH (English). TUYỆT ĐỐI KHÔNG DỊCH sang tiếng Việt!
-     👉 Nếu kịch bản nhập vào là TIẾNG VIỆT -> "sceneText" LÀ TIẾNG VIỆT.
-     👉 Nếu là bất kỳ ngôn ngữ nào khác (Pháp, Tây Ban Nha, Nhật...) -> Giữ nguyên ngôn ngữ đó.
-   - "sceneText" cần trích xuất chính xác hoặc tóm tắt đúng câu thoại/nội dung tương ứng của cảnh đó từ kịch bản gốc.
+3. 🛑 NGUYÊN TẮC 3: ĐỂ TRỐNG (imageIndex: -1) NẾU CHƯA CÓ ẢNH HOẶC HẾT ẢNH MỚI
+   - Nếu phân cảnh đó chưa có ảnh phù hợp trong kho, hoặc các ảnh tương tự đã được dùng trước đó:
+   👉 BẮT BUỘC đặt "imageIndex": -1 (ĐỂ TRỐNG - Chờ người dùng tải ảnh bù).
+   👉 TUYỆT ĐỐI KHÔNG lặp lại ảnh cũ đã dùng, KHÔNG gán bừa ảnh không liên quan!
 
-4. 🎬 CHỌN ẢNH VÀ HIỆU ỨNG TƯƠNG THÍCH:
-   - Hãy quan sát visual từng ảnh và tên file để chọn ảnh mô tả sát nhất ý đồ phân cảnh.
+4. 🛑 NGUYÊN TẮC 4: GIỮ NGUYÊN 100% NGÔN NGỮ KỊCH BẢN CHO PHỤ ĐỀ (sceneText)
+   - Trường "sceneText" của mỗi phân cảnh [SCENE i] PHẢI LÀ NGUYÊN VĂN câu thoại của [SCENE i] đó đúng 100% bằng ngôn ngữ gốc (English if English script, Vietnamese if Vietnamese script). TUYỆT ĐỐI KHÔNG TỰ Ý DỊCH!
+
+5. 🎬 CHỌN HIỆU ỨNG VÀ THỜI LƯỢNG TƯƠNG THÍCH:
    - suggestedMotion: 'zoom_in', 'zoom_out', 'pan_left', 'pan_right', 'pan_up', 'pan_down', 'zoom_pan', 'zoom_in_left', 'zoom_in_right', 'none'.
-   - suggestedDuration: từ 3.0s đến 6.0s tùy theo độ dài câu thoại kịch bản.
-   - fadeIn, fadeOut: 0.6s - 0.8s.
+   - suggestedDuration: từ 7.5s đến 9.5s (trung bình 8.5s cho mỗi câu).
+   - fadeIn, fadeOut: 0.8s.
 
 === CẤU TRÚC JSON TRẢ VỀ ===
-Trả về JSON mảng các phân cảnh:
+Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
 [
   {
-    "imageIndex": 0, // Số nguyên từ 0 đến ${imageItems.length - 1}, HOẶC -1 NẾU ĐỂ TRỐNG
-    "sceneText": "Trích dẫn/tóm tắt câu thoại cảnh này đúng 100% bằng ngôn ngữ của kịch bản gốc (English if English script, Vietnamese if Vietnamese script)",
+    "imageIndex": 0, // Index ảnh từ 0 đến ${imageItems.length - 1}, HOẶC -1 NẾU ĐỂ TRỐNG
+    "sceneText": "Nguyên văn câu thoại của SCENE tương ứng bằng ngôn ngữ gốc",
     "suggestedMotion": "zoom_in",
-    "suggestedDuration": 4.5,
+    "suggestedDuration": 8.5,
     "fadeIn": 0.8,
     "fadeOut": 0.8,
     "reason": "Giải thích ngắn lý do chọn ảnh hoặc lý do để trống"
@@ -299,6 +303,7 @@ Trả về JSON mảng các phân cảnh:
 ]
 `;
         contents.push({ text: promptText });
+
 
         const response = await ai.models.generateContent({
             model: 'gemini-3.6-flash',
