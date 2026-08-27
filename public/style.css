@@ -472,12 +472,12 @@ body {
 
 .inspector-fields-grid {
     display: grid;
-    grid-template-columns: 1.4fr 1fr 1fr 1.2fr;
+    grid-template-columns: 1.3fr 0.9fr 0.9fr 1fr 1.1fr;
     gap: 12px;
     align-items: center;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 992px) {
     .inspector-fields-grid {
         grid-template-columns: 1fr 1fr;
     }

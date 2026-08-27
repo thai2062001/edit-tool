@@ -649,9 +649,18 @@ app.post('/api/render', async (req, res) => {
 
     const { width, height, fps, crf, preset } = getOutputDimensionsAndEncoding(aspectRatio, qualityPreset, customFps);
 
-    // Calculate total duration
-    let totalDuration = 0;
+    // Expand items by loopCount if specified (e.g. repetition 2x, 3x for fitness/workout videos)
+    const expandedItems = [];
     items.forEach(item => {
+        const loopCount = Math.max(1, parseInt(item.settings?.loopCount) || 1);
+        for (let l = 0; l < loopCount; l++) {
+            expandedItems.push(item);
+        }
+    });
+
+    // Calculate total duration across expanded items
+    let totalDuration = 0;
+    expandedItems.forEach(item => {
         if (item.type === 'image') {
             totalDuration += Number(item.settings?.duration || 5.0);
         } else if (item.type === 'video') {
@@ -677,8 +686,8 @@ app.post('/api/render', async (req, res) => {
     activeJobs.set(jobId, job);
     res.json({ jobId, outputFilename, totalDuration, width, height, fps });
 
-    // Start background FFmpeg execution
-    executeFFmpegRender(job, items, bgm, { width, height, fps, crf, preset, reframeMode, aspectRatio, outputPath });
+    // Start background FFmpeg execution with expandedItems
+    executeFFmpegRender(job, expandedItems, bgm, { width, height, fps, crf, preset, reframeMode, aspectRatio, outputPath });
 });
 
 // Helper to build FFmpeg drawtext filter for Text Overlay

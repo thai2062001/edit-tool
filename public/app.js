@@ -359,7 +359,7 @@ function renderMediaList() {
                     : `<video src="${item.url}" class="storyboard-thumb-img" muted></video>`
                 }
                 <span class="storyboard-idx-tag">#${index + 1}</span>
-                <span class="storyboard-dur-tag">⏱️ ${dur.toFixed(1)}s</span>
+                <span class="storyboard-dur-tag">⏱️ ${dur.toFixed(1)}s${loopCount > 1 ? ` (🔁 ${loopCount}x)` : ''}</span>
             </div>
             <div class="storyboard-meta-strip">
                 <span class="storyboard-motion-tag">${motionLabel}</span>
@@ -756,7 +756,7 @@ function bindQuickInspectorInputs() {
         triggerAutoSave();
     }
 
-    [inspMotion, inspDuration, inspIntensity, inspFadeIn, inspFadeOut, inspTrimStart, inspTrimEnd, inspVideoVolume, inspText, inspTextPos, inspTextStyle, inspTextSize].forEach(el => {
+    [inspMotion, inspDuration, inspLoopCount, inspLoopCountVideo, inspIntensity, inspFadeIn, inspFadeOut, inspTrimStart, inspTrimEnd, inspVideoVolume, inspText, inspTextPos, inspTextStyle, inspTextSize].forEach(el => {
         if (el) {
             el.addEventListener('input', onInspectorChange);
             el.addEventListener('change', onInspectorChange);
