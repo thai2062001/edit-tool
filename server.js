@@ -776,6 +776,29 @@ app.post('/api/render', async (req, res) => {
 });
 
 // Helper to build FFmpeg drawtext filter for Text Overlay
+// Helper to auto-wrap long subtitle text to prevent edge overflow
+function wrapTextSmart(text, maxChars = 50) {
+    if (!text || text.length <= maxChars) return text;
+    const words = text.split(/\s+/);
+    const lines = [];
+    let currentLine = '';
+
+    words.forEach(word => {
+        if (!currentLine) {
+            currentLine = word;
+        } else if ((currentLine + ' ' + word).length <= maxChars) {
+            currentLine += ' ' + word;
+        } else {
+            lines.push(currentLine);
+            currentLine = word;
+        }
+    });
+    if (currentLine) {
+        lines.push(currentLine);
+    }
+    return lines.join('\n');
+}
+
 // Helper to build FFmpeg drawtext filter for Text Overlay safely via textfile
 function buildDrawtextFilter(settings, width, height, tempFiles = []) {
     if (!settings || !settings.overlayText || !settings.overlayText.trim()) {
@@ -783,9 +806,21 @@ function buildDrawtextFilter(settings, width, height, tempFiles = []) {
     }
     const text = settings.overlayText.trim();
     
+    // Calculate max characters per line based on aspect ratio & width
+    let maxChars = 48;
+    if (width < height) {
+        // 9:16 portrait format (Shorts / TikTok)
+        maxChars = 26;
+    } else if (width === height) {
+        // 1:1 square format (Instagram)
+        maxChars = 34;
+    }
+
+    const wrappedText = wrapTextSmart(text, maxChars);
+
     // Write text to temporary UTF-8 file to avoid all FFmpeg command line & filter graph escaping issues
     const textTmpFile = path.join(OUTPUTS_DIR, `txt_${Date.now()}_${Math.round(Math.random() * 1e8)}.txt`);
-    fs.writeFileSync(textTmpFile, text, 'utf8');
+    fs.writeFileSync(textTmpFile, wrappedText, 'utf8');
     tempFiles.push(textTmpFile);
 
     const position = settings.textPosition || 'bottom';
@@ -805,15 +840,15 @@ function buildDrawtextFilter(settings, width, height, tempFiles = []) {
         y = `h-text_h-${Math.round(height * 0.10)}`;
     }
 
-    let styleParams = ':fontcolor=white';
+    let styleParams = ':fontcolor=white:line_spacing=10';
     if (style === 'banner') {
-        styleParams = ':fontcolor=white:box=1:boxcolor=black@0.65:boxborderw=16';
+        styleParams = ':fontcolor=white:box=1:boxcolor=black@0.78:boxborderw=18:line_spacing=10';
     } else if (style === 'outline') {
-        styleParams = ':fontcolor=white:borderw=4:bordercolor=black';
+        styleParams = ':fontcolor=white:borderw=4:bordercolor=black:line_spacing=10';
     } else if (style === 'glow') {
-        styleParams = ':fontcolor=white:shadowcolor=0x6366F1@0.8:shadowx=3:shadowy=3:borderw=2:bordercolor=black';
+        styleParams = ':fontcolor=white:shadowcolor=0x6366F1@0.8:shadowx=3:shadowy=3:borderw=2:bordercolor=black:line_spacing=10';
     } else if (style === 'plain') {
-        styleParams = ':fontcolor=white';
+        styleParams = ':fontcolor=white:line_spacing=10';
     }
 
     let animParams = '';

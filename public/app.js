@@ -639,32 +639,64 @@ function renderImageFrameOnCanvas(ctx, canvas, item, img, progress) {
     ctx.drawImage(img, -canvas.width / 2 + offsetX, -canvas.height / 2 + offsetY, canvas.width, canvas.height);
     ctx.restore();
 
-    // Render Text Overlay
+    // Render Text Overlay (Smart Auto Word-Wrap to prevent overflow)
     const overlayText = item.settings?.overlayText?.trim();
     if (overlayText) {
         const textPos = item.settings?.textPosition || 'bottom';
         const textStyle = item.settings?.textStyle || 'banner';
         const fontSize = Number(item.settings?.fontSize) || 48;
+        const lineHeight = fontSize * 1.35;
+        const maxTextWidth = canvas.width * 0.85; // Leave 7.5% safe margin on each side
 
         ctx.save();
         ctx.font = `bold ${fontSize}px Outfit, -apple-system, sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        const textX = canvas.width / 2;
-        let textY = canvas.height - 120;
-        if (textPos === 'top') textY = 120;
-        else if (textPos === 'center') textY = canvas.height / 2;
+        // Word wrap into lines
+        const words = overlayText.split(/\s+/);
+        const lines = [];
+        let currentLine = '';
 
-        const metrics = ctx.measureText(overlayText);
-        const boxWidth = metrics.width + 48;
-        const boxHeight = fontSize * 1.6;
+        words.forEach(word => {
+            const testLine = currentLine ? `${currentLine} ${word}` : word;
+            const testWidth = ctx.measureText(testLine).width;
+            if (testWidth > maxTextWidth && currentLine) {
+                lines.push(currentLine);
+                currentLine = word;
+            } else {
+                currentLine = testLine;
+            }
+        });
+        if (currentLine) lines.push(currentLine);
+
+        const totalTextHeight = lines.length * lineHeight;
+        const textX = canvas.width / 2;
+
+        let startY = canvas.height - 120 - (totalTextHeight / 2);
+        if (textPos === 'top') {
+            startY = 100;
+        } else if (textPos === 'center') {
+            startY = (canvas.height - totalTextHeight) / 2;
+        } else {
+            startY = canvas.height - 90 - totalTextHeight;
+        }
 
         if (textStyle === 'banner') {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            // Find max width among lines
+            let maxLineWidth = 0;
+            lines.forEach(l => {
+                const w = ctx.measureText(l).width;
+                if (w > maxLineWidth) maxLineWidth = w;
+            });
+
+            const boxWidth = Math.min(canvas.width * 0.94, maxLineWidth + 56);
+            const boxHeight = totalTextHeight + 24;
             const rx = textX - boxWidth / 2;
-            const ry = textY - boxHeight / 2;
-            const r = 10;
+            const ry = startY - 12;
+            const r = 12;
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.78)';
             ctx.beginPath();
             ctx.moveTo(rx + r, ry);
             ctx.lineTo(rx + boxWidth - r, ry);
@@ -679,20 +711,25 @@ function renderImageFrameOnCanvas(ctx, canvas, item, img, progress) {
             ctx.fill();
         }
 
-        if (textStyle === 'outline') {
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = Math.max(4, fontSize * 0.12);
-            ctx.strokeText(overlayText, textX, textY);
-        } else if (textStyle === 'glow') {
-            ctx.shadowColor = '#06B6D4';
-            ctx.shadowBlur = 18;
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillText(overlayText, textX, textY);
-            ctx.shadowBlur = 0;
-        }
+        lines.forEach((line, lIdx) => {
+            const lineY = startY + (lIdx * lineHeight) + (lineHeight / 2);
 
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillText(overlayText, textX, textY);
+            if (textStyle === 'outline') {
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = Math.max(4, fontSize * 0.12);
+                ctx.strokeText(line, textX, lineY);
+            } else if (textStyle === 'glow') {
+                ctx.shadowColor = '#06B6D4';
+                ctx.shadowBlur = 18;
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillText(line, textX, lineY);
+                ctx.shadowBlur = 0;
+            }
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillText(line, textX, lineY);
+        });
+
         ctx.restore();
     }
 }
