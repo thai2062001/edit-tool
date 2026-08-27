@@ -65,5 +65,3 @@ Bạn lúc này đã trở thành những ông bà cụ người Mỹ ngồi tr�
 Lũ trẻ con Mỹ sẽ ôm bụng cười ngặt nghẽo: "Ông lại kể chuyện viễn tưởng của Hollywood rồi! Làm gì có chiếc gương ma thuật nào như thế!".
 
 Lúc đó, bạn sẽ chỉ khẽ mỉm cười hiền từ. Bởi vì bạn nhận ra rằng: Mất đi Internet ban đầu tuy khiến nước Mỹ chao đảo và sốc nặng, nhưng sau tất cả, nó đã trao trả lại cho con người Giấc Mơ Mỹ chân thật nhất — đó là thời gian, sự kết nối bằng xương bằng thịt giữa người với người, và một cuộc sống được sống trọn vẹn 100% không qua bất kỳ một lớp màn hình ảo nào.
-
-Nếu ngày mai nước Mỹ thực sự mất Internet vĩnh viễn và bạn chỉ có thể dùng bốt điện thoại công cộng gọi một cuộc gọi cuối cùng, bạn sẽ gọi cho ai? Hãy tag ngay đứa bạn thân ấy vào hoặc chia sẻ video này cho họ cùng xem nhé!
