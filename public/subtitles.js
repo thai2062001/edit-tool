@@ -884,6 +884,35 @@
     let lastRenderedWordIdx = null;
     let currentActiveCardEl = null;
     let currentActivePillEl = null;
+    let cachedSegIndex = 0;
+
+    function findActiveSegment(segments, curTime) {
+        if (!segments || segments.length === 0) return null;
+        if (cachedSegIndex >= 0 && cachedSegIndex < segments.length) {
+            const cur = segments[cachedSegIndex];
+            if (curTime >= cur.start && curTime <= cur.end) return cur;
+            if (cachedSegIndex + 1 < segments.length) {
+                const next = segments[cachedSegIndex + 1];
+                if (curTime >= next.start && curTime <= next.end) {
+                    cachedSegIndex++;
+                    return next;
+                }
+            }
+        }
+        // Binary search fallback for timeline jumps
+        let low = 0, high = segments.length - 1;
+        while (low <= high) {
+            const mid = (low + high) >> 1;
+            const seg = segments[mid];
+            if (curTime < seg.start) high = mid - 1;
+            else if (curTime > seg.end) low = mid + 1;
+            else {
+                cachedSegIndex = mid;
+                return seg;
+            }
+        }
+        return null;
+    }
 
     // Real-time Word-Level Subtitle Rendering on Video/Audio Playback (Optimized)
     function onPlayerTimeUpdate() {
@@ -896,8 +925,8 @@
         }
         updateTimeDisplay(curTime, dur);
 
-        // Fast binary or linear search for active segment
-        const activeSeg = SubState.segments.find(s => curTime >= s.start && curTime <= s.end);
+        // O(1) Fast path search for active segment
+        const activeSeg = findActiveSegment(SubState.segments, curTime);
 
         if (!activeSeg) {
             if (lastRenderedSegId !== null) {

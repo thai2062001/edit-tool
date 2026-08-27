@@ -77,24 +77,17 @@ function setupSubtitlesRoutes(app, config) {
                 const mediaPath = path.join(UPLOADS_DIR, mediaFilename);
                 if (fs.existsSync(mediaPath)) {
                     try {
-                        mediaDuration = await probeMediaDuration(mediaPath);
-                    } catch (e) {}
-
-                    // Extract lightweight audio (mp3, mono, 64k) for Gemini multimodal audio understanding
-                    try {
-                        const tempAudioPath = path.join(UPLOADS_DIR, `temp_gemini_${Date.now()}.mp3`);
-                        await extractLightweightAudio(mediaPath, tempAudioPath);
-                        if (fs.existsSync(tempAudioPath)) {
-                            const audioBuffer = fs.readFileSync(tempAudioPath);
-                            // If audio is under 20MB, attach inlineData base64
-                            if (audioBuffer.length <= 20 * 1024 * 1024) {
-                                audioBase64 = audioBuffer.toString('base64');
-                                mimeType = 'audio/mp3';
-                            }
-                            try { fs.unlinkSync(tempAudioPath); } catch (e) {}
+                        const [dur, base64Audio] = await Promise.all([
+                            probeMediaDuration(mediaPath),
+                            extractLightweightAudioBuffer(mediaPath)
+                        ]);
+                        mediaDuration = dur || 10;
+                        if (base64Audio) {
+                            audioBase64 = base64Audio;
+                            mimeType = 'audio/mp3';
                         }
-                    } catch (audioExtractErr) {
-                        console.warn('Audio extraction warning:', audioExtractErr.message);
+                    } catch (mediaErr) {
+                        console.warn('Media processing warning:', mediaErr.message);
                     }
                 }
             }
@@ -658,7 +651,37 @@ function probeMediaDuration(filePath) {
 }
 
 /**
- * Extract low-bitrate MP3 for fast AI processing
+ * Extract low-bitrate MP3 directly to in-memory Base64 for fast AI processing
+ */
+function extractLightweightAudioBuffer(inputPath) {
+    return new Promise((resolve) => {
+        const proc = spawn('ffmpeg', [
+            '-threads', '0',
+            '-i', inputPath,
+            '-vn',
+            '-sn',
+            '-dn',
+            '-ar', '16000',
+            '-ac', '1',
+            '-b:a', '32k',
+            '-f', 'mp3',
+            'pipe:1'
+        ]);
+        const chunks = [];
+        proc.stdout.on('data', d => chunks.push(d));
+        proc.on('close', (code) => {
+            if (code === 0 && chunks.length > 0) {
+                resolve(Buffer.concat(chunks).toString('base64'));
+            } else {
+                resolve(null);
+            }
+        });
+        proc.on('error', () => resolve(null));
+    });
+}
+
+/**
+ * Extract low-bitrate MP3 for fast AI processing (file-based legacy fallback)
  */
 function extractLightweightAudio(inputPath, outputPath) {
     return new Promise((resolve, reject) => {
