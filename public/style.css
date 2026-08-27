@@ -1729,6 +1729,28 @@ body {
     gap: 4px;
 }
 
+.btn-scene-upload {
+    font-size: 10px;
+    font-weight: 700;
+    background: rgba(6, 182, 212, 0.15);
+    color: #38BDF8;
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    padding: 3px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-scene-upload:hover {
+    background: rgba(6, 182, 212, 0.35);
+    border-color: #38BDF8;
+    color: #FFF;
+    transform: scale(1.03);
+}
+
 .badge-motion {
     font-size: 10px;
     background: rgba(99, 102, 241, 0.2);
@@ -1746,6 +1768,97 @@ body {
 .ai-apply-footer {
     display: flex;
     gap: 10px;
+}
+
+/* Storyboard Placeholder Card Styles */
+.storyboard-card.is-placeholder {
+    border: 2px dashed #F59E0B !important;
+    background: rgba(40, 30, 15, 0.85) !important;
+}
+
+.storyboard-card.is-placeholder:hover {
+    border-color: #FBBF24 !important;
+    background: rgba(50, 38, 18, 0.95) !important;
+    box-shadow: 0 4px 18px rgba(245, 158, 11, 0.35);
+}
+
+.storyboard-card.is-placeholder.active {
+    border-color: #FBBF24 !important;
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.6) !important;
+}
+
+.storyboard-placeholder-thumb {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(30, 25, 15, 0.95), rgba(15, 12, 8, 0.95));
+    color: #F59E0B;
+    text-align: center;
+    padding: 4px;
+    gap: 3px;
+}
+
+.placeholder-icon {
+    font-size: 18px;
+    line-height: 1;
+}
+
+.placeholder-btn-mini {
+    font-size: 9.5px;
+    font-weight: 700;
+    background: rgba(245, 158, 11, 0.25);
+    color: #FCD34D;
+    border: 1px solid rgba(245, 158, 11, 0.5);
+    padding: 2px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.placeholder-btn-mini:hover {
+    background: rgba(245, 158, 11, 0.5);
+    color: #FFF;
+}
+
+.inspector-placeholder-banner {
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.inspector-placeholder-text {
+    font-size: 12.5px;
+    color: #FDE68A;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-inspector-upload-placeholder {
+    font-size: 12px;
+    font-weight: 700;
+    background: #F59E0B;
+    color: #000;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+}
+
+.btn-inspector-upload-placeholder:hover {
+    background: #FBBF24;
+    transform: scale(1.03);
 }
 
 /* Batch Motion & Duration Controls Styling */

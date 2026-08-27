@@ -270,7 +270,15 @@ ${scriptText.trim().slice(0, 15000)}
    👉 BẮT BUỘC đặt "imageIndex": -1 (ĐỂ TRỐNG).
    👉 TUYỆT ĐỐI KHÔNG fill lại ảnh cũ đã dùng, KHÔNG cố gán bừa ảnh không liên quan!
 
-3. 🎬 CHỌN ẢNH VÀ HIỆU ỨNG TƯƠNG THÍCH:
+3. 🛑 NGUYÊN TẮC 3: GIỮ NGUYÊN 100% NGÔN NGỮ KỊCH BẢN CHO PHỤ ĐỀ (sceneText)
+   - Trường "sceneText" sẽ được dùng trực tiếp làm PHỤ ĐỀ (subtitle / overlay text) hiển thị trên video.
+   - BẮT BUỘC PHẢI GIỮ NGUYÊN 100% NGÔN NGỮ GỐC của kịch bản đầu vào:
+     👉 Nếu kịch bản nhập vào là TIẾNG ANH (English) -> "sceneText" PHẢI LÀ TIẾNG ANH (English). TUYỆT ĐỐI KHÔNG DỊCH sang tiếng Việt!
+     👉 Nếu kịch bản nhập vào là TIẾNG VIỆT -> "sceneText" LÀ TIẾNG VIỆT.
+     👉 Nếu là bất kỳ ngôn ngữ nào khác (Pháp, Tây Ban Nha, Nhật...) -> Giữ nguyên ngôn ngữ đó.
+   - "sceneText" cần trích xuất chính xác hoặc tóm tắt đúng câu thoại/nội dung tương ứng của cảnh đó từ kịch bản gốc.
+
+4. 🎬 CHỌN ẢNH VÀ HIỆU ỨNG TƯƠNG THÍCH:
    - Hãy quan sát visual từng ảnh và tên file để chọn ảnh mô tả sát nhất ý đồ phân cảnh.
    - suggestedMotion: 'zoom_in', 'zoom_out', 'pan_left', 'pan_right', 'pan_up', 'pan_down', 'zoom_pan', 'zoom_in_left', 'zoom_in_right', 'none'.
    - suggestedDuration: từ 3.0s đến 6.0s tùy theo độ dài câu thoại kịch bản.
@@ -281,7 +289,7 @@ Trả về JSON mảng các phân cảnh:
 [
   {
     "imageIndex": 0, // Số nguyên từ 0 đến ${imageItems.length - 1}, HOẶC -1 NẾU ĐỂ TRỐNG
-    "sceneText": "Tóm tắt ngắn gọn câu thoại/nội dung cảnh này",
+    "sceneText": "Trích dẫn/tóm tắt câu thoại cảnh này đúng 100% bằng ngôn ngữ của kịch bản gốc (English if English script, Vietnamese if Vietnamese script)",
     "suggestedMotion": "zoom_in",
     "suggestedDuration": 4.5,
     "fadeIn": 0.8,
@@ -824,13 +832,22 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
         const { width, height, fps, crf, preset, reframeMode } = config;
         const args = ['-y'];
 
+        // Ensure fallback 1x1 black image exists for empty placeholder scenes
+        const defaultPlaceholderPath = path.join(OUTPUTS_DIR, 'default_placeholder.png');
+        if (!fs.existsSync(defaultPlaceholderPath)) {
+            const png1x1 = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64');
+            fs.writeFileSync(defaultPlaceholderPath, png1x1);
+        }
+
         chunkItems.forEach((item) => {
-            let filePath = path.join(UPLOADS_DIR, item.filename);
+            let filePath = path.join(UPLOADS_DIR, item.filename || 'empty.png');
             if (!fs.existsSync(filePath)) {
                 if (item.path && fs.existsSync(item.path)) {
                     filePath = item.path;
-                } else if (fs.existsSync(path.join(OUTPUTS_DIR, item.filename))) {
+                } else if (item.filename && fs.existsSync(path.join(OUTPUTS_DIR, item.filename))) {
                     filePath = path.join(OUTPUTS_DIR, item.filename);
+                } else {
+                    filePath = defaultPlaceholderPath;
                 }
             }
             args.push('-i', filePath);

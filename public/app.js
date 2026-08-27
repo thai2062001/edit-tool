@@ -322,13 +322,14 @@ function renderMediaList() {
 
     mediaItems.forEach((item, index) => {
         const isImage = item.type === 'image';
+        const isPlaceholder = Boolean(item.isPlaceholder);
         const dur = isImage 
-            ? Number(item.settings.duration || 5.0) 
-            : Math.max(0.5, Number(item.settings.trimEnd || item.duration || 5) - Number(item.settings.trimStart || 0));
+            ? Number(item.settings?.duration || 5.0) 
+            : Math.max(0.5, Number(item.settings?.trimEnd || item.duration || 5) - Number(item.settings?.trimStart || 0));
         totalDur += Math.max(0.5, dur);
 
         const card = document.createElement('div');
-        card.className = `storyboard-card ${index === activeSegmentIndex ? 'active' : ''}`;
+        card.className = `storyboard-card ${index === activeSegmentIndex ? 'active' : ''} ${isPlaceholder ? 'is-placeholder' : ''}`;
         card.dataset.index = index;
         card.setAttribute('draggable', 'true');
 
@@ -340,13 +341,14 @@ function renderMediaList() {
         card.addEventListener('dragend', handleDragEnd);
 
         // Click to select
-        card.addEventListener('click', () => {
+        card.addEventListener('click', (e) => {
+            if (e.target.closest('.btn-card-upload-img')) return; // Handled separately
             selectSegment(index);
         });
 
-        const motionLabel = isImage 
-            ? getMotionShortName(item.settings.motion || 'zoom_in')
-            : '✂️ Video Trim';
+        const motionLabel = isPlaceholder 
+            ? '📷 Cần thêm ảnh' 
+            : (isImage ? getMotionShortName(item.settings?.motion || 'zoom_in') : '✂️ Video Trim');
 
         const textPreview = item.settings?.overlayText?.trim() 
             ? `✍️ ${item.settings.overlayText.trim()}` 
@@ -354,12 +356,24 @@ function renderMediaList() {
 
         const loopCount = item.settings?.loopCount || 1;
 
+        let thumbHtml = '';
+        if (isPlaceholder) {
+            thumbHtml = `
+                <div class="storyboard-placeholder-thumb">
+                    <span class="placeholder-icon">📷</span>
+                    <span style="font-size: 9px; font-weight: 700; color: #FBBF24;">Chờ thêm ảnh</span>
+                    <button type="button" class="placeholder-btn-mini btn-card-upload-img" data-index="${index}">➕ Bù ảnh</button>
+                </div>
+            `;
+        } else if (isImage) {
+            thumbHtml = `<img src="${item.url}" class="storyboard-thumb-img" alt="${item.originalName}">`;
+        } else {
+            thumbHtml = `<video src="${item.url}" class="storyboard-thumb-img" muted></video>`;
+        }
+
         card.innerHTML = `
             <div class="storyboard-thumb-box">
-                ${isImage 
-                    ? `<img src="${item.url}" class="storyboard-thumb-img" alt="${item.originalName}">` 
-                    : `<video src="${item.url}" class="storyboard-thumb-img" muted></video>`
-                }
+                ${thumbHtml}
                 <span class="storyboard-idx-tag">#${index + 1}</span>
                 <span class="storyboard-dur-tag">⏱️ ${dur.toFixed(1)}s${loopCount > 1 ? ` (🔁 ${loopCount}x)` : ''}</span>
             </div>
@@ -371,12 +385,22 @@ function renderMediaList() {
         mediaList.appendChild(card);
     });
 
+    // Attach inline upload listeners for placeholder cards
+    mediaList.querySelectorAll('.btn-card-upload-img').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const idx = parseInt(btn.dataset.index);
+            uploadImageForSegment(idx);
+        });
+    });
+
     totalDurationEl.innerText = `${totalDur.toFixed(1)}s`;
     
     // Update Quick Inspector & Studio Canvas Player
     selectSegment(activeSegmentIndex, false);
     triggerAutoSave();
 }
+
 
 function selectSegment(index, shouldScroll = true) {
     if (index < 0 || index >= mediaItems.length) return;
@@ -411,12 +435,23 @@ function updateQuickInspector(index) {
     const inspTypeBadge = document.getElementById('inspector-type-badge');
     const inspImageControls = document.getElementById('inspector-image-controls');
     const inspVideoControls = document.getElementById('inspector-video-controls');
+    const inspPlaceholderBanner = document.getElementById('inspector-placeholder-banner');
+    const btnInspUploadPlaceholder = document.getElementById('btn-insp-upload-placeholder');
+
+    const isPlaceholder = Boolean(item.isPlaceholder);
 
     if (inspNum) inspNum.innerText = `#${index + 1}`;
     if (inspFilename) inspFilename.innerText = item.originalName;
     if (inspTypeBadge) {
-        inspTypeBadge.className = `card-type-badge ${item.type}`;
-        inspTypeBadge.innerText = item.type === 'image' ? '🖼️ Ảnh' : '🎬 Clip';
+        inspTypeBadge.className = `card-type-badge ${isPlaceholder ? 'placeholder' : item.type}`;
+        inspTypeBadge.innerText = isPlaceholder ? '⚠️ Chờ ảnh' : (item.type === 'image' ? '🖼️ Ảnh' : '🎬 Clip');
+    }
+
+    if (inspPlaceholderBanner) {
+        inspPlaceholderBanner.classList.toggle('hidden', !isPlaceholder);
+    }
+    if (btnInspUploadPlaceholder) {
+        btnInspUploadPlaceholder.onclick = () => uploadImageForSegment(index);
     }
 
     const isImage = item.type === 'image';
@@ -440,29 +475,29 @@ function updateQuickInspector(index) {
     const inspTextSize = document.getElementById('insp-textsize');
 
     if (isImage) {
-        if (inspMotion) inspMotion.value = item.settings.motion || 'zoom_in';
-        if (inspDuration) inspDuration.value = item.settings.duration || 5.0;
-        if (inspLoopCount) inspLoopCount.value = item.settings.loopCount || 1;
-        if (inspIntensity) inspIntensity.value = item.settings.zoomIntensity || 1.25;
-        if (inspFadeIn) inspFadeIn.value = item.settings.fadeIn ?? 0.8;
-        if (inspFadeOut) inspFadeOut.value = item.settings.fadeOut ?? 0.8;
+        if (inspMotion) inspMotion.value = item.settings?.motion || 'zoom_in';
+        if (inspDuration) inspDuration.value = item.settings?.duration || 5.0;
+        if (inspLoopCount) inspLoopCount.value = item.settings?.loopCount || 1;
+        if (inspIntensity) inspIntensity.value = item.settings?.zoomIntensity || 1.25;
+        if (inspFadeIn) inspFadeIn.value = item.settings?.fadeIn ?? 0.8;
+        if (inspFadeOut) inspFadeOut.value = item.settings?.fadeOut ?? 0.8;
     } else {
         if (inspTrimStart) {
             inspTrimStart.max = item.duration || 10;
-            inspTrimStart.value = item.settings.trimStart || 0;
+            inspTrimStart.value = item.settings?.trimStart || 0;
         }
         if (inspTrimEnd) {
             inspTrimEnd.max = item.duration || 10;
-            inspTrimEnd.value = item.settings.trimEnd || item.duration || 5;
+            inspTrimEnd.value = item.settings?.trimEnd || item.duration || 5;
         }
-        if (inspLoopCountVideo) inspLoopCountVideo.value = item.settings.loopCount || 1;
-        if (inspVideoVolume) inspVideoVolume.value = item.settings.videoVolume ?? 1.0;
+        if (inspLoopCountVideo) inspLoopCountVideo.value = item.settings?.loopCount || 1;
+        if (inspVideoVolume) inspVideoVolume.value = item.settings?.videoVolume ?? 1.0;
     }
 
-    if (inspText) inspText.value = item.settings.overlayText || '';
-    if (inspTextPos) inspTextPos.value = item.settings.textPosition || 'bottom';
-    if (inspTextStyle) inspTextStyle.value = item.settings.textStyle || 'banner';
-    if (inspTextSize) inspTextSize.value = item.settings.fontSize || 48;
+    if (inspText) inspText.value = item.settings?.overlayText || '';
+    if (inspTextPos) inspTextPos.value = item.settings?.textPosition || 'bottom';
+    if (inspTextStyle) inspTextStyle.value = item.settings?.textStyle || 'banner';
+    if (inspTextSize) inspTextSize.value = item.settings?.fontSize || 48;
 
     // Actions
     const btnInspPrev = document.getElementById('btn-inspector-move-prev');
@@ -495,12 +530,32 @@ function drawStudioCanvasFrame(index, progress = 0) {
     const timeDisplay = document.getElementById('studio-time-display');
 
     const dur = item.type === 'image' 
-        ? (item.settings.duration || 5.0) 
-        : Math.max(0.5, (item.settings.trimEnd || item.duration || 5) - (item.settings.trimStart || 0));
+        ? (item.settings?.duration || 5.0) 
+        : Math.max(0.5, (item.settings?.trimEnd || item.duration || 5) - (item.settings?.trimStart || 0));
 
     if (sceneLabel) sceneLabel.innerText = `Cảnh #${index + 1} / ${mediaItems.length}`;
-    if (sceneMotion) sceneMotion.innerText = item.type === 'image' ? getMotionShortName(item.settings.motion) : '🎬 Video Clip';
+    if (sceneMotion) sceneMotion.innerText = item.isPlaceholder ? '⚠️ Chờ thêm ảnh' : (item.type === 'image' ? getMotionShortName(item.settings?.motion) : '🎬 Video Clip');
     if (timeDisplay) timeDisplay.innerText = `${(progress * dur).toFixed(1)}s / ${dur.toFixed(1)}s`;
+
+    if (item.isPlaceholder || !item.url) {
+        ctx.fillStyle = '#18140E';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = '#F59E0B';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(30, 30, canvas.width - 60, canvas.height - 60);
+
+        ctx.fillStyle = '#F59E0B';
+        ctx.font = 'bold 50px Outfit, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('📷 [PHÂN CẢNH CHỜ THÊM ẢNH]', canvas.width / 2, canvas.height / 2 - 35);
+
+        if (item.settings?.overlayText) {
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.font = '32px Outfit, sans-serif';
+            ctx.fillText(`"${item.settings.overlayText}"`, canvas.width / 2, canvas.height / 2 + 40);
+        }
+        return;
+    }
 
     if (item.type === 'image') {
         let img = studioLoadedImages.get(item.url);
@@ -527,6 +582,7 @@ function drawStudioCanvasFrame(index, progress = 0) {
         ctx.fillText(`Thời lượng: ${dur.toFixed(1)}s`, canvas.width / 2, canvas.height / 2 + 30);
     }
 }
+
 
 function renderImageFrameOnCanvas(ctx, canvas, item, img, progress) {
     const motion = item.settings.motion || 'zoom_in';
@@ -1728,6 +1784,103 @@ btnRunAiMatch.addEventListener('click', async () => {
     }
 });
 
+// Upload and assign new image to a specific segment on Timeline
+function uploadImageForSegment(itemIndex) {
+    const tempInput = document.createElement('input');
+    tempInput.type = 'file';
+    tempInput.accept = 'image/*';
+    tempInput.style.display = 'none';
+    document.body.appendChild(tempInput);
+
+    tempInput.onchange = async (e) => {
+        if (!e.target.files || !e.target.files[0]) {
+            document.body.removeChild(tempInput);
+            return;
+        }
+        const file = e.target.files[0];
+        const formData = new FormData();
+        formData.append('files', file);
+
+        try {
+            const res = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success && data.files && data.files[0]) {
+                const newUploaded = data.files[0];
+                const targetItem = mediaItems[itemIndex];
+                if (targetItem) {
+                    targetItem.filename = newUploaded.filename;
+                    targetItem.originalName = newUploaded.originalName;
+                    targetItem.url = newUploaded.url;
+                    targetItem.type = 'image';
+                    targetItem.isPlaceholder = false;
+                    targetItem.width = newUploaded.width;
+                    targetItem.height = newUploaded.height;
+                    
+                    renderMediaList();
+                    selectSegment(itemIndex);
+                }
+            } else {
+                alert('Tải ảnh thất bại: ' + (data.error || 'Lỗi không xác định'));
+            }
+        } catch (err) {
+            alert('Lỗi tải ảnh: ' + err.message);
+        } finally {
+            document.body.removeChild(tempInput);
+        }
+    };
+
+    tempInput.click();
+}
+
+// Upload and assign new image to a specific scene in AI Match Modal
+function uploadImageForAiScene(sceneIndex) {
+    const tempInput = document.createElement('input');
+    tempInput.type = 'file';
+    tempInput.accept = 'image/*';
+    tempInput.style.display = 'none';
+    document.body.appendChild(tempInput);
+
+    tempInput.onchange = async (e) => {
+        if (!e.target.files || !e.target.files[0]) {
+            document.body.removeChild(tempInput);
+            return;
+        }
+        const file = e.target.files[0];
+        const formData = new FormData();
+        formData.append('files', file);
+
+        try {
+            const res = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success && data.files && data.files[0]) {
+                const newUploaded = data.files[0];
+                mediaItems.push(newUploaded);
+                if (window.mediaItems) window.mediaItems.push(newUploaded);
+
+                if (currentAiMatchedScenes && currentAiMatchedScenes[sceneIndex]) {
+                    currentAiMatchedScenes[sceneIndex].imageIndex = mediaItems.length - 1;
+                    currentAiMatchedScenes[sceneIndex].reason = 'Đã tự chọn ảnh mới tải lên';
+                }
+                renderAiScenesResult(currentAiMatchedScenes);
+            } else {
+                alert('Tải ảnh thất bại: ' + (data.error || 'Lỗi không xác định'));
+            }
+        } catch (err) {
+            alert('Lỗi tải ảnh: ' + err.message);
+        } finally {
+            document.body.removeChild(tempInput);
+        }
+    };
+
+    tempInput.click();
+}
+
 function renderAiScenesResult(scenes, meta = {}) {
     aiResultsContainer.classList.remove('hidden');
     
@@ -1756,7 +1909,7 @@ function renderAiScenesResult(scenes, meta = {}) {
 
         const titleHtml = hasImage
             ? `<h5>Cảnh ${index + 1}: ${imgItem.originalName}</h5>`
-            : `<h5 class="empty-title">Cảnh ${index + 1} <span class="badge-empty-scene">⚠️ Để trống (Tránh trùng lặp)</span></h5>`;
+            : `<h5 class="empty-title">Cảnh ${index + 1} <span class="badge-empty-scene">⚠️ Để trống (Chờ bù ảnh)</span></h5>`;
 
         const reasonHtml = scene.reason 
             ? `<div class="ai-scene-reason text-xs text-dim mt-1">💡 <em>${scene.reason}</em></div>`
@@ -1770,27 +1923,35 @@ function renderAiScenesResult(scenes, meta = {}) {
                 ${reasonHtml}
             </div>
             <div class="ai-scene-meta">
+                <button type="button" class="btn-scene-upload" data-scene-idx="${index}">📤 ${hasImage ? 'Đổi ảnh' : 'Tải ảnh bù'}</button>
                 <span class="badge-motion">${(scene.suggestedMotion || 'zoom_in').replace(/_/g, ' ')}</span>
                 <span class="ai-scene-dur">⏱️ ${scene.suggestedDuration || 4.0}s | Fade ${scene.fadeIn || 0.8}s</span>
             </div>
         `;
         aiScenesList.appendChild(card);
     });
+
+    // Attach click event to upload buttons in modal
+    aiScenesList.querySelectorAll('.btn-scene-upload').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const sIdx = parseInt(btn.dataset.sceneIdx);
+            uploadImageForAiScene(sIdx);
+        });
+    });
 }
 
-// Apply AI Match to Timeline (Strictly without duplicate images)
+// Apply AI Match to Timeline (Preserves 100% of scenes with placeholders for empty slots)
 btnApplyAiTimeline.addEventListener('click', () => {
     if (!currentAiMatchedScenes || currentAiMatchedScenes.length === 0) return;
 
     const sourceItems = (window.mediaItems && window.mediaItems.length > 0) ? window.mediaItems : mediaItems;
     const newTimeline = [];
-    const emptyScenes = [];
+    let placeholderCount = 0;
 
     currentAiMatchedScenes.forEach((scene, sIdx) => {
-        // Only pick valid unique media items; strictly DO NOT fallback or repeat old images
         if (typeof scene.imageIndex === 'number' && scene.imageIndex >= 0 && sourceItems[scene.imageIndex]) {
             const originalItem = sourceItems[scene.imageIndex];
-            // Deep clone item with new AI settings
             const cloned = JSON.parse(JSON.stringify(originalItem));
             if (!cloned.settings) cloned.settings = {};
             cloned.settings.motion = scene.suggestedMotion || 'zoom_in';
@@ -1800,9 +1961,29 @@ btnApplyAiTimeline.addEventListener('click', () => {
             if (scene.sceneText) {
                 cloned.settings.overlayText = scene.sceneText;
             }
+            cloned.isPlaceholder = false;
             newTimeline.push(cloned);
         } else {
-            emptyScenes.push(scene);
+            // Create placeholder item to preserve timeline sequence and script text
+            placeholderCount++;
+            newTimeline.push({
+                id: 'ph_' + Date.now() + '_' + sIdx,
+                filename: '',
+                originalName: `[Cần thêm ảnh] Cảnh ${sIdx + 1}`,
+                type: 'image',
+                isPlaceholder: true,
+                url: '',
+                settings: {
+                    motion: scene.suggestedMotion || 'zoom_in',
+                    duration: parseFloat(scene.suggestedDuration || 5.0),
+                    fadeIn: parseFloat(scene.fadeIn || 0.8),
+                    fadeOut: parseFloat(scene.fadeOut || 0.8),
+                    overlayText: scene.sceneText || '',
+                    textPosition: 'bottom',
+                    textStyle: 'banner',
+                    fontSize: 48
+                }
+            });
         }
     });
 
@@ -1812,15 +1993,16 @@ btnApplyAiTimeline.addEventListener('click', () => {
         renderMediaList();
         closeAiModal();
         
-        let msg = `🎉 Đã áp dụng thành công ${newTimeline.length} phân cảnh có ảnh độc nhất vào Timeline theo kịch bản!`;
-        if (emptyScenes.length > 0) {
-            msg += `\n\nℹ️ Có ${emptyScenes.length} phân cảnh kịch bản được để trống (không gán ảnh cũ để tránh nhàm chán). Bạn có thể tải thêm ảnh mới để bổ sung vào timeline bất cứ lúc nào.`;
+        let msg = `🎉 Đã áp dụng toàn bộ ${newTimeline.length} phân cảnh theo kịch bản vào Timeline!`;
+        if (placeholderCount > 0) {
+            msg += `\n\nℹ️ Có ${placeholderCount} phân cảnh chưa có ảnh (thẻ viền vàng trên Timeline). Bạn có thể bấm trực tiếp vào nút "➕ Bù ảnh" trên từng thẻ để tải ảnh khớp vào đúng vị trí nhé!`;
         }
         alert(msg);
     } else {
-        alert('Không có phân cảnh nào có ảnh phù hợp để đưa vào Timeline!');
+        alert('Không có phân cảnh nào để đưa vào Timeline!');
     }
 });
+
 
 // =========================================================================
 // PROJECT AUTO-SAVE, EXPORT & IMPORT SYSTEM
