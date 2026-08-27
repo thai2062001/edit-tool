@@ -1,4 +1,4 @@
-Imagine waking up at 8 AM on a gorgeous Saturday morning in New York or Los Angeles. You stretch, yawn, and your immediate instinct is to reach for your phone on the nightstand to check for DMs from your crush or Snapchat... oh wait, never mind, you're still hopelessly single! You shrug it off and decide to open TikTok to scroll through some juicy celebrity drama to wake yourself up.
+Imagine waking up at 8 AM on a gorgeous Saturday morning in New York or Los Angeles. You stretch, yawn, and your immediate instinct is to reach for your phone on the nightstand to check for DMs from your crush or your Snapchat streaks... oh wait, never mind, you're still hopelessly single! You shrug it off and decide to open TikTok to scroll through some juicy celebrity drama to wake yourself up.
 
 But wait... the loading circle is just spinning indefinitely. Turn on 5G? Still spinning. Toggle Airplane mode on and off half a dozen times? A massive "No Service" alert slaps you right in the face! Thinking your Wi-Fi router kicked the bucket, you slip on your trusty Crocs and sprint out the door. And then you freeze: The entire street, from Brooklyn to Beverly Hills, is packed with bewildered neighbors holding their phones high toward the sky like they're performing a sacred ritual praying to the Signal Gods!
 
@@ -16,7 +16,7 @@ After clawing your way out of the house, disaster strikes your wallet: APPLE PAY
 
 Picture yourself in the Starbucks Drive-thru, ordering an iced oat milk caramel macchiato with three extra pumps of vanilla and sweet cold foam, totaling a solid nine bucks. You casually flick your wrist, holding your Apple Watch up to the POS terminal, waiting for that sleek, satisfying "beep."
 
-Instead, the barista shakes his head as the terminal blares an error tone: "National grid is down, bro. Cash only today!"
+Instead, the barista shakes his head as the terminal blares an error tone: "No internet nationwide, bro. Cash only today!"
 
 You frantically dump out your entire backpack right on the console: aside from three shiny metallic Amex and Apple cards, all you’ve got is one rusty 25-cent quarter, your driver's license, and a mountain of faded Target receipts from six months ago.
 
@@ -52,7 +52,7 @@ Wanna shoot your shot without the Internet? Forget swiping right on Tinder, drop
 
 If a guy wants to take a girl out, he has to muster the courage to drive up to her house, walk up the porch, firmly shake her dad's hand, and ask for permission before taking her to an authentic retro Diner for a milkshake. If you want to profess your love, you have to write a heartfelt letter by hand, stick a USPS stamp on the envelope, drop it into that classic roadside mailbox, flip up the little red flag, and spend an entire week anxiously biting your nails waiting for a reply!
 
-And what if you run into someone you can't stand? Sorry, but there’s no magical "Block" or "Unfollow" button in the real world. If you spot your high school rival walking down the locker hallway, your only escape is aggressively pretending to look for dropped keys on the floor or ducking behind the nearest vending machine!
+And what if you run into someone you can't stand? Sorry, but there’s no magical "Block" or "Unfollow" button in the real world. If you spot your high school rival walking down the hall past the lockers, your only escape is aggressively pretending to look for dropped keys on the floor or ducking behind the nearest vending machine!
 
 America's entertainment scene undergoes a magical renaissance.
 
@@ -80,7 +80,7 @@ Just as you sink into your wooden porch rocking chair, taking a slow, refreshing
 
 "DING DING! DING DING!" 🔊
 
-A dusty iPhone buried under papers in the corner violently buzzes to life. The cellular signal bar jumps to full 5G, instantly unleashing an apocalyptic avalanche of 999+ notifications from TikTok, Instagram, and breaking celebrity drama!
+A dusty iPhone buried under papers in the corner violently buzzes to life. Your signal bars shoot up to full 5G, instantly unleashing an apocalyptic avalanche of 999+ notifications from TikTok, Instagram, and breaking celebrity drama!
 
 And you already know what happens next: Without a single second of hesitation, you hurl your glass of sweet tea into the air, dive across the living room like an Olympic gymnast to grab the phone, plug in the charger at lightning speed, and gleefully squeal: "OMG! What episode is the celebrity drama on now?!".
 
