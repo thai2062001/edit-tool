@@ -770,34 +770,37 @@ function startPreviewAnimation() {
         let offsetX = 0;
         let offsetY = 0;
 
+        const maxPanX = (1 - 1 / zoomIntensity) * (previewCanvas.width / 2);
+        const maxPanY = (1 - 1 / zoomIntensity) * (previewCanvas.height / 2);
+
         if (motion === 'zoom_in') {
             zoom = 1.0 + (delta * progress);
         } else if (motion === 'zoom_out') {
             zoom = zoomIntensity - (delta * progress);
         } else if (motion === 'pan_left') {
             zoom = zoomIntensity;
-            offsetX = (1 - progress) * (previewCanvas.width * delta * 0.5);
+            offsetX = maxPanX * (1 - 2 * progress);
         } else if (motion === 'pan_right') {
             zoom = zoomIntensity;
-            offsetX = -progress * (previewCanvas.width * delta * 0.5);
+            offsetX = maxPanX * (2 * progress - 1);
         } else if (motion === 'pan_up') {
             zoom = zoomIntensity;
-            offsetY = (1 - progress) * (previewCanvas.height * delta * 0.5);
+            offsetY = maxPanY * (1 - 2 * progress);
         } else if (motion === 'pan_down') {
             zoom = zoomIntensity;
-            offsetY = -progress * (previewCanvas.height * delta * 0.5);
+            offsetY = maxPanY * (2 * progress - 1);
         } else if (motion === 'zoom_in_left') {
             zoom = 1.0 + (delta * progress);
-            offsetX = (zoom - 1.0) * (previewCanvas.width * 0.45);
-            offsetY = (zoom - 1.0) * (previewCanvas.height * 0.45);
+            offsetX = (1 - 1 / zoom) * (previewCanvas.width / 2);
+            offsetY = (1 - 1 / zoom) * (previewCanvas.height / 2);
         } else if (motion === 'zoom_in_right') {
             zoom = 1.0 + (delta * progress);
-            offsetX = -(zoom - 1.0) * (previewCanvas.width * 0.45);
-            offsetY = (zoom - 1.0) * (previewCanvas.height * 0.45);
+            offsetX = -(1 - 1 / zoom) * (previewCanvas.width / 2);
+            offsetY = (1 - 1 / zoom) * (previewCanvas.height / 2);
         } else if (motion === 'zoom_pan') {
             zoom = 1.0 + (delta * progress);
-            offsetX = progress * (previewCanvas.width * 0.08);
-            offsetY = progress * (previewCanvas.height * 0.08);
+            offsetX = -(1 - 1 / zoom) * (previewCanvas.width / 2) * (1 - 2 * progress);
+            offsetY = -(1 - 1 / zoom) * (previewCanvas.height / 2) * (1 - 2 * progress);
         } else {
             zoom = 1.0;
             offsetX = 0;

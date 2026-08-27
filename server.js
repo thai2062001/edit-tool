@@ -69,6 +69,35 @@ function getMediaDuration(filePath) {
     });
 }
 
+// Helper to probe media dimensions & duration
+function getMediaInfo(filePath) {
+    return new Promise((resolve) => {
+        const ffprobe = spawn('ffprobe', [
+            '-v', 'error',
+            '-select_streams', 'v:0',
+            '-show_entries', 'stream=width,height,duration:format=duration',
+            '-of', 'json',
+            filePath
+        ]);
+        let output = '';
+        ffprobe.stdout.on('data', data => output += data.toString());
+        ffprobe.on('close', () => {
+            try {
+                const info = JSON.parse(output);
+                const stream = info.streams && info.streams[0] ? info.streams[0] : {};
+                const format = info.format || {};
+                const width = parseInt(stream.width) || 1920;
+                const height = parseInt(stream.height) || 1080;
+                const duration = parseFloat(stream.duration || format.duration) || 5;
+                resolve({ width, height, duration });
+            } catch (e) {
+                resolve({ width: 1920, height: 1080, duration: 5 });
+            }
+        });
+        ffprobe.on('error', () => resolve({ width: 1920, height: 1080, duration: 5 }));
+    });
+}
+
 // Upload API
 app.post('/api/upload', upload.array('files'), async (req, res) => {
     try {
@@ -220,7 +249,7 @@ Yêu cầu: Trả về JSON mảng các mảng [imageIndex, "tóm tắt câu tho
 [
   [0, "Tóm tắt cảnh 1", "zoom_in", 4.0, 0.8, 0.8]
 ]
-Motion gồm: 'zoom_in', 'zoom_out', 'pan_left', 'pan_right', 'zoom_pan', 'none'.
+Motion gồm: 'zoom_in', 'zoom_out', 'pan_left', 'pan_right', 'pan_up', 'pan_down', 'zoom_pan', 'zoom_in_left', 'zoom_in_right', 'none'.
 `;
         contents.push({ text: promptText });
 
@@ -246,7 +275,7 @@ Motion gồm: 'zoom_in', 'zoom_out', 'pan_left', 'pan_right', 'zoom_pan', 'none'
         let rawScenes = Array.isArray(parsed) ? parsed : (parsed.scenes || Object.values(parsed)[0] || []);
         
         // Allowed motion values
-        const validMotions = ['zoom_in', 'zoom_out', 'pan_left', 'pan_right', 'zoom_pan', 'none'];
+        const validMotions = ['zoom_in', 'zoom_out', 'pan_left', 'pan_right', 'pan_up', 'pan_down', 'zoom_pan', 'zoom_in_left', 'zoom_in_right', 'none'];
         const cleanMotion = (m) => {
             if (!m || typeof m !== 'string') return 'zoom_in';
             let norm = m.trim().toLowerCase().replace(/[\s-]+/g, '_');
@@ -732,46 +761,67 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
             if (item.type === 'image') {
                 chunkDuration += dur;
                 let zExpr = '1.0';
-                let xExpr = 'iw/2-(iw/zoom/2)';
-                let yExpr = 'ih/2-(ih/zoom/2)';
+                let xExpr = '(iw-iw/zoom)/2';
+                let yExpr = '(ih-ih/zoom)/2';
 
                 if (motion === 'zoom_in') {
                     zExpr = `1.0+(${delta}*(on/${frames}))`;
-                    xExpr = 'iw/2-(iw/zoom/2)';
-                    yExpr = 'ih/2-(ih/zoom/2)';
+                    xExpr = '(iw-iw/zoom)/2';
+                    yExpr = '(ih-ih/zoom)/2';
                 } else if (motion === 'zoom_out') {
                     zExpr = `${zoomIntensity}-(${delta}*(on/${frames}))`;
-                    xExpr = 'iw/2-(iw/zoom/2)';
-                    yExpr = 'ih/2-(ih/zoom/2)';
+                    xExpr = '(iw-iw/zoom)/2';
+                    yExpr = '(ih-ih/zoom)/2';
                 } else if (motion === 'pan_left') {
                     zExpr = `${zoomIntensity}`;
                     xExpr = `(iw-iw/zoom)*(1-(on/${frames}))`;
-                    yExpr = 'ih/2-(ih/zoom/2)';
+                    yExpr = '(ih-ih/zoom)/2';
                 } else if (motion === 'pan_right') {
                     zExpr = `${zoomIntensity}`;
                     xExpr = `(iw-iw/zoom)*(on/${frames})`;
-                    yExpr = 'ih/2-(ih/zoom/2)';
+                    yExpr = '(ih-ih/zoom)/2';
                 } else if (motion === 'pan_up') {
                     zExpr = `${zoomIntensity}`;
-                    xExpr = 'iw/2-(iw/zoom/2)';
+                    xExpr = '(iw-iw/zoom)/2';
                     yExpr = `(ih-ih/zoom)*(1-(on/${frames}))`;
                 } else if (motion === 'pan_down') {
                     zExpr = `${zoomIntensity}`;
-                    xExpr = 'iw/2-(iw/zoom/2)';
+                    xExpr = '(iw-iw/zoom)/2';
                     yExpr = `(ih-ih/zoom)*(on/${frames})`;
-                }
-
-                // Image Smart Reframe Modes
-                let imageScaleFilter = '';
-                if (reframeMode === 'contain_blur') {
-                    imageScaleFilter = `scale=w=${width}:h=${height}:force_original_aspect_ratio=increase,crop=${width}:${height},boxblur=25:5[bg];[0:v]scale=w=${width}:h=${height}:force_original_aspect_ratio=decrease[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2,crop=${width}:${height}`;
-                } else if (reframeMode === 'contain_black') {
-                    imageScaleFilter = `scale=w=${width}:h=${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:black`;
+                } else if (motion === 'zoom_in_left') {
+                    zExpr = `1.0+(${delta}*(on/${frames}))`;
+                    xExpr = '0';
+                    yExpr = '0';
+                } else if (motion === 'zoom_in_right') {
+                    zExpr = `1.0+(${delta}*(on/${frames}))`;
+                    xExpr = 'iw-iw/zoom';
+                    yExpr = '0';
+                } else if (motion === 'zoom_pan') {
+                    zExpr = `1.0+(${delta}*(on/${frames}))`;
+                    xExpr = `(iw-iw/zoom)*(on/${frames})`;
+                    yExpr = `(ih-ih/zoom)*(on/${frames})`;
                 } else {
-                    imageScaleFilter = `scale=w=${width}:h=${height}:force_original_aspect_ratio=increase,crop=${width}:${height}`;
+                    // none or fallback static
+                    zExpr = '1.0';
+                    xExpr = '(iw-iw/zoom)/2';
+                    yExpr = '(ih-ih/zoom)/2';
                 }
 
-                let vFilters = `zoompan=z='${zExpr}':x='${xExpr}':y='${yExpr}':d=${frames}:s=${width}x${height}:fps=${fps},${imageScaleFilter},setsar=1,format=yuv420p`;
+                // High-resolution canvas to eliminate subpixel rounding jitter across all resolutions (720p, 1080p, 16:9, 9:16, 1:1)
+                const scaleFactor = Math.max(2, Math.ceil(3840 / Math.max(width, height)));
+                const highW = width * scaleFactor;
+                const highH = height * scaleFactor;
+
+                let preScaleFilter = '';
+                if (reframeMode === 'contain_blur') {
+                    preScaleFilter = `split=2[rawmain_${idx}][rawbg_${idx}];[rawbg_${idx}]scale=w=${highW}:h=${highH}:force_original_aspect_ratio=increase,crop=${highW}:${highH},boxblur=25:5[bg_${idx}];[rawmain_${idx}]scale=w=${highW}:h=${highH}:force_original_aspect_ratio=decrease[fg_${idx}];[bg_${idx}][fg_${idx}]overlay=(W-w)/2:(H-h)/2`;
+                } else if (reframeMode === 'contain_black') {
+                    preScaleFilter = `scale=w=${highW}:h=${highH}:force_original_aspect_ratio=decrease,pad=${highW}:${highH}:(ow-iw)/2:(oh-ih)/2:black`;
+                } else {
+                    preScaleFilter = `scale=w=${highW}:h=${highH}:force_original_aspect_ratio=increase,crop=${highW}:${highH}`;
+                }
+
+                let vFilters = `${preScaleFilter},zoompan=z='${zExpr}':x='${xExpr}':y='${yExpr}':d=${frames}:s=${width}x${height}:fps=${fps},setsar=1,format=yuv420p`;
 
                 if (fadeIn > 0) {
                     vFilters += `,fade=t=in:st=0:d=${fadeIn}`;
@@ -801,7 +851,7 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
                 if (reframeMode === 'cover') {
                     reframeFilter = `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height}`;
                 } else if (reframeMode === 'contain_blur') {
-                    reframeFilter = `split=2[rawmain][rawbg];[rawbg]scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},boxblur=25:5[bgblur];[rawmain]scale=${width}:${height}:force_original_aspect_ratio=decrease[fg];[bgblur][fg]overlay=(W-w)/2:(H-h)/2`;
+                    reframeFilter = `split=2[rawmain_${idx}][rawbg_${idx}];[rawbg_${idx}]scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},boxblur=25:5[bgblur_${idx}];[rawmain_${idx}]scale=${width}:${height}:force_original_aspect_ratio=decrease[fg_${idx}];[bgblur_${idx}][fg_${idx}]overlay=(W-w)/2:(H-h)/2`;
                 } else {
                     reframeFilter = `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:black`;
                 }
@@ -1092,12 +1142,8 @@ app.post('/api/watermark/process-video', async (req, res) => {
         const outputPath = path.join(OUTPUTS_DIR, outputFilename);
 
         const isImage = /\.(jpe?g|png|webp|bmp)$/i.test(sourceFilename);
-        let totalDuration = 5;
-        try {
-            totalDuration = await getMediaDuration(inputPath);
-        } catch (e) {
-            totalDuration = 5;
-        }
+        const mediaInfo = await getMediaInfo(inputPath);
+        const totalDuration = isImage ? 5 : mediaInfo.duration;
 
         const job = {
             id: jobId,
@@ -1128,17 +1174,28 @@ app.post('/api/watermark/process-video', async (req, res) => {
                     let overlayX = `main_w-w-${margin}`;
                     let overlayY = `main_h-h-${margin}`;
 
-                    switch (pos) {
-                        case 'top_left': overlayX = `${margin}`; overlayY = `${margin}`; break;
-                        case 'top_center': overlayX = `(main_w-w)/2`; overlayY = `${margin}`; break;
-                        case 'top_right': overlayX = `main_w-w-${margin}`; overlayY = `${margin}`; break;
-                        case 'center_left': overlayX = `${margin}`; overlayY = `(main_h-h)/2`; break;
-                        case 'center': overlayX = `(main_w-w)/2`; overlayY = `(main_h-h)/2`; break;
-                        case 'center_right': overlayX = `main_w-w-${margin}`; overlayY = `(main_h-h)/2`; break;
-                        case 'bottom_left': overlayX = `${margin}`; overlayY = `main_h-h-${margin}`; break;
-                        case 'bottom_center': overlayX = `(main_w-w)/2`; overlayY = `main_h-h-${margin}`; break;
-                        case 'bottom_right': overlayX = `main_w-w-${margin}`; overlayY = `main_h-h-${margin}`; break;
+                    if (pos === 'custom' && logoSettings.xPct !== undefined && logoSettings.yPct !== undefined) {
+                        const xPct = Math.min(99, Math.max(0, Number(logoSettings.xPct)));
+                        const yPct = Math.min(99, Math.max(0, Number(logoSettings.yPct)));
+                        overlayX = `${Math.round((xPct / 100) * mediaInfo.width)}`;
+                        overlayY = `${Math.round((yPct / 100) * mediaInfo.height)}`;
+                    } else {
+                        switch (pos) {
+                            case 'top_left': overlayX = `${margin}`; overlayY = `${margin}`; break;
+                            case 'top_center': overlayX = `(main_w-w)/2`; overlayY = `${margin}`; break;
+                            case 'top_right': overlayX = `main_w-w-${margin}`; overlayY = `${margin}`; break;
+                            case 'center_left': overlayX = `${margin}`; overlayY = `(main_h-h)/2`; break;
+                            case 'center': overlayX = `(main_w-w)/2`; overlayY = `(main_h-h)/2`; break;
+                            case 'center_right': overlayX = `main_w-w-${margin}`; overlayY = `(main_h-h)/2`; break;
+                            case 'bottom_left': overlayX = `${margin}`; overlayY = `main_h-h-${margin}`; break;
+                            case 'bottom_center': overlayX = `(main_w-w)/2`; overlayY = `main_h-h-${margin}`; break;
+                            case 'bottom_right':
+                            default: overlayX = `main_w-w-${margin}`; overlayY = `main_h-h-${margin}`; break;
+                        }
                     }
+
+                    const logoTargetWidth = Math.max(20, Math.round((mediaInfo.width * scalePct) / 2) * 2);
+                    const filterGraph = `[0:v]scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p[base];[1:v]scale=${logoTargetWidth}:-2,format=rgba,colorchannelmixer=aa=${opacity}[logo];[base][logo]overlay=${overlayX}:${overlayY}:format=auto[v]`;
 
                     if (isImage) {
                         ffmpegArgs = [
@@ -1146,8 +1203,7 @@ app.post('/api/watermark/process-video', async (req, res) => {
                             '-loop', '1',
                             '-i', inputPath,
                             '-i', logoPath,
-                            '-filter_complex',
-                            `[1:v]scale=main_w*${scalePct}:-1,format=rgba,colorchannelmixer=aa=${opacity}[logo];[0:v][logo]overlay=${overlayX}:${overlayY}[v]`,
+                            '-filter_complex', filterGraph,
                             '-map', '[v]',
                             '-t', '5',
                             '-pix_fmt', 'yuv420p',
@@ -1160,8 +1216,7 @@ app.post('/api/watermark/process-video', async (req, res) => {
                             '-y',
                             '-i', inputPath,
                             '-i', logoPath,
-                            '-filter_complex',
-                            `[1:v]scale=main_w*${scalePct}:-1,format=rgba,colorchannelmixer=aa=${opacity}[logo];[0:v][logo]overlay=${overlayX}:${overlayY}[v]`,
+                            '-filter_complex', filterGraph,
                             '-map', '[v]',
                             '-map', '0:a?',
                             '-pix_fmt', 'yuv420p',
@@ -1172,20 +1227,34 @@ app.post('/api/watermark/process-video', async (req, res) => {
                         ];
                     }
                 } else if (mode === 'delogo' && delogoSettings) {
-                    const x = Math.max(0, parseInt(delogoSettings.x || 0));
-                    const y = Math.max(0, parseInt(delogoSettings.y || 0));
-                    const w = Math.max(10, parseInt(delogoSettings.w || 140));
-                    const h = Math.max(10, parseInt(delogoSettings.h || 60));
+                    const xPct = delogoSettings.xPct !== undefined ? Number(delogoSettings.xPct) : (Number(delogoSettings.x) <= 100 ? Number(delogoSettings.x) : (Number(delogoSettings.x) / 1920) * 100);
+                    const yPct = delogoSettings.yPct !== undefined ? Number(delogoSettings.yPct) : (Number(delogoSettings.y) <= 100 ? Number(delogoSettings.y) : (Number(delogoSettings.y) / 1080) * 100);
+                    const wPct = delogoSettings.wPct !== undefined ? Number(delogoSettings.wPct) : (Number(delogoSettings.w) <= 100 ? Number(delogoSettings.w) : (Number(delogoSettings.w) / 1920) * 100);
+                    const hPct = delogoSettings.hPct !== undefined ? Number(delogoSettings.hPct) : (Number(delogoSettings.h) <= 100 ? Number(delogoSettings.h) : (Number(delogoSettings.h) / 1080) * 100);
+
+                    const mediaW = Math.round(mediaInfo.width / 2) * 2;
+                    const mediaH = Math.round(mediaInfo.height / 2) * 2;
+
+                    let pxX = Math.max(1, Math.round((xPct / 100) * mediaW));
+                    let pxY = Math.max(1, Math.round((yPct / 100) * mediaH));
+                    let pxW = Math.max(8, Math.round((wPct / 100) * mediaW));
+                    let pxH = Math.max(8, Math.round((hPct / 100) * mediaH));
+
+                    if (pxX + pxW >= mediaW) pxW = mediaW - pxX - 1;
+                    if (pxY + pxH >= mediaH) pxH = mediaH - pxY - 1;
+                    if (pxW < 8) { pxX = Math.max(1, mediaW - 10); pxW = 8; }
+                    if (pxH < 8) { pxY = Math.max(1, mediaH - 10); pxH = 8; }
+
                     const filterType = delogoSettings.filterType || 'delogo';
 
                     let filterGraph = '';
                     if (filterType === 'blur') {
-                        filterGraph = `split=2[main][crop];[crop]crop=${w}:${h}:${x}:${y},boxblur=20:5[blur];[main][blur]overlay=${x}:${y}[v]`;
+                        filterGraph = `[0:v]scale=trunc(iw/2)*2:trunc(ih/2)*2,split=2[main][crop];[crop]crop=${pxW}:${pxH}:${pxX}:${pxY},boxblur=20:5[blur];[main][blur]overlay=${pxX}:${pxY}[v]`;
                     } else if (filterType === 'crop') {
-                        filterGraph = `scale=iw*1.05:ih*1.05,crop=iw/1.05:ih/1.05:0:0[v]`;
+                        filterGraph = `[0:v]scale=iw*1.06:ih*1.06,crop=iw/1.06:ih/1.06:0:0,scale=trunc(iw/2)*2:trunc(ih/2)*2[v]`;
                     } else {
                         // Standard Delogo Interpolation
-                        filterGraph = `delogo=x=${x}:y=${y}:w=${w}:h=${h}:show=0[v]`;
+                        filterGraph = `[0:v]scale=trunc(iw/2)*2:trunc(ih/2)*2,delogo=x=${pxX}:y=${pxY}:w=${pxW}:h=${pxH}:show=0[v]`;
                     }
 
                     if (isImage) {

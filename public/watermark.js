@@ -208,6 +208,112 @@
         if (dom.btnProcessWatermark) {
             dom.btnProcessWatermark.addEventListener('click', processWatermarkVideo);
         }
+
+        // Initialize Interactive Drag & Drop on Video Player
+        setupDragAndDrop();
+    }
+
+    // Setup Drag-and-Drop for Logo Overlay and Delogo Bounding Box
+    function setupDragAndDrop() {
+        // Draggable Logo Overlay
+        setupDraggableElement(dom.wmLogoOverlay, (xPct, yPct) => {
+            WmState.logoSettings.position = 'custom';
+            WmState.logoSettings.xPct = Math.round(xPct);
+            WmState.logoSettings.yPct = Math.round(yPct);
+            if (dom.wmPosButtons) {
+                dom.wmPosButtons.forEach(b => b.classList.remove('active'));
+            }
+        });
+
+        // Draggable Delogo Guide Box
+        setupDraggableElement(dom.wmDelogoGuide, (xPct, yPct) => {
+            WmState.delogoSettings.x = Math.round(xPct);
+            WmState.delogoSettings.y = Math.round(yPct);
+            if (dom.delogoX) dom.delogoX.value = Math.round(xPct);
+            if (dom.delogoY) dom.delogoY.value = Math.round(yPct);
+            if (dom.delogoPresets) {
+                dom.delogoPresets.forEach(c => c.classList.remove('active'));
+                const customChip = document.querySelector('.delogo-preset-chip[data-preset="custom"]');
+                if (customChip) customChip.classList.add('active');
+            }
+        });
+    }
+
+    function setupDraggableElement(el, onMoveCallback) {
+        if (!el) return;
+
+        let isDragging = false;
+        let startMouseX = 0, startMouseY = 0;
+        let startElemLeft = 0, startElemTop = 0;
+
+        function startDrag(e) {
+            if (!dom.wmVideoContainer) return;
+            e.preventDefault();
+            e.stopPropagation();
+            isDragging = true;
+            el.classList.add('dragging');
+
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            startMouseX = clientX;
+            startMouseY = clientY;
+
+            const rect = dom.wmVideoContainer.getBoundingClientRect();
+            const elRect = el.getBoundingClientRect();
+
+            startElemLeft = elRect.left - rect.left;
+            startElemTop = elRect.top - rect.top;
+
+            window.addEventListener('mousemove', moveDrag);
+            window.addEventListener('mouseup', endDrag);
+            window.addEventListener('touchmove', moveDrag, { passive: false });
+            window.addEventListener('touchend', endDrag);
+        }
+
+        function moveDrag(e) {
+            if (!isDragging || !dom.wmVideoContainer) return;
+            if (e.cancelable) e.preventDefault();
+
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            const dx = clientX - startMouseX;
+            const dy = clientY - startMouseY;
+
+            const rect = dom.wmVideoContainer.getBoundingClientRect();
+            const elWidth = el.offsetWidth;
+            const elHeight = el.offsetHeight;
+
+            let newLeft = Math.max(0, Math.min(rect.width - elWidth, startElemLeft + dx));
+            let newTop = Math.max(0, Math.min(rect.height - elHeight, startElemTop + dy));
+
+            const xPct = (newLeft / rect.width) * 100;
+            const yPct = (newTop / rect.height) * 100;
+
+            el.style.left = `${newLeft}px`;
+            el.style.top = `${newTop}px`;
+            el.style.right = 'auto';
+            el.style.bottom = 'auto';
+            el.style.transform = 'none';
+
+            if (typeof onMoveCallback === 'function') {
+                onMoveCallback(xPct, yPct);
+            }
+        }
+
+        function endDrag() {
+            if (!isDragging) return;
+            isDragging = false;
+            el.classList.remove('dragging');
+            window.removeEventListener('mousemove', moveDrag);
+            window.removeEventListener('mouseup', endDrag);
+            window.removeEventListener('touchmove', moveDrag);
+            window.removeEventListener('touchend', endDrag);
+        }
+
+        el.addEventListener('mousedown', startDrag);
+        el.addEventListener('touchstart', startDrag, { passive: false });
     }
 
     function switchMode(mode) {
@@ -397,49 +503,57 @@
                 dom.wmLogoOverlay.style.right = 'auto';
                 dom.wmLogoOverlay.style.transform = 'none';
 
-                switch (pos) {
-                    case 'top_left':
-                        dom.wmLogoOverlay.style.top = `${margin}px`;
-                        dom.wmLogoOverlay.style.left = `${margin}px`;
-                        break;
-                    case 'top_center':
-                        dom.wmLogoOverlay.style.top = `${margin}px`;
-                        dom.wmLogoOverlay.style.left = '50%';
-                        dom.wmLogoOverlay.style.transform = 'translateX(-50%)';
-                        break;
-                    case 'top_right':
-                        dom.wmLogoOverlay.style.top = `${margin}px`;
-                        dom.wmLogoOverlay.style.right = `${margin}px`;
-                        break;
-                    case 'center_left':
-                        dom.wmLogoOverlay.style.top = '50%';
-                        dom.wmLogoOverlay.style.left = `${margin}px`;
-                        dom.wmLogoOverlay.style.transform = 'translateY(-50%)';
-                        break;
-                    case 'center':
-                        dom.wmLogoOverlay.style.top = '50%';
-                        dom.wmLogoOverlay.style.left = '50%';
-                        dom.wmLogoOverlay.style.transform = 'translate(-50%, -50%)';
-                        break;
-                    case 'center_right':
-                        dom.wmLogoOverlay.style.top = '50%';
-                        dom.wmLogoOverlay.style.right = `${margin}px`;
-                        dom.wmLogoOverlay.style.transform = 'translateY(-50%)';
-                        break;
-                    case 'bottom_left':
-                        dom.wmLogoOverlay.style.bottom = `${margin}px`;
-                        dom.wmLogoOverlay.style.left = `${margin}px`;
-                        break;
-                    case 'bottom_center':
-                        dom.wmLogoOverlay.style.bottom = `${margin}px`;
-                        dom.wmLogoOverlay.style.left = '50%';
-                        dom.wmLogoOverlay.style.transform = 'translateX(-50%)';
-                        break;
-                    case 'bottom_right':
-                    default:
-                        dom.wmLogoOverlay.style.bottom = `${margin}px`;
-                        dom.wmLogoOverlay.style.right = `${margin}px`;
-                        break;
+                if (pos === 'custom' && WmState.logoSettings.xPct !== undefined && WmState.logoSettings.yPct !== undefined) {
+                    dom.wmLogoOverlay.style.left = `${WmState.logoSettings.xPct}%`;
+                    dom.wmLogoOverlay.style.top = `${WmState.logoSettings.yPct}%`;
+                    dom.wmLogoOverlay.style.right = 'auto';
+                    dom.wmLogoOverlay.style.bottom = 'auto';
+                    dom.wmLogoOverlay.style.transform = 'none';
+                } else {
+                    switch (pos) {
+                        case 'top_left':
+                            dom.wmLogoOverlay.style.top = `${margin}px`;
+                            dom.wmLogoOverlay.style.left = `${margin}px`;
+                            break;
+                        case 'top_center':
+                            dom.wmLogoOverlay.style.top = `${margin}px`;
+                            dom.wmLogoOverlay.style.left = '50%';
+                            dom.wmLogoOverlay.style.transform = 'translateX(-50%)';
+                            break;
+                        case 'top_right':
+                            dom.wmLogoOverlay.style.top = `${margin}px`;
+                            dom.wmLogoOverlay.style.right = `${margin}px`;
+                            break;
+                        case 'center_left':
+                            dom.wmLogoOverlay.style.top = '50%';
+                            dom.wmLogoOverlay.style.left = `${margin}px`;
+                            dom.wmLogoOverlay.style.transform = 'translateY(-50%)';
+                            break;
+                        case 'center':
+                            dom.wmLogoOverlay.style.top = '50%';
+                            dom.wmLogoOverlay.style.left = '50%';
+                            dom.wmLogoOverlay.style.transform = 'translate(-50%, -50%)';
+                            break;
+                        case 'center_right':
+                            dom.wmLogoOverlay.style.top = '50%';
+                            dom.wmLogoOverlay.style.right = `${margin}px`;
+                            dom.wmLogoOverlay.style.transform = 'translateY(-50%)';
+                            break;
+                        case 'bottom_left':
+                            dom.wmLogoOverlay.style.bottom = `${margin}px`;
+                            dom.wmLogoOverlay.style.left = `${margin}px`;
+                            break;
+                        case 'bottom_center':
+                            dom.wmLogoOverlay.style.bottom = `${margin}px`;
+                            dom.wmLogoOverlay.style.left = '50%';
+                            dom.wmLogoOverlay.style.transform = 'translateX(-50%)';
+                            break;
+                        case 'bottom_right':
+                        default:
+                            dom.wmLogoOverlay.style.bottom = `${margin}px`;
+                            dom.wmLogoOverlay.style.right = `${margin}px`;
+                            break;
+                    }
                 }
             } else if (dom.wmLogoOverlay) {
                 dom.wmLogoOverlay.style.display = 'none';
@@ -499,12 +613,6 @@
         renderStatusText.innerText = 'Đang khởi chạy bộ lọc FFmpeg...';
 
         try {
-            // Translate percentage coordinates to pixel coordinates on full HD canvas (1920x1080)
-            const targetPixelX = Math.round((WmState.delogoSettings.x / 100) * 1920);
-            const targetPixelY = Math.round((WmState.delogoSettings.y / 100) * 1080);
-            const targetPixelW = Math.round((WmState.delogoSettings.w / 100) * 1920);
-            const targetPixelH = Math.round((WmState.delogoSettings.h / 100) * 1080);
-
             const res = await fetch('/api/watermark/process-video', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -513,10 +621,10 @@
                     mode: WmState.activeMode,
                     logoSettings: WmState.logoSettings,
                     delogoSettings: {
-                        x: targetPixelX,
-                        y: targetPixelY,
-                        w: targetPixelW,
-                        h: targetPixelH,
+                        xPct: Number(WmState.delogoSettings.x),
+                        yPct: Number(WmState.delogoSettings.y),
+                        wPct: Number(WmState.delogoSettings.w),
+                        hPct: Number(WmState.delogoSettings.h),
                         filterType: WmState.delogoSettings.filterType
                     }
                 })

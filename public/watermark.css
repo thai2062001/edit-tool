@@ -48,44 +48,102 @@
     background: #000;
 }
 
-/* Live Logo Overlay inside Preview */
+/* Live Logo Overlay inside Preview - Draggable */
 .wm-logo-overlay {
     position: absolute;
-    pointer-events: none;
-    z-index: 10;
-    transition: all 0.2s ease;
+    pointer-events: auto;
+    cursor: grab;
+    z-index: 15;
+    user-select: none;
+    touch-action: none;
     display: none;
+    border: 1.5px dashed rgba(6, 182, 212, 0.4);
+    border-radius: 4px;
+    padding: 2px;
+    transition: transform 0.05s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.wm-logo-overlay:hover {
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 14px rgba(6, 182, 212, 0.5);
+}
+
+.wm-logo-overlay.dragging {
+    cursor: grabbing;
+    border-color: #38bdf8;
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.8);
+    opacity: 0.95;
+}
+
+.wm-logo-overlay::before {
+    content: "🖐️ Kéo đè lên Watermark";
+    position: absolute;
+    top: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    font-weight: 700;
+    background: rgba(14, 165, 233, 0.9);
+    color: #FFF;
+    padding: 1px 7px;
+    border-radius: 4px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.wm-logo-overlay:hover::before,
+.wm-logo-overlay.dragging::before {
+    opacity: 1;
 }
 
 .wm-logo-overlay img {
     max-width: 100%;
     height: auto;
     display: block;
+    pointer-events: none;
 }
 
-/* Live Delogo Bounding Box Guide */
+/* Live Delogo Bounding Box Guide - Draggable */
 .wm-delogo-box-guide {
     position: absolute;
     border: 2px dashed #EF4444;
-    background: rgba(239, 68, 68, 0.2);
-    pointer-events: none;
-    z-index: 12;
+    background: rgba(239, 68, 68, 0.25);
+    pointer-events: auto;
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+    z-index: 16;
     display: none;
-    box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+    box-shadow: 0 0 14px rgba(239, 68, 68, 0.4);
     border-radius: 4px;
+    transition: box-shadow 0.2s ease;
+}
+
+.wm-delogo-box-guide:hover {
+    border-color: #F87171;
+    box-shadow: 0 0 18px rgba(239, 68, 68, 0.7);
+}
+
+.wm-delogo-box-guide.dragging {
+    cursor: grabbing;
+    border-color: #FCA5A5;
+    box-shadow: 0 0 24px rgba(239, 68, 68, 0.9);
 }
 
 .wm-delogo-box-guide::after {
-    content: "Vùng Xóa AI";
+    content: "🖐️ Kéo Vùng Xóa";
     position: absolute;
-    top: -20px;
+    top: -22px;
     right: 0;
     font-size: 10px;
     font-weight: 700;
     background: #EF4444;
     color: #FFF;
-    padding: 1px 5px;
+    padding: 1px 6px;
     border-radius: 3px;
+    white-space: nowrap;
 }
 
 /* Control Panel */
