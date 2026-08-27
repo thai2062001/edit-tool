@@ -2449,3 +2449,52 @@ if (trimmerTimelineTrack) {
         if (trimmerVideoPlayer) trimmerVideoPlayer.currentTime = timeAtPos;
     });
 }
+
+
+// ==========================================
+// Universal Tab Switching & Zero-Overhead Isolation
+// ==========================================
+
+function switchMainTab(targetTabBtnId) {
+    // 1. Stop Tab 1 Canvas Studio sequence loop
+    if (typeof isStudioPlayingAll !== 'undefined' && isStudioPlayingAll) {
+        isStudioPlayingAll = false;
+        const btnPlay = document.getElementById('studio-btn-play');
+        if (btnPlay) btnPlay.innerHTML = '▶ Toàn bộ';
+        const container = document.getElementById('studio-player-container');
+        if (container) container.classList.remove('is-playing');
+    }
+
+    // 2. Pause all playing video and audio elements across all tabs
+    document.querySelectorAll('video, audio').forEach(media => {
+        try {
+            if (!media.paused) media.pause();
+        } catch (e) {}
+    });
+
+    // 3. Update tab buttons
+    document.querySelectorAll('.main-tab-nav .tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.id === targetTabBtnId);
+    });
+
+    // 4. Update tab panes
+    const tabMap = {
+        'tab-btn-editor': 'tab-pane-editor',
+        'tab-btn-subtitles': 'tab-pane-subtitles',
+        'tab-btn-watermark': 'tab-pane-watermark',
+        'tab-btn-qa': 'tab-pane-qa'
+    };
+
+    document.querySelectorAll('.tab-pane').forEach(pane => {
+        pane.classList.toggle('active', pane.id === tabMap[targetTabBtnId]);
+    });
+}
+
+// Bind universal tab switcher
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.main-tab-nav .tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            switchMainTab(btn.id);
+        });
+    });
+});
