@@ -2046,3 +2046,406 @@ setTimeout(checkAutoSaveOnLoad, 300);
 
 
 
+
+
+// ==========================================
+// Video Trimmer & Splitter Modal Logic
+// ==========================================
+
+let currentTrimItemIndex = -1;
+let trimVideoDuration = 10;
+let trimStartSec = 0;
+let trimEndSec = 5;
+let isPreviewLoopActive = false;
+let isDraggingTrimHandle = null; // 'start' | 'end' | null
+
+const videoTrimmerModal = document.getElementById('video-trimmer-modal');
+const trimmerVideoPlayer = document.getElementById('trimmer-video-player');
+const trimmerVideoFilename = document.getElementById('trimmer-video-filename');
+const trimmerPlaybackTime = document.getElementById('trimmer-playback-time');
+const trimmerDurLabel = document.getElementById('trimmer-dur-label');
+const trimmerTotalDurLabel = document.getElementById('trimmer-total-dur-label');
+const trimmerRangePercentLabel = document.getElementById('trimmer-range-percent-label');
+const trimmerTimelineTrack = document.getElementById('trimmer-timeline-track');
+const trimmerActiveRange = document.getElementById('trimmer-active-range');
+const trimmerDimLeft = document.getElementById('trimmer-dim-left');
+const trimmerDimRight = document.getElementById('trimmer-dim-right');
+const trimmerPlayhead = document.getElementById('trimmer-playhead');
+const trimmerHandleStart = document.getElementById('trimmer-handle-start');
+const trimmerHandleEnd = document.getElementById('trimmer-handle-end');
+const trimmerHandleStartTag = document.getElementById('trimmer-handle-start-tag');
+const trimmerHandleEndTag = document.getElementById('trimmer-handle-end-tag');
+const trimmerInputStart = document.getElementById('trimmer-input-start');
+const trimmerInputEnd = document.getElementById('trimmer-input-end');
+const trimmerRulers = document.getElementById('trimmer-timeline-rulers');
+
+const btnTrimmerPlayPause = document.getElementById('btn-trimmer-play-pause');
+const btnTrimmerStepBack = document.getElementById('btn-trimmer-step-back');
+const btnTrimmerStepFwd = document.getElementById('btn-trimmer-step-fwd');
+const btnTrimmerPreviewLoop = document.getElementById('btn-trimmer-preview-loop');
+const btnTrimmerSetStartNow = document.getElementById('btn-trimmer-set-start-now');
+const btnTrimmerSetEndNow = document.getElementById('btn-trimmer-set-end-now');
+const btnTrimmerReset = document.getElementById('btn-trimmer-reset');
+const btnTrimmerSplit = document.getElementById('btn-trimmer-split');
+const btnTrimmerApply = document.getElementById('btn-trimmer-apply');
+const btnOpenTrimmerModal = document.getElementById('btn-open-trimmer-modal');
+
+function openTrimmerModal(itemIndex) {
+    if (itemIndex < 0 || itemIndex >= mediaItems.length) return;
+    const item = mediaItems[itemIndex];
+    if (item.type !== 'video') return;
+
+    currentTrimItemIndex = itemIndex;
+    if (trimmerVideoFilename) trimmerVideoFilename.innerText = item.originalName || item.filename;
+
+    if (trimmerVideoPlayer) {
+        trimmerVideoPlayer.src = item.url;
+        trimmerVideoPlayer.load();
+    }
+
+    if (videoTrimmerModal) videoTrimmerModal.classList.remove('hidden');
+}
+
+function closeTrimmerModal() {
+    if (videoTrimmerModal) videoTrimmerModal.classList.add('hidden');
+    if (trimmerVideoPlayer) trimmerVideoPlayer.pause();
+    isPreviewLoopActive = false;
+}
+
+if (trimmerVideoPlayer) {
+    trimmerVideoPlayer.addEventListener('loadedmetadata', () => {
+        const item = mediaItems[currentTrimItemIndex];
+        trimVideoDuration = trimmerVideoPlayer.duration || 10;
+        
+        trimStartSec = Number(item.settings?.trimStart || 0);
+        trimEndSec = Number(item.settings?.trimEnd || trimVideoDuration);
+        if (trimEndSec <= trimStartSec || trimEndSec > trimVideoDuration) {
+            trimEndSec = trimVideoDuration;
+        }
+
+        if (trimmerInputStart) {
+            trimmerInputStart.max = trimVideoDuration;
+            trimmerInputStart.value = trimStartSec.toFixed(1);
+        }
+        if (trimmerInputEnd) {
+            trimmerInputEnd.max = trimVideoDuration;
+            trimmerInputEnd.value = trimEndSec.toFixed(1);
+        }
+
+        trimmerVideoPlayer.currentTime = trimStartSec;
+        updateTrimmerTrackUI();
+        renderTrimmerRulers();
+    });
+
+    trimmerVideoPlayer.addEventListener('timeupdate', () => {
+        const cur = trimmerVideoPlayer.currentTime;
+        if (trimmerPlaybackTime) {
+            trimmerPlaybackTime.innerText = `${formatTrimmerTime(cur)} / ${formatTrimmerTime(trimVideoDuration)}`;
+        }
+
+        // Update playhead cursor position
+        if (trimmerPlayhead && trimVideoDuration > 0) {
+            const pct = Math.max(0, Math.min(100, (cur / trimVideoDuration) * 100));
+            trimmerPlayhead.style.left = `${pct}%`;
+        }
+
+        // Preview loop constraint
+        if (isPreviewLoopActive && (cur >= trimEndSec || cur < trimStartSec)) {
+            trimmerVideoPlayer.currentTime = trimStartSec;
+        }
+    });
+
+    trimmerVideoPlayer.addEventListener('play', () => {
+        if (btnTrimmerPlayPause) btnTrimmerPlayPause.innerHTML = '⏸ Tạm dừng';
+    });
+
+    trimmerVideoPlayer.addEventListener('pause', () => {
+        if (btnTrimmerPlayPause) btnTrimmerPlayPause.innerHTML = '▶ Phát';
+    });
+}
+
+function formatTrimmerTime(sec) {
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    const ms = Math.floor((sec % 1) * 10);
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}.${ms}`;
+}
+
+function updateTrimmerTrackUI() {
+    if (trimVideoDuration <= 0) return;
+
+    const startPct = Math.max(0, Math.min(100, (trimStartSec / trimVideoDuration) * 100));
+    const endPct = Math.max(0, Math.min(100, (trimEndSec / trimVideoDuration) * 100));
+    const dur = Math.max(0.1, trimEndSec - trimStartSec);
+
+    if (trimmerHandleStart) trimmerHandleStart.style.left = `${startPct}%`;
+    if (trimmerHandleEnd) trimmerHandleEnd.style.left = `${endPct}%`;
+
+    if (trimmerHandleStartTag) trimmerHandleStartTag.innerText = `${trimStartSec.toFixed(1)}s`;
+    if (trimmerHandleEndTag) trimmerHandleEndTag.innerText = `${trimEndSec.toFixed(1)}s`;
+
+    if (trimmerActiveRange) {
+        trimmerActiveRange.style.left = `${startPct}%`;
+        trimmerActiveRange.style.width = `${endPct - startPct}%`;
+    }
+
+    if (trimmerDimLeft) trimmerDimLeft.style.width = `${startPct}%`;
+    if (trimmerDimRight) trimmerDimRight.style.width = `${100 - endPct}%`;
+
+    if (trimmerDurLabel) trimmerDurLabel.innerText = `${dur.toFixed(1)}s`;
+    if (trimmerTotalDurLabel) trimmerTotalDurLabel.innerText = `${trimVideoDuration.toFixed(1)}s`;
+    if (trimmerRangePercentLabel) trimmerRangePercentLabel.innerText = `${Math.round((dur / trimVideoDuration) * 100)}% video`;
+
+    if (trimmerInputStart) trimmerInputStart.value = trimStartSec.toFixed(1);
+    if (trimmerInputEnd) trimmerInputEnd.value = trimEndSec.toFixed(1);
+}
+
+function renderTrimmerRulers() {
+    if (!trimmerRulers || trimVideoDuration <= 0) return;
+    trimmerRulers.innerHTML = '';
+    const steps = 6;
+    for (let i = 0; i <= steps; i++) {
+        const span = document.createElement('span');
+        const t = (trimVideoDuration * i) / steps;
+        span.innerText = `${t.toFixed(1)}s`;
+        trimmerRulers.appendChild(span);
+    }
+}
+
+function adjustTrimTime(type, delta) {
+    if (type === 'start') {
+        trimStartSec = Math.max(0, Math.min(trimEndSec - 0.2, trimStartSec + delta));
+        trimStartSec = parseFloat(trimStartSec.toFixed(2));
+        if (trimmerVideoPlayer) trimmerVideoPlayer.currentTime = trimStartSec;
+    } else if (type === 'end') {
+        trimEndSec = Math.min(trimVideoDuration, Math.max(trimStartSec + 0.2, trimEndSec + delta));
+        trimEndSec = parseFloat(trimEndSec.toFixed(2));
+        if (trimmerVideoPlayer) trimmerVideoPlayer.currentTime = trimEndSec;
+    }
+    updateTrimmerTrackUI();
+}
+
+// Global expose for inline buttons
+window.adjustTrimTime = adjustTrimTime;
+window.openTrimmerModal = openTrimmerModal;
+window.closeTrimmerModal = closeTrimmerModal;
+
+// Inputs change handlers
+if (trimmerInputStart) {
+    trimmerInputStart.addEventListener('change', (e) => {
+        const val = parseFloat(e.target.value) || 0;
+        trimStartSec = Math.max(0, Math.min(trimEndSec - 0.2, val));
+        if (trimmerVideoPlayer) trimmerVideoPlayer.currentTime = trimStartSec;
+        updateTrimmerTrackUI();
+    });
+}
+
+if (trimmerInputEnd) {
+    trimmerInputEnd.addEventListener('change', (e) => {
+        const val = parseFloat(e.target.value) || trimVideoDuration;
+        trimEndSec = Math.min(trimVideoDuration, Math.max(trimStartSec + 0.2, val));
+        if (trimmerVideoPlayer) trimmerVideoPlayer.currentTime = trimEndSec;
+        updateTrimmerTrackUI();
+    });
+}
+
+// Micro Buttons bindings
+['m05', 'm01', 'p01', 'p05'].forEach(btnKey => {
+    const val = btnKey === 'm05' ? -0.5 : (btnKey === 'm01' ? -0.1 : (btnKey === 'p01' ? 0.1 : 0.5));
+    const btnS = document.getElementById(`btn-trim-start-${btnKey}`);
+    if (btnS) btnS.addEventListener('click', () => adjustTrimTime('start', val));
+    const btnE = document.getElementById(`btn-trim-end-${btnKey}`);
+    if (btnE) btnE.addEventListener('click', () => adjustTrimTime('end', val));
+});
+
+// Playhead & Button actions
+if (btnTrimmerPlayPause && trimmerVideoPlayer) {
+    btnTrimmerPlayPause.addEventListener('click', () => {
+        if (trimmerVideoPlayer.paused) {
+            trimmerVideoPlayer.play();
+        } else {
+            trimmerVideoPlayer.pause();
+        }
+    });
+}
+
+if (btnTrimmerStepBack && trimmerVideoPlayer) {
+    btnTrimmerStepBack.addEventListener('click', () => {
+        trimmerVideoPlayer.currentTime = Math.max(0, trimmerVideoPlayer.currentTime - 1.0);
+    });
+}
+
+if (btnTrimmerStepFwd && trimmerVideoPlayer) {
+    btnTrimmerStepFwd.addEventListener('click', () => {
+        trimmerVideoPlayer.currentTime = Math.min(trimVideoDuration, trimmerVideoPlayer.currentTime + 1.0);
+    });
+}
+
+if (btnTrimmerPreviewLoop && trimmerVideoPlayer) {
+    btnTrimmerPreviewLoop.addEventListener('click', () => {
+        isPreviewLoopActive = !isPreviewLoopActive;
+        if (isPreviewLoopActive) {
+            btnTrimmerPreviewLoop.classList.remove('btn-secondary');
+            btnTrimmerPreviewLoop.classList.add('btn-primary');
+            btnTrimmerPreviewLoop.innerHTML = '🔁 Đang lặp vùng cắt...';
+            trimmerVideoPlayer.currentTime = trimStartSec;
+            trimmerVideoPlayer.play();
+        } else {
+            btnTrimmerPreviewLoop.classList.remove('btn-primary');
+            btnTrimmerPreviewLoop.classList.add('btn-secondary');
+            btnTrimmerPreviewLoop.innerHTML = '🔁 Phát Lặp Vùng Cắt';
+        }
+    });
+}
+
+if (btnTrimmerSetStartNow && trimmerVideoPlayer) {
+    btnTrimmerSetStartNow.addEventListener('click', () => {
+        const cur = trimmerVideoPlayer.currentTime;
+        trimStartSec = Math.max(0, Math.min(trimEndSec - 0.2, cur));
+        updateTrimmerTrackUI();
+    });
+}
+
+if (btnTrimmerSetEndNow && trimmerVideoPlayer) {
+    btnTrimmerSetEndNow.addEventListener('click', () => {
+        const cur = trimmerVideoPlayer.currentTime;
+        trimEndSec = Math.min(trimVideoDuration, Math.max(trimStartSec + 0.2, cur));
+        updateTrimmerTrackUI();
+    });
+}
+
+if (btnTrimmerReset) {
+    btnTrimmerReset.addEventListener('click', () => {
+        trimStartSec = 0;
+        trimEndSec = trimVideoDuration;
+        if (trimmerVideoPlayer) trimmerVideoPlayer.currentTime = 0;
+        updateTrimmerTrackUI();
+    });
+}
+
+// Apply Trim
+if (btnTrimmerApply) {
+    btnTrimmerApply.addEventListener('click', () => {
+        if (currentTrimItemIndex < 0 || currentTrimItemIndex >= mediaItems.length) return;
+        const item = mediaItems[currentTrimItemIndex];
+        
+        item.settings.trimStart = parseFloat(trimStartSec.toFixed(2));
+        item.settings.trimEnd = parseFloat(trimEndSec.toFixed(2));
+        item.duration = parseFloat((trimEndSec - trimStartSec).toFixed(2));
+
+        renderMediaList();
+        closeTrimmerModal();
+    });
+}
+
+// Split Video Segment
+if (btnTrimmerSplit) {
+    btnTrimmerSplit.addEventListener('click', () => {
+        if (currentTrimItemIndex < 0 || currentTrimItemIndex >= mediaItems.length) return;
+        const curTime = trimmerVideoPlayer ? trimmerVideoPlayer.currentTime : (trimStartSec + (trimEndSec - trimStartSec)/2);
+        
+        if (curTime <= trimStartSec + 0.3 || curTime >= trimEndSec - 0.3) {
+            alert('Vị trí cắt phải nằm ở giữa điểm Bắt đầu và Kết thúc (cách ít nhất 0.3s)! Hãy kéo con trỏ video vào vị trí muốn tách.');
+            return;
+        }
+
+        const originalItem = mediaItems[currentTrimItemIndex];
+        
+        // Segment 1: from trimStart to curTime
+        const seg1Settings = JSON.parse(JSON.stringify(originalItem.settings));
+        seg1Settings.trimStart = trimStartSec;
+        seg1Settings.trimEnd = parseFloat(curTime.toFixed(2));
+
+        originalItem.settings = seg1Settings;
+        originalItem.duration = parseFloat((curTime - trimStartSec).toFixed(2));
+
+        // Segment 2: from curTime to trimEnd
+        const seg2Settings = JSON.parse(JSON.stringify(originalItem.settings));
+        seg2Settings.trimStart = parseFloat(curTime.toFixed(2));
+        seg2Settings.trimEnd = trimEndSec;
+
+        const seg2Item = {
+            id: 'item_' + Date.now(),
+            filename: originalItem.filename,
+            originalName: originalItem.originalName + ' (Phần 2)',
+            path: originalItem.path,
+            url: originalItem.url,
+            type: originalItem.type,
+            duration: parseFloat((trimEndSec - curTime).toFixed(2)),
+            settings: seg2Settings
+        };
+
+        // Insert seg2 right after originalItem
+        mediaItems.splice(currentTrimItemIndex + 1, 0, seg2Item);
+
+        renderMediaList();
+        closeTrimmerModal();
+        alert(`✅ Đã tách video thành công thành 2 đoạn riêng biệt trên Timeline!\n- Đoạn 1: ${trimStartSec.toFixed(1)}s -> ${curTime.toFixed(1)}s\n- Đoạn 2: ${curTime.toFixed(1)}s -> ${trimEndSec.toFixed(1)}s`);
+    });
+}
+
+// Open Trimmer from Quick Inspector button
+if (btnOpenTrimmerModal) {
+    btnOpenTrimmerModal.addEventListener('click', () => {
+        openTrimmerModal(activeSegmentIndex);
+    });
+}
+
+// Event Delegation on mediaList for card trim buttons
+if (mediaList) {
+    mediaList.addEventListener('click', (e) => {
+        const trimBtn = e.target.closest('.btn-card-trim');
+        if (trimBtn) {
+            e.stopPropagation();
+            const idx = parseInt(trimBtn.dataset.index);
+            openTrimmerModal(idx);
+        }
+    });
+}
+
+// Dragging Trimmer Handles
+if (trimmerTimelineTrack) {
+    function handleTrackMouse(e) {
+        if (!isDraggingTrimHandle || trimVideoDuration <= 0) return;
+        const rect = trimmerTimelineTrack.getBoundingClientRect();
+        const offsetX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+        const timeAtPos = parseFloat(((offsetX / rect.width) * trimVideoDuration).toFixed(2));
+
+        if (isDraggingTrimHandle === 'start') {
+            trimStartSec = Math.max(0, Math.min(trimEndSec - 0.2, timeAtPos));
+            if (trimmerVideoPlayer) trimmerVideoPlayer.currentTime = trimStartSec;
+        } else if (isDraggingTrimHandle === 'end') {
+            trimEndSec = Math.min(trimVideoDuration, Math.max(trimStartSec + 0.2, timeAtPos));
+            if (trimmerVideoPlayer) trimmerVideoPlayer.currentTime = trimEndSec;
+        }
+        updateTrimmerTrackUI();
+    }
+
+    if (trimmerHandleStart) {
+        trimmerHandleStart.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+            isDraggingTrimHandle = 'start';
+        });
+    }
+
+    if (trimmerHandleEnd) {
+        trimmerHandleEnd.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+            isDraggingTrimHandle = 'end';
+        });
+    }
+
+    document.addEventListener('mousemove', handleTrackMouse);
+    document.addEventListener('mouseup', () => {
+        isDraggingTrimHandle = null;
+    });
+
+    // Clicking anywhere on track seeks video
+    trimmerTimelineTrack.addEventListener('click', (e) => {
+        if (e.target.closest('.trimmer-handle')) return;
+        const rect = trimmerTimelineTrack.getBoundingClientRect();
+        const offsetX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+        const timeAtPos = (offsetX / rect.width) * trimVideoDuration;
+        if (trimmerVideoPlayer) trimmerVideoPlayer.currentTime = timeAtPos;
+    });
+}

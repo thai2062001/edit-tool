@@ -746,7 +746,14 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
         const args = ['-y'];
 
         chunkItems.forEach((item) => {
-            const filePath = path.join(UPLOADS_DIR, item.filename);
+            let filePath = path.join(UPLOADS_DIR, item.filename);
+            if (!fs.existsSync(filePath)) {
+                if (item.path && fs.existsSync(item.path)) {
+                    filePath = item.path;
+                } else if (fs.existsSync(path.join(OUTPUTS_DIR, item.filename))) {
+                    filePath = path.join(OUTPUTS_DIR, item.filename);
+                }
+            }
             args.push('-i', filePath);
         });
 

@@ -1273,7 +1273,134 @@
         </div>
     </div>
 
-    <!-- Render Progress & Result Modal -->
+        <!-- Video Trimmer & Splitter Modal -->
+    <div id="video-trimmer-modal" class="modal hidden">
+        <div class="modal-backdrop" onclick="closeTrimmerModal()"></div>
+        <div class="modal-dialog trimmer-dialog">
+            <div class="modal-header">
+                <div class="trimmer-modal-title">
+                    <span class="trimmer-modal-icon">✂️</span>
+                    <div>
+                        <h3 id="trimmer-modal-heading">Trình Cắt & Tách Đoạn Video (Trimmer & Splitter)</h3>
+                        <span id="trimmer-video-filename" class="text-xs text-muted">clip.mp4</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close-modal" onclick="closeTrimmerModal()">✕</button>
+            </div>
+
+            <div class="modal-body trimmer-body">
+                <!-- Video Player Preview -->
+                <div class="trimmer-video-wrapper">
+                    <video id="trimmer-video-player" playsinline></video>
+                    
+                    <!-- Player overlay controls -->
+                    <div class="trimmer-player-overlay">
+                        <div class="trimmer-time-pill" id="trimmer-playback-time">00:00.0 / 00:00.0</div>
+                    </div>
+                </div>
+
+                <!-- Video Controls Bar -->
+                <div class="trimmer-control-bar mt-2">
+                    <div class="trimmer-playback-actions">
+                        <button type="button" id="btn-trimmer-step-back" class="btn btn-secondary btn-xs" title="Lùi 1 giây">⏪ -1s</button>
+                        <button type="button" id="btn-trimmer-play-pause" class="btn btn-primary btn-small">▶ Phát</button>
+                        <button type="button" id="btn-trimmer-step-fwd" class="btn btn-secondary btn-xs" title="Tiến 1 giây">⏩ +1s</button>
+                        <button type="button" id="btn-trimmer-preview-loop" class="btn btn-secondary btn-small" title="Chỉ phát lặp lại đoạn được cắt">🔁 Phát Lặp Vùng Cắt</button>
+                    </div>
+
+                    <div class="trimmer-stats-badge">
+                        <span>Đoạn cắt: <strong id="trimmer-dur-label" class="text-cyan">0.0s</strong> / Gốc: <span id="trimmer-total-dur-label">0.0s</span></span>
+                    </div>
+                </div>
+
+                <!-- Visual Dual-Range Interactive Timeline Track -->
+                <div class="trimmer-timeline-box mt-3">
+                    <div class="trimmer-track-header">
+                        <span class="text-xs text-muted">Kéo 2 đầu mút để chọn điểm Bắt đầu (◀) và Kết thúc (▶)</span>
+                        <span class="text-xs text-cyan font-bold" id="trimmer-range-percent-label">100% video</span>
+                    </div>
+
+                    <div id="trimmer-timeline-track" class="trimmer-timeline-track">
+                        <!-- Dimmed Left Region (cut off) -->
+                        <div id="trimmer-dim-left" class="trimmer-dim-region left"></div>
+                        
+                        <!-- Highlighted Active Trim Range -->
+                        <div id="trimmer-active-range" class="trimmer-active-range">
+                            <!-- Playhead Cursor Line -->
+                            <div id="trimmer-playhead" class="trimmer-playhead"></div>
+                        </div>
+
+                        <!-- Dimmed Right Region (cut off) -->
+                        <div id="trimmer-dim-right" class="trimmer-dim-region right"></div>
+
+                        <!-- Draggable Handles -->
+                        <div id="trimmer-handle-start" class="trimmer-handle start" title="Kéo để chỉnh điểm Bắt đầu">
+                            <span class="handle-arrow">◀</span>
+                            <span class="handle-tag" id="trimmer-handle-start-tag">0.0s</span>
+                        </div>
+                        <div id="trimmer-handle-end" class="trimmer-handle end" title="Kéo để chỉnh điểm Kết thúc">
+                            <span class="handle-arrow">▶</span>
+                            <span class="handle-tag" id="trimmer-handle-end-tag">5.0s</span>
+                        </div>
+                    </div>
+
+                    <!-- Timeline Rulers / Time Markers -->
+                    <div id="trimmer-timeline-rulers" class="trimmer-timeline-rulers"></div>
+                </div>
+
+                <!-- Precision Micro-Adjustment Grid -->
+                <div class="trimmer-adjust-grid mt-3">
+                    <!-- Start Point Adjustment -->
+                    <div class="trimmer-adjust-card">
+                        <div class="adjust-header">
+                            <label class="adjust-label">🟢 Điểm Bắt Đầu (Start Time):</label>
+                            <button type="button" id="btn-trimmer-set-start-now" class="btn btn-ghost btn-xxs" title="Đặt điểm bắt đầu tại vị trí con trỏ đang phát">📍 Lấy vị trí đang phát</button>
+                        </div>
+                        <div class="adjust-input-row">
+                            <input type="number" id="trimmer-input-start" class="form-control form-control-sm" min="0" step="0.1" value="0.0">
+                            <div class="micro-btn-group">
+                                <button type="button" id="btn-trim-start-m05" class="btn btn-secondary btn-micro">-0.5s</button>
+                                <button type="button" id="btn-trim-start-m01" class="btn btn-secondary btn-micro">-0.1s</button>
+                                <button type="button" id="btn-trim-start-p01" class="btn btn-secondary btn-micro">+0.1s</button>
+                                <button type="button" id="btn-trim-start-p05" class="btn btn-secondary btn-micro">+0.5s</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- End Point Adjustment -->
+                    <div class="trimmer-adjust-card">
+                        <div class="adjust-header">
+                            <label class="adjust-label">🔴 Điểm Kết Thúc (End Time):</label>
+                            <button type="button" id="btn-trimmer-set-end-now" class="btn btn-ghost btn-xxs" title="Đặt điểm kết thúc tại vị trí con trỏ đang phát">📍 Lấy vị trí đang phát</button>
+                        </div>
+                        <div class="adjust-input-row">
+                            <input type="number" id="trimmer-input-end" class="form-control form-control-sm" min="0.1" step="0.1" value="5.0">
+                            <div class="micro-btn-group">
+                                <button type="button" id="btn-trim-end-m05" class="btn btn-secondary btn-micro">-0.5s</button>
+                                <button type="button" id="btn-trim-end-m01" class="btn btn-secondary btn-micro">-0.1s</button>
+                                <button type="button" id="btn-trim-end-p01" class="btn btn-secondary btn-micro">+0.1s</button>
+                                <button type="button" id="btn-trim-end-p05" class="btn btn-secondary btn-micro">+0.5s</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Action Buttons -->
+                <div class="trimmer-footer-actions mt-4">
+                    <div class="footer-left">
+                        <button type="button" id="btn-trimmer-reset" class="btn btn-secondary btn-small">🔄 Đặt Lại Gốc</button>
+                        <button type="button" id="btn-trimmer-split" class="btn btn-warning btn-small" title="Tách video thành 2 phân đoạn độc lập tại vị trí con trỏ phát">🪓 Tách Thành 2 Đoạn (Split)</button>
+                    </div>
+                    <div class="footer-right">
+                        <button type="button" class="btn btn-ghost" onclick="closeTrimmerModal()">Hủy</button>
+                        <button type="button" id="btn-trimmer-apply" class="btn btn-primary">✅ Áp Dụng Cắt Clip</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- Render Progress & Result Modal -->
     <div id="render-modal" class="modal hidden">
         <div class="modal-backdrop"></div>
         <div class="modal-dialog render-dialog">
