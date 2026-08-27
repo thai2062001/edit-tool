@@ -491,7 +491,7 @@
             if (WmState.logoSettings.logoUrl && dom.wmLogoOverlay) {
                 dom.wmLogoOverlay.style.display = 'block';
                 dom.wmLogoOverlay.innerHTML = `<img src="${WmState.logoSettings.logoUrl}" style="opacity: ${WmState.logoSettings.opacity}; width: 100%;">`;
-                dom.wmLogoOverlay.style.width = `${WmState.logoSettings.scalePercent * 2.5}px`;
+                dom.wmLogoOverlay.style.width = `${WmState.logoSettings.scalePercent}%`;
 
                 // Calculate Position in Container
                 const margin = WmState.logoSettings.margin;
