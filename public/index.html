@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="subtitles.css">
     <link rel="stylesheet" href="watermark.css">
+    <link rel="stylesheet" href="qa.css">
 </head>
 <body>
     <div class="app-container">
@@ -66,6 +67,9 @@
             </button>
             <button id="tab-btn-watermark" class="tab-btn">
                 <span>🛡️ Logo & Watermark Studio</span>
+            </button>
+            <button id="tab-btn-qa" class="tab-btn">
+                <span>🔬 Kiểm Định Video AI (QA Final)</span>
             </button>
         </nav>
 
@@ -947,6 +951,153 @@
         </div>
         <!-- End TAB 3 -->
 
+        <!-- TAB 4: AI Video QA Auditor -->
+        <div id="tab-pane-qa" class="tab-pane">
+            <div class="qa-workspace-grid">
+                
+                <!-- Left Column: Video Player & Inputs -->
+                <div class="qa-left-col">
+                    <div class="qa-card">
+                        <div class="qa-card-header">
+                            <h3>🎬 Video Thành Phẩm Cần Kiểm Định</h3>
+                            <button type="button" id="btn-qa-load-rendered" class="btn btn-secondary btn-xs" title="Tải nhanh video vừa xuất từ Tab 1 sang">
+                                ⚡ Lấy Video Vừa Xuất (Tab 1)
+                            </button>
+                        </div>
+
+                        <!-- Video Player Box -->
+                        <div class="qa-video-player-box">
+                            <video id="qa-video-player" class="qa-video-el" controls></video>
+                            <div id="qa-player-empty-cue" class="qa-player-empty-cue">
+                                <span style="font-size: 36px;">📹</span>
+                                <strong>Chưa có video được nạp</strong>
+                                <span style="font-size: 12px;">Tải video lên từ máy hoặc lấy từ Tab 1</span>
+                            </div>
+                        </div>
+
+                        <div class="selected-file-indicator mb-2">
+                            <span class="text-muted text-xs">Tệp đang chọn: </span>
+                            <strong id="qa-selected-filename" class="text-xs text-cyan">Chưa chọn tệp</strong>
+                        </div>
+
+                        <!-- Upload Dropzone -->
+                        <div id="qa-dropzone" class="qa-dropzone">
+                            <input type="file" id="qa-video-input" class="hidden" accept="video/*">
+                            <span class="upload-icon" style="font-size: 28px; display: block; margin-bottom: 6px;">📥</span>
+                            <strong style="color: #FFF; font-size: 14px;">Chọn hoặc kéo thả tệp Video thành phẩm vào đây</strong>
+                            <p class="text-muted text-xs mt-1">Hỗ trợ .MP4, .MOV, .WEBM, .MKV</p>
+                        </div>
+
+                        <!-- Script Input (Optional) -->
+                        <div class="form-group mt-3">
+                            <label class="form-label-xs">📝 Kịch bản gốc / Lời thoại (Tùy chọn):</label>
+                            <textarea id="qa-script-textarea" class="qa-script-textarea" placeholder="Dán nội dung kịch bản hoặc lời thoại vào đây để AI so khớp chính xác từng câu chữ với hình ảnh và âm thanh..."></textarea>
+                        </div>
+
+                        <!-- Audit Action CTA -->
+                        <button type="button" id="btn-run-qa-audit" class="btn-qa-audit mt-3" disabled>
+                            🔍 Bắt Đầu Kiểm Định Video Bằng Gemini AI
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right Column: AI QA Scorecard & Timeline Analysis -->
+                <div class="qa-right-col">
+                    <!-- Empty State before running audit -->
+                    <div id="qa-audit-empty" class="qa-empty-state">
+                        <span style="font-size: 48px; margin-bottom: 12px;">🔬</span>
+                        <h3 style="color: #FFF; font-size: 17px; margin-bottom: 8px;">Trợ Lý Đạo Diễn & Giám Định Video AI</h3>
+                        <p style="max-width: 360px; line-height: 1.5; font-size: 13px;">
+                            Hệ thống AI đa phương thức sẽ phân tích sâu từng giây của video, kiểm tra độ khớp giữa <strong>Giọng đọc (Voice)</strong>, <strong>Hình ảnh (Visuals)</strong> và <strong>Kịch bản (Script)</strong> để xuất báo cáo chi tiết.
+                        </p>
+                    </div>
+
+                    <!-- Audit Results Card (Visible when audit is completed) -->
+                    <div id="qa-audit-results" class="qa-audit-results-wrap hidden">
+                        <!-- Score Overview Card -->
+                        <div class="qa-score-overview-card">
+                            <div class="qa-gauge-wrap">
+                                <div class="qa-gauge-inner">
+                                    <span id="qa-overall-score-num" class="qa-gauge-num">88</span>
+                                    <span class="qa-gauge-sub">/ 100</span>
+                                </div>
+                            </div>
+                            <div class="qa-score-details">
+                                <span id="qa-verdict-badge" class="qa-verdict-badge good">✅ ĐẠT CHUẨN</span>
+                                <p id="qa-summary-text" class="qa-summary-text">Video có nhịp điệu tốt và hình ảnh đẹp mắt.</p>
+                            </div>
+                        </div>
+
+                        <!-- 4 Category Progress Bars -->
+                        <div class="qa-categories-grid">
+                            <div class="qa-cat-item">
+                                <div class="qa-cat-header">
+                                    <span>🗣️ Khớp Giọng & Khung Hình</span>
+                                    <span id="qa-num-voicesync" class="text-cyan">85%</span>
+                                </div>
+                                <div class="qa-cat-bar-bg">
+                                    <div id="qa-bar-voicesync" class="qa-cat-bar-fill" style="width: 85%;"></div>
+                                </div>
+                            </div>
+
+                            <div class="qa-cat-item">
+                                <div class="qa-cat-header">
+                                    <span>📜 Khớp Kịch Bản & Hình Ảnh</span>
+                                    <span id="qa-num-scriptmatch" class="text-cyan">90%</span>
+                                </div>
+                                <div class="qa-cat-bar-bg">
+                                    <div id="qa-bar-scriptmatch" class="qa-cat-bar-fill" style="width: 90%;"></div>
+                                </div>
+                            </div>
+
+                            <div class="qa-cat-item">
+                                <div class="qa-cat-header">
+                                    <span>⚡ Nhịp Điệu & Chuyển Cảnh</span>
+                                    <span id="qa-num-pacing" class="text-cyan">88%</span>
+                                </div>
+                                <div class="qa-cat-bar-bg">
+                                    <div id="qa-bar-pacing" class="qa-cat-bar-fill" style="width: 88%;"></div>
+                                </div>
+                            </div>
+
+                            <div class="qa-cat-item">
+                                <div class="qa-cat-header">
+                                    <span>🎨 Thẩm Mỹ & Màu Sắc</span>
+                                    <span id="qa-num-visuals" class="text-cyan">92%</span>
+                                </div>
+                                <div class="qa-cat-bar-bg">
+                                    <div id="qa-bar-visuals" class="qa-cat-bar-fill" style="width: 92%;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Strengths & Improvements -->
+                        <div class="qa-pros-cons-grid">
+                            <div class="qa-pros-box">
+                                <h4>🌟 Điểm Nổi Bật</h4>
+                                <ul id="qa-pros-list" class="qa-bullet-list"></ul>
+                            </div>
+                            <div class="qa-cons-box">
+                                <h4>💡 Điểm Cần Tối Ưu</h4>
+                                <ul id="qa-cons-list" class="qa-bullet-list"></ul>
+                            </div>
+                        </div>
+
+                        <!-- Interactive Timeline Critiques -->
+                        <div class="qa-card mt-3">
+                            <div class="qa-card-header">
+                                <h3>⏱️ Đánh Giá Chi Tiết Theo Dòng Thời Gian</h3>
+                                <span class="text-xs text-muted">Bấm vào từng thẻ để tua video đến đúng giây đó</span>
+                            </div>
+                            <div id="qa-timeline-list" class="qa-timeline-list"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+
     </div>
 
     <!-- Live Preview Modal -->
@@ -1450,5 +1601,6 @@
     <script src="app.js"></script>
     <script src="subtitles.js"></script>
     <script src="watermark.js"></script>
+    <script src="qa.js"></script>
 </body>
 </html>

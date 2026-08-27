@@ -1343,8 +1343,243 @@ app.post('/api/watermark/process-video', async (req, res) => {
             }
         })();
     } catch (err) {
-        console.error('Process video error:', err);
-        res.status(500).json({ error: err.message || 'Lỗi hệ thống' });
+        console.error("Process video error:", err);
+        res.status(500).json({ error: err.message || "Lỗi hệ thống" });
+    }
+});
+
+// ==========================================
+// TAB 4: AI Video QA Auditor
+// ==========================================
+
+function extractVideoKeyframes(videoPath, duration, maxFrames = 24) {
+    return new Promise(async (resolve) => {
+        // Adaptively calculate frame count based on video length (up to 36 frames for 15-20 min videos)
+        const targetFrames = Math.min(36, Math.max(12, Math.floor(duration / 15)));
+        const frameInterval = Math.max(2.0, duration / targetFrames);
+        const timestamps = [];
+        for (let t = 0.5; t < duration; t += frameInterval) {
+            timestamps.push(t);
+            if (timestamps.length >= targetFrames) break;
+        }
+
+        const promises = timestamps.map(t => {
+            return new Promise((resFrame) => {
+                const proc = spawn('ffmpeg', [
+                    '-ss', t.toFixed(2),
+                    '-i', videoPath,
+                    '-vframes', '1',
+                    '-vf', 'scale=480:-1',
+                    '-q:v', '7',
+                    '-f', 'image2pipe',
+                    '-vcodec', 'mjpeg',
+                    'pipe:1'
+                ]);
+                const chunks = [];
+                proc.stdout.on('data', d => chunks.push(d));
+                proc.on('close', code => {
+                    if (code === 0 && chunks.length > 0) {
+                        resFrame({
+                            timeSec: parseFloat(t.toFixed(1)),
+                            timeFormatted: formatTimeSec(t),
+                            base64: Buffer.concat(chunks).toString('base64')
+                        });
+                    } else {
+                        resFrame(null);
+                    }
+                });
+                proc.on('error', () => resFrame(null));
+            });
+        });
+
+        const results = (await Promise.all(promises)).filter(Boolean);
+        resolve(results);
+    });
+}
+
+function extractAudioBase64(videoPath, maxDuration = 1800) {
+    return new Promise((resolve) => {
+        const proc = spawn('ffmpeg', [
+            '-i', videoPath,
+            '-t', maxDuration.toString(),
+            '-vn',
+            '-ar', '16000',
+            '-ac', '1',
+            '-b:a', '32k',
+            '-f', 'mp3',
+            'pipe:1'
+        ]);
+        const chunks = [];
+        proc.stdout.on('data', d => chunks.push(d));
+        proc.on('close', (code) => {
+            if (code === 0 && chunks.length > 0) {
+                resolve(Buffer.concat(chunks).toString('base64'));
+            } else {
+                resolve(null);
+            }
+        });
+        proc.on('error', () => resolve(null));
+    });
+}
+
+function formatTimeSec(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}
+
+app.post('/api/qa/audit-video', upload.single('video'), async (req, res) => {
+    try {
+        let videoPath = null;
+        let videoFilename = '';
+        let originalName = '';
+
+        if (req.file) {
+            videoPath = req.file.path;
+            videoFilename = req.file.filename;
+            originalName = req.file.originalname;
+        } else if (req.body.videoPath) {
+            videoPath = path.isAbsolute(req.body.videoPath) ? req.body.videoPath : path.join(__dirname, req.body.videoPath);
+            videoFilename = path.basename(videoPath);
+            originalName = videoFilename;
+        }
+
+        if (!videoPath || !fs.existsSync(videoPath)) {
+            return res.status(400).json({ error: 'Không tìm thấy tệp video để kiểm định' });
+        }
+
+        const scriptText = req.body.scriptText || '';
+        const customApiKey = req.body.customApiKey || '';
+        const apiKey = (customApiKey && customApiKey.trim()) ? customApiKey.trim() : DEFAULT_GEMINI_API_KEY;
+
+        console.log(`[QA Auditor] Starting video audit on: ${videoFilename}`);
+        const mediaInfo = await getMediaInfo(videoPath);
+        const duration = mediaInfo.duration || 10;
+
+        // 1. Extract sample keyframes (adaptive count)
+        const keyframes = await extractVideoKeyframes(videoPath, duration, 24);
+        console.log(`[QA Auditor] Extracted ${keyframes.length} keyframes`);
+
+        // 2. Extract audio track base64 (up to 30 mins)
+        const audioBase64 = await extractAudioBase64(videoPath, Math.min(1800, duration));
+
+        // 3. Build Gemini multimodal payload
+        const ai = new GoogleGenAI({ apiKey });
+        const contents = [];
+
+        // Add audio if available
+        if (audioBase64) {
+            contents.push({ text: `[AUDIO TRACK CỦA VIDEO - Thời lượng: ${duration.toFixed(1)}s]` });
+            contents.push({
+                inlineData: {
+                    mimeType: 'audio/mp3',
+                    data: audioBase64
+                }
+            });
+        }
+
+        // Add keyframes
+        keyframes.forEach((kf) => {
+            contents.push({ text: `[KHUNG HÌNH TẠI GIÂY ${kf.timeFormatted} (${kf.timeSec}s)]` });
+            contents.push({
+                inlineData: {
+                    mimeType: 'image/jpeg',
+                    data: kf.base64
+                }
+            });
+        });
+
+        const promptText = `
+Bạn là Trợ Lý Đạo Diễn & Chuyên Gia Kiểm Định Chất Lượng Video Cao Cấp (Senior Multimodal Video QA Auditor).
+Hãy phân tích và đánh giá toàn diện video trên (gồm âm thanh/giọng nói và chuỗi khung hình theo các mốc giây).
+
+${scriptText.trim() ? `--- KỊCH BẢN / NỘI DUNG GỐC ĐƯỢC CUNG CẤP ---\n${scriptText.trim()}\n---` : ''}
+
+Nhiệm vụ kiểm định cốt lõi:
+1. ĐỒNG BỘ GIỌNG ĐỌC & KHUNG HÌNH (Voice-Visual Sync): Lời nói/giọng đọc có khớp với hình ảnh đang diễn ra không? Chuyển cảnh có bị trễ, sớm hoặc lệch so với câu thoại không?
+2. KHỚP KỊCH BẢN & HÌNH ẢNH (Script-Visual Accuracy): Hình ảnh tại từng thời điểm có diễn tả đúng chủ đề kịch bản không? Có hình ảnh nào bị "lạc quẻ" không liên quan không?
+3. NHỊP ĐIỆU & CẢM XÚC (Pacing & Transition): Tốc độ chuyển động, nhịp độ nói và chuyển cảnh có hài hòa cuốn hút không?
+4. ĐÁNH GIÁ CHI TIẾT TỪNG MỐC THỜI GIAN (Timeline Critiques): Chỉ rõ từng đoạn (ví dụ 00:00 - 00:04) xem đoạn nào làm tốt (status: "ok"), đoạn nào cần chú ý (status: "warning"), đoạn nào bị lệch nặng (status: "error") kèm lời khuyên chỉnh sửa cụ thể.
+
+Trả về DUY NHẤT một chuỗi JSON hợp lệ theo schema sau (không thêm markdown backticks thừa ngoài JSON):
+{
+  "overallScore": 88,
+  "verdict": "GOOD",
+  "summary": "Video có nhịp điệu tốt và hình ảnh đẹp mắt. Cần căn chỉnh lại phân đoạn ở giây 00:06 để khớp trọn vẹn với câu thoại.",
+  "scores": {
+    "voiceSync": 85,
+    "scriptMatch": 90,
+    "pacing": 88,
+    "visuals": 92
+  },
+  "strengths": [
+    "Hình ảnh minh họa có độ sắc nét và màu sắc rất cuốn hút",
+    "Hiệu ứng chuyển động mượt mà"
+  ],
+  "improvements": [
+    "Cần kéo dài thời lượng đoạn thứ 2 thêm 1 giây để khớp hết lời đọc",
+    "Thêm phụ đề nhấn mạnh vào từ khóa quan trọng"
+  ],
+  "timelineCritiques": [
+    {
+      "timestamp": "00:00 - 00:04",
+      "startTime": 0,
+      "endTime": 4,
+      "status": "ok",
+      "topic": "Khởi đầu thu hút",
+      "observation": "Khung hình mở đầu khớp với lời chào, chuyển động zoom vào trọng tâm rất tốt.",
+      "suggestion": "Giữ nguyên"
+    },
+    {
+      "timestamp": "00:04 - 00:09",
+      "startTime": 4,
+      "endTime": 9,
+      "status": "warning",
+      "topic": "Độ trễ chuyển cảnh",
+      "observation": "Lời đọc đã chuyển sang nội dung mới nhưng khung hình cũ vẫn còn lưu lại khoảng 1.5s.",
+      "suggestion": "Nên cắt ngắn ảnh trước 1s hoặc đẩy câu thoại chậm lại 1 nhịp."
+    }
+  ]
+}
+`;
+        contents.push({ text: promptText });
+
+        const response = await ai.models.generateContent({
+            model: "gemini-3.6-flash",
+            contents,
+            config: {
+                responseMimeType: "application/json"
+            }
+        });
+
+        const rawText = response.text ? response.text.trim() : "";
+        let auditData = null;
+        try {
+            auditData = JSON.parse(rawText);
+        } catch (parseErr) {
+            const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                auditData = JSON.parse(jsonMatch[0]);
+            } else {
+                throw new Error("Không thể phân tích dữ liệu JSON từ AI: " + rawText);
+            }
+        }
+
+        res.json({
+            success: true,
+            video: {
+                filename: videoFilename,
+                originalName,
+                url: `/uploads/${videoFilename}`,
+                duration,
+                width: mediaInfo.width,
+                height: mediaInfo.height
+            },
+            audit: auditData
+        });
+    } catch (err) {
+        console.error('[QA Auditor Error]:', err);
+        res.status(500).json({ error: err.message || 'Lỗi trong quá trình kiểm định video' });
     }
 });
 
