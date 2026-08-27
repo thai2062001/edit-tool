@@ -107,163 +107,120 @@
             </div>
         </div>
 
-        <!-- TAB 1: Main Video Editor Workspace -->
+        <!-- TAB 1: Main Video Editor Workspace (Modern Studio Layout) -->
         <div id="tab-pane-editor" class="tab-pane active">
-            <main class="workspace-grid">
-            <!-- Left & Center: Media Timeline & Configuration -->
-            <section class="media-timeline-section">
-                <!-- Dropzone for Upload -->
-                <div class="upload-zone" id="upload-zone">
-                    <input type="file" id="file-input" multiple accept="image/*,video/*,audio/*" hidden>
-                    <div class="upload-content">
-                        <div class="upload-icon-pulse">
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                <polyline points="17 8 12 3 7 8"></polyline>
-                                <line x1="12" y1="3" x2="12" y2="15"></line>
-                            </svg>
+            <div class="studio-workspace-grid">
+                
+                <!-- Left Sidebar: Settings & BGM & Smart Batch Tools -->
+                <aside class="studio-sidebar-left">
+                    <!-- Aspect Ratio & Quality -->
+                    <div class="settings-card studio-card">
+                        <div class="card-header">
+                            <h3>📐 Tỉ Lệ Khung Hình & Xuất</h3>
                         </div>
-                        <h3>Kéo & thả Ảnh, Video hoặc Nhạc vào đây</h3>
-                        <p>Hỗ trợ ảnh (JPG, PNG, WEBP), video (MP4, MOV, MKV) và nhạc nền (MP3, WAV)</p>
-                        <button class="btn btn-outline" onclick="document.getElementById('file-input').click()">
-                            Chọn Tệp Từ Máy Tính
-                        </button>
-                    </div>
-                </div>
+                        <div class="aspect-ratio-selector">
+                            <label class="ratio-option active" data-ratio="16:9" data-width="1920" data-height="1080">
+                                <input type="radio" name="aspect-ratio" value="16:9" checked hidden>
+                                <div class="ratio-box landscape"></div>
+                                <div class="ratio-meta">
+                                    <strong>16:9 (Ngang)</strong>
+                                    <span>YouTube / HD</span>
+                                </div>
+                            </label>
+                            <label class="ratio-option" data-ratio="9:16" data-width="1080" data-height="1920">
+                                <input type="radio" name="aspect-ratio" value="9:16" hidden>
+                                <div class="ratio-box portrait"></div>
+                                <div class="ratio-meta">
+                                    <strong>9:16 (Dọc)</strong>
+                                    <span>TikTok / Shorts</span>
+                                </div>
+                            </label>
+                            <label class="ratio-option" data-ratio="1:1" data-width="1080" data-height="1080">
+                                <input type="radio" name="aspect-ratio" value="1:1" hidden>
+                                <div class="ratio-box square"></div>
+                                <div class="ratio-meta">
+                                    <strong>1:1 (Vuông)</strong>
+                                    <span>Instagram</span>
+                                </div>
+                            </label>
+                        </div>
 
-                <!-- Media Item List / Timeline Header -->
-                <div class="timeline-header">
-                    <div class="timeline-title-area">
-                        <h2>Danh Sách Phân Đoạn Video (<span id="item-count">0</span>)</h2>
-                        <span class="badge-total-duration">Tổng thời lượng: <strong id="total-est-duration">0.0s</strong></span>
-                    </div>
-                    <div class="timeline-controls">
-                        <button id="btn-clear-all" class="btn btn-small btn-ghost" title="Xóa tất cả">
-                            🗑️ Xóa hết
-                        </button>
-                    </div>
-                </div>
+                        <div class="setting-row mt-2">
+                            <label for="select-export-quality">Chất lượng:</label>
+                            <select id="select-export-quality" class="custom-select">
+                                <option value="standard_1080p" selected>🌟 Full HD 1080p (Khuyên dùng)</option>
+                                <option value="fast_720p">⚡ Xuất nhanh (720p)</option>
+                                <option value="high_1080p_60fps">🚀 Full HD 60fps (Siêu mượt)</option>
+                                <option value="ultra_4k">💎 Ultra 4K (2160p)</option>
+                            </select>
+                        </div>
 
-                <!-- Media Item Container -->
-                <div id="media-list" class="media-list">
-                    <div class="empty-state" id="empty-state">
-                        <div class="empty-icon">🎞️</div>
-                        <h4>Chưa có ảnh hoặc video nào trên Timeline</h4>
-                        <p>Kéo thả tệp vào khung bên trên hoặc nhấn nút bên dưới để nạp mẫu thử nghiệm ngay.</p>
-                        <div class="mt-3">
-                            <button type="button" class="btn btn-secondary btn-small" onclick="document.getElementById('btn-sample-demo').click()">
-                                ✨ Nạp 12 Ảnh Mẫu & Kịch Bản Demo
-                            </button>
+                        <div id="row-reframe-mode" class="setting-row mt-2 hidden">
+                            <label for="select-reframe-mode">Căn viền (Reframe):</label>
+                            <select id="select-reframe-mode" class="custom-select">
+                                <option value="cover" selected>🎯 Smart Center Crop</option>
+                                <option value="contain_blur">✨ Blurred Backdrop (Nền mờ)</option>
+                                <option value="contain_black">⬛ Letterbox (Viền đen)</option>
+                            </select>
+                        </div>
+
+                        <div class="setting-row mt-2">
+                            <label for="select-fps">Khung hình (FPS):</label>
+                            <select id="select-fps" class="custom-select">
+                                <option value="30" selected>30 FPS (Chuẩn mượt)</option>
+                                <option value="60">60 FPS (Siêu mượt)</option>
+                            </select>
                         </div>
                     </div>
-                </div>
-            </section>
 
-            <!-- Right Sidebar: Settings & Audio -->
-            <aside class="sidebar-settings">
-                <!-- Aspect Ratio & Resolution & Quality -->
-                <div class="settings-card">
-                    <div class="card-header">
-                        <h3>📐 Tỉ Lệ Khung Hình & Chất Lượng Xuất</h3>
-                    </div>
-                    <div class="aspect-ratio-selector">
-                        <label class="ratio-option active" data-ratio="16:9" data-width="1920" data-height="1080">
-                            <input type="radio" name="aspect-ratio" value="16:9" checked hidden>
-                            <div class="ratio-box landscape"></div>
-                            <div class="ratio-meta">
-                                <strong>16:9 (Ngang)</strong>
-                                <span>1920x1080 (YouTube/HD)</span>
+                    <!-- BGM Settings -->
+                    <div class="settings-card studio-card mt-2">
+                        <div class="card-header flex-between">
+                            <h3>🎵 Nhạc Nền (BGM)</h3>
+                            <button class="btn btn-xs btn-outline" onclick="document.getElementById('bgm-file-input').click()">+ Nạp Nhạc</button>
+                            <input type="file" id="bgm-file-input" accept="audio/*" hidden>
+                        </div>
+                        <div class="bgm-panel" id="bgm-panel">
+                            <div id="bgm-empty-state">
+                                <p class="text-xs text-dim">Chưa có nhạc nền. Bấm "+ Nạp Nhạc" để thêm MP3/WAV.</p>
                             </div>
-                        </label>
-                        <label class="ratio-option" data-ratio="9:16" data-width="1080" data-height="1920">
-                            <input type="radio" name="aspect-ratio" value="9:16" hidden>
-                            <div class="ratio-box portrait"></div>
-                            <div class="ratio-meta">
-                                <strong>9:16 (Dọc)</strong>
-                                <span>1080x1920 (TikTok/Reels)</span>
+                            <div id="bgm-active-state" class="hidden">
+                                <div class="bgm-info">
+                                    <span class="bgm-icon">🎶</span>
+                                    <div class="bgm-details">
+                                        <strong id="bgm-title">audio.mp3</strong>
+                                        <span id="bgm-duration">00:00</span>
+                                    </div>
+                                    <button id="btn-remove-bgm" class="btn btn-icon btn-ghost" title="Xóa nhạc">✕</button>
+                                </div>
+                                <div class="slider-group mt-2">
+                                    <div class="slider-label">
+                                        <span>Âm lượng BGM</span>
+                                        <strong id="bgm-volume-val">60%</strong>
+                                    </div>
+                                    <input type="range" id="bgm-volume" min="0" max="1" step="0.05" value="0.6" class="custom-range">
+                                </div>
                             </div>
-                        </label>
-                        <label class="ratio-option" data-ratio="1:1" data-width="1080" data-height="1080">
-                            <input type="radio" name="aspect-ratio" value="1:1" hidden>
-                            <div class="ratio-box square"></div>
-                            <div class="ratio-meta">
-                                <strong>1:1 (Vuông)</strong>
-                                <span>1080x1080 (Instagram)</span>
-                            </div>
-                        </label>
+                        </div>
                     </div>
 
-                    <!-- Quality Presets -->
-                    <div class="setting-row mt-3">
-                        <label for="select-export-quality">Chất lượng & Tốc độ:</label>
-                        <select id="select-export-quality" class="custom-select">
-                            <option value="standard_1080p" selected>🌟 Chuẩn Full HD (1080p - Khuyên dùng)</option>
-                            <option value="fast_720p">⚡ Xuất Nhanh (720p - Xem thử siêu tốc)</option>
-                            <option value="high_1080p_60fps">🚀 Full HD 60fps (1080p - Siêu mượt)</option>
-                            <option value="ultra_4k">💎 Ultra 4K (2160p 60fps - Tối đa chi tiết)</option>
-                        </select>
-                    </div>
-
-                    <!-- Smart Reframe Mode (Only visible for 9:16 or 1:1) -->
-                    <div id="row-reframe-mode" class="setting-row mt-2 hidden">
-                        <label for="select-reframe-mode" title="Tự động xử lý khi ảnh/clip ngang chuyển sang khung hình dọc 9:16 hoặc 1:1">
-                            Cắt/Căn khung hình (Reframe):
-                        </label>
-                        <select id="select-reframe-mode" class="custom-select">
-                            <option value="cover" selected>🎯 Smart Center Crop (Cắt căn giữa bao trùm)</option>
-                            <option value="contain_blur">✨ Blurred Backdrop (Nền mờ - Chuẩn TikTok)</option>
-                            <option value="contain_black">⬛ Letterbox (Viền đen truyền thống)</option>
-                        </select>
-                    </div>
-
-                    <div class="setting-row mt-2">
-                        <label for="select-fps">Tốc độ khung hình (FPS):</label>
-                        <select id="select-fps" class="custom-select">
-                            <option value="30" selected>30 FPS (Chuẩn mượt)</option>
-                            <option value="60">60 FPS (Siêu mượt)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Motion & Batch Effects Settings -->
-                <div class="settings-card highlight-card">
-                    <div class="card-header">
-                        <h3>⚡ Tùy Chỉnh Thời Lượng & Hiệu Ứng Nhanh</h3>
-                    </div>
-                    <div class="batch-settings-body">
-                        <!-- Batch Duration Slider -->
-                        <div class="setting-row">
+                    <!-- Batch Smart Tools -->
+                    <div class="settings-card studio-card highlight-card mt-2">
+                        <div class="card-header">
+                            <h3>⚡ Công Cụ Gán Hàng Loạt</h3>
+                        </div>
+                        <div class="setting-row mt-2">
                             <div class="slider-label">
                                 <span>⏱️ Thời lượng mỗi ảnh:</span>
                                 <strong id="batch-duration-val" style="color: var(--accent-cyan);">5.0s</strong>
                             </div>
                             <div class="input-with-btn">
                                 <input type="range" id="batch-duration-slider" min="1.0" max="15.0" step="0.5" value="5.0" class="custom-range">
-                                <button type="button" id="btn-apply-duration-all" class="btn btn-secondary" title="Áp dụng thời lượng này cho tất cả ảnh trên Timeline">
-                                    Áp Dụng
-                                </button>
-                            </div>
-                            <small class="text-xs text-dim">Mặc định ban đầu 5.0s (chậm rãi, êm dịu hơn)</small>
-                        </div>
-
-                        <!-- Batch Motion Intensity -->
-                        <div class="setting-row mt-2">
-                            <label for="batch-motion-intensity">🌊 Cường độ Zoom & Pan:</label>
-                            <div class="input-with-btn">
-                                <select id="batch-motion-intensity" class="custom-select">
-                                    <option value="1.15">🌿 Rất chậm & Êm dịu (15% zoom)</option>
-                                    <option value="1.25" selected>✨ Mượt mà chuẩn (25% zoom)</option>
-                                    <option value="1.40">⚡ Nhanh & Kịch tính (40% zoom)</option>
-                                </select>
-                                <button type="button" id="btn-apply-intensity-all" class="btn btn-secondary" title="Áp dụng cường độ chuyển động cho tất cả ảnh">
-                                    Áp Dụng
-                                </button>
+                                <button type="button" id="btn-apply-duration-all" class="btn btn-secondary btn-xs" title="Áp dụng thời lượng này cho tất cả cảnh">Áp Dụng</button>
                             </div>
                         </div>
-
-                        <!-- Batch Motion Type -->
                         <div class="setting-row mt-2">
-                            <label for="batch-motion-select">🎬 Gán hiệu ứng chuyển động:</label>
+                            <label for="batch-motion-select">🎬 Gán hiệu ứng toàn bộ:</label>
                             <div class="input-with-btn">
                                 <select id="batch-motion-select" class="custom-select">
                                     <option value="zoom_in">🔍 Zoom In (Phóng to tâm)</option>
@@ -275,80 +232,189 @@
                                     <option value="zoom_pan">🎯 Zoom + Pan Chéo</option>
                                     <option value="zoom_in_left">↖️ Zoom Góc Trái</option>
                                     <option value="zoom_in_right">↗️ Zoom Góc Phải</option>
-                                    <option value="none">⏹️ Tĩnh (Không zoom)</option>
+                                    <option value="none">⏹️ Tĩnh</option>
                                 </select>
-                                <button type="button" id="btn-apply-motion-all" class="btn btn-secondary" title="Đổi tất cả ảnh sang hiệu ứng này">
-                                    Đổi Hết
-                                </button>
+                                <button type="button" id="btn-apply-motion-all" class="btn btn-secondary btn-xs" title="Đổi tất cả cảnh sang hiệu ứng này">Đổi Hết</button>
                             </div>
                             <button type="button" id="btn-randomize-motions" class="btn btn-small btn-secondary w-100 mt-2" style="background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.4);">
-                                🎲 Phân Bổ Ngẫu Nhiên Hiệu Ứng Cho Mọi Ảnh
+                                🎲 Phân Bổ Ngẫu Nhiên Mọi Cảnh
                             </button>
                         </div>
-                        
-                        <!-- Batch Fade In/Out -->
-                        <div class="setting-row mt-2">
-                            <label>✨ Hiệu ứng Fade In / Out (giây):</label>
-                            <div class="fade-inputs-grid">
-                                <div class="fade-input-item">
-                                    <span>In:</span>
-                                    <input type="number" id="batch-fade-in" min="0" max="3" step="0.1" value="0.8">
-                                </div>
-                                <div class="fade-input-item">
-                                    <span>Out:</span>
-                                    <input type="number" id="batch-fade-out" min="0" max="3" step="0.1" value="0.8">
-                                </div>
-                                <button type="button" id="btn-apply-fade-all" class="btn btn-secondary">Áp Dụng</button>
-                            </div>
-                        </div>
                     </div>
-                </div>
+                </aside>
 
-                <!-- Background Music Settings -->
-                <div class="settings-card">
-                    <div class="card-header">
-                        <h3>🎵 Nhạc Nền (BGM)</h3>
-                    </div>
-                    <div class="bgm-panel" id="bgm-panel">
-                        <div id="bgm-empty-state">
-                            <p>Chưa có nhạc nền</p>
-                            <button class="btn btn-small btn-outline mt-2" onclick="document.getElementById('bgm-file-input').click()">
-                                ➕ Thêm file MP3 / WAV
+                <!-- Center Stage: Live Canvas Video Player & Quick Inspector -->
+                <section class="studio-center-stage">
+                    <!-- Dropzone (compact bar) -->
+                    <div class="upload-zone-compact" id="upload-zone">
+                        <input type="file" id="file-input" multiple accept="image/*,video/*,audio/*" hidden>
+                        <div class="upload-compact-content">
+                            <span class="upload-mini-icon">📁</span>
+                            <span class="upload-tip-text">Kéo thả thêm Ảnh/Video/Nhạc vào đây hoặc</span>
+                            <button type="button" class="btn btn-xs btn-outline" onclick="document.getElementById('file-input').click()">
+                                Chọn Tệp Từ Máy
                             </button>
-                            <input type="file" id="bgm-file-input" accept="audio/*" hidden>
+                            <button type="button" class="btn btn-xs btn-secondary" onclick="document.getElementById('btn-sample-demo').click()">
+                                ✨ Nạp 12 Ảnh Mẫu Demo
+                            </button>
                         </div>
-                        <div id="bgm-active-state" class="hidden">
-                            <div class="bgm-info">
-                                <span class="bgm-icon">🎶</span>
-                                <div class="bgm-details">
-                                    <strong id="bgm-title">audio.mp3</strong>
-                                    <span id="bgm-duration">00:00</span>
-                                </div>
-                                <button id="btn-remove-bgm" class="btn btn-icon btn-ghost" title="Xóa nhạc">✕</button>
+                    </div>
+
+                    <!-- Integrated Canvas Live Preview Player -->
+                    <div class="studio-player-wrap">
+                        <div class="studio-player-container" id="studio-player-container">
+                            <canvas id="studio-preview-canvas" width="1920" height="1080"></canvas>
+                            <div class="studio-player-overlay-info">
+                                <span id="studio-scene-label">Cảnh #1 / 0</span> &nbsp;|&nbsp; 
+                                <span id="studio-scene-motion">Zoom In</span> &nbsp;|&nbsp; 
+                                <span id="studio-time-display">0.0s / 0.0s</span>
                             </div>
-                            <div class="slider-group mt-3">
-                                <div class="slider-label">
-                                    <span>Âm lượng nhạc nền</span>
-                                    <strong id="bgm-volume-val">60%</strong>
+                        </div>
+
+                        <!-- Player Controls Bar -->
+                        <div class="studio-player-controls">
+                            <button type="button" id="studio-btn-play" class="btn btn-primary btn-small">
+                                ▶ Phát Toàn Bộ Video
+                            </button>
+                            <button type="button" id="studio-btn-play-scene" class="btn btn-secondary btn-small" title="Chỉ phát lặp lại phân cảnh hiện tại">
+                                🔁 Xem Cảnh Này
+                            </button>
+                            <input type="range" id="studio-scrubber" class="custom-range studio-scrubber" min="0" max="100" step="0.1" value="0">
+                            <span id="studio-scrubber-time" class="studio-time-badge">0:00 / 0:00</span>
+                        </div>
+                    </div>
+
+                    <!-- Quick Inspector Panel for the Active Selected Segment -->
+                    <div id="quick-inspector" class="quick-inspector-panel">
+                        <div class="inspector-header">
+                            <div class="inspector-title">
+                                <span id="inspector-segment-num" class="inspector-badge">#1</span>
+                                <strong id="inspector-filename" class="inspector-filename-text">Tên tệp phân đoạn</strong>
+                                <span id="inspector-type-badge" class="card-type-badge image">🖼️ Ảnh</span>
+                            </div>
+                            <div class="inspector-actions">
+                                <button type="button" id="btn-inspector-move-prev" class="btn btn-icon btn-secondary btn-xs" title="Lùi vị trí">◀</button>
+                                <button type="button" id="btn-inspector-move-next" class="btn btn-icon btn-secondary btn-xs" title="Tiến vị trí">▶</button>
+                                <button type="button" id="btn-inspector-delete" class="btn btn-icon btn-ghost btn-xs text-danger" title="Xóa phân đoạn này">🗑️</button>
+                            </div>
+                        </div>
+
+                        <div class="inspector-body">
+                            <!-- Image controls -->
+                            <div id="inspector-image-controls" class="inspector-fields-grid">
+                                <div class="form-group">
+                                    <label class="form-label-xs">🎬 Hiệu ứng Motion:</label>
+                                    <select id="insp-motion" class="custom-select form-control-sm">
+                                        <option value="zoom_in">🔍 Zoom In (Phóng to tâm)</option>
+                                        <option value="zoom_out">🔎 Zoom Out (Thu nhỏ tâm)</option>
+                                        <option value="pan_left">⬅️ Pan Trái</option>
+                                        <option value="pan_right">➡️ Pan Phải</option>
+                                        <option value="pan_up">⬆️ Pan Lên Trên</option>
+                                        <option value="pan_down">⬇️ Pan Xuống Dưới</option>
+                                        <option value="zoom_pan">🎯 Zoom + Pan Chéo</option>
+                                        <option value="zoom_in_left">↖️ Zoom Góc Trái</option>
+                                        <option value="zoom_in_right">↗️ Zoom Góc Phải</option>
+                                        <option value="none">⏹️ Tĩnh (Không zoom)</option>
+                                    </select>
                                 </div>
-                                <input type="range" id="bgm-volume" min="0" max="1" step="0.05" value="0.6" class="custom-range">
+                                <div class="form-group">
+                                    <label class="form-label-xs">⏱️ Thời lượng (s):</label>
+                                    <input type="number" id="insp-duration" class="form-control form-control-sm" min="1" max="30" step="0.5" value="5.0">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label-xs">🌊 Cường độ:</label>
+                                    <select id="insp-intensity" class="custom-select form-control-sm">
+                                        <option value="1.15">🌿 Rất chậm (15%)</option>
+                                        <option value="1.25">✨ Mượt mà (25%)</option>
+                                        <option value="1.40">⚡ Kịch tính (40%)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label-xs">✨ Fade In / Out (s):</label>
+                                    <div class="flex-row-gap">
+                                        <input type="number" id="insp-fadein" class="form-control form-control-sm" min="0" max="3" step="0.1" value="0.8" placeholder="In">
+                                        <input type="number" id="insp-fadeout" class="form-control form-control-sm" min="0" max="3" step="0.1" value="0.8" placeholder="Out">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Video controls -->
+                            <div id="inspector-video-controls" class="inspector-fields-grid hidden">
+                                <div class="form-group">
+                                    <label class="form-label-xs">✂️ Cắt từ (s):</label>
+                                    <input type="number" id="insp-trimstart" class="form-control form-control-sm" min="0" step="0.5" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label-xs">✂️ Đến (s):</label>
+                                    <input type="number" id="insp-trimend" class="form-control form-control-sm" min="0.5" step="0.5" value="5">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label-xs">🔊 Âm lượng clip:</label>
+                                    <select id="insp-videovolume" class="custom-select form-control-sm">
+                                        <option value="1.0">🔊 100% Gốc</option>
+                                        <option value="0.5">🔉 50% Nhỏ</option>
+                                        <option value="0">🔇 Tắt tiếng</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Text Overlay Row -->
+                            <div class="inspector-text-row mt-2">
+                                <div class="text-input-wrap">
+                                    <label class="form-label-xs">✍️ Tiêu đề/Chữ hiển thị trên cảnh này:</label>
+                                    <input type="text" id="insp-text" class="form-control form-control-sm" placeholder="Nhập tiêu đề hoặc lời bình...">
+                                </div>
+                                <div class="text-options-grid">
+                                    <select id="insp-textpos" class="custom-select form-control-sm" title="Vị trí">
+                                        <option value="bottom">📍 Dưới đáy</option>
+                                        <option value="center">📍 Giữa khung</option>
+                                        <option value="top">📍 Trên đỉnh</option>
+                                    </select>
+                                    <select id="insp-textstyle" class="custom-select form-control-sm" title="Kiểu chữ">
+                                        <option value="banner">🎨 Banner mờ</option>
+                                        <option value="outline">🎨 Viền đen</option>
+                                        <option value="glow">🎨 Neon sáng</option>
+                                        <option value="plain">🎨 Chữ trắng</option>
+                                    </select>
+                                    <select id="insp-textsize" class="custom-select form-control-sm" title="Cỡ chữ">
+                                        <option value="36">36px Vừa</option>
+                                        <option value="48">48px Lớn</option>
+                                        <option value="64">64px To</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                </section>
 
-                <!-- Quick Tips Card -->
-                <div class="settings-card tips-card">
-                    <h4>💡 Mẹo hiệu ứng:</h4>
-                    <ul>
-                        <li><strong>Zoom In:</strong> Máy quay phóng to từ từ vào tâm ảnh.</li>
-                        <li><strong>Zoom Out:</strong> Máy quay thu nhỏ dần từ cận cảnh ra toàn cảnh.</li>
-                        <li><strong>Fade In/Out:</strong> Độ mờ ảo khi bắt đầu và kết thúc ảnh (không ảnh hưởng đến video tiếp nối).</li>
-                    </ul>
-                </div>
-            </aside>
-        </main>
+                <!-- Bottom Stage: Visual Storyboard Ribbon / Timeline -->
+                <footer class="studio-bottom-timeline">
+                    <div class="timeline-header-bar flex-between">
+                        <div class="timeline-meta-info">
+                            <h3>🎞️ Dải Phân Đoạn Video Storyboard (<span id="item-count">0</span> cảnh)</h3>
+                            <span class="badge-total-duration">⏱️ Tổng thời lượng: <strong id="total-est-duration">0.0s</strong></span>
+                        </div>
+                        <div class="timeline-quick-actions">
+                            <button type="button" class="btn btn-xs btn-outline" onclick="document.getElementById('file-input').click()">
+                                ➕ Thêm Ảnh/Video
+                            </button>
+                            <button type="button" id="btn-clear-all" class="btn btn-xs btn-ghost text-danger">
+                                🗑️ Xóa hết
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Storyboard Ribbon Cards List -->
+                    <div id="media-list" class="storyboard-ribbon">
+                        <div class="empty-state-ribbon" id="empty-state">
+                            <span>🎞️ Chưa có phân đoạn nào. Bấm <strong>"+ Thêm Ảnh/Video"</strong> hoặc <strong>"Nạp Mẫu Demo"</strong> để bắt đầu dựng video.</span>
+                        </div>
+                    </div>
+                </footer>
+
+            </div>
         </div>
+        <!-- End TAB 1 -->
         <!-- End TAB 1 -->
 
         <!-- TAB 2: Auto Subtitle / Captions (Word-Level Animation) -->

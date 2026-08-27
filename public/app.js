@@ -237,7 +237,28 @@ btnRemoveBgm.addEventListener('click', () => {
     updateBgmUI();
 });
 
-// Render Media List
+let activeSegmentIndex = 0;
+let studioAnimFrame = null;
+let isStudioPlayingAll = false;
+const studioLoadedImages = new Map();
+
+function getMotionShortName(motion) {
+    switch (motion) {
+        case 'zoom_in': return '🔍 Zoom In';
+        case 'zoom_out': return '🔎 Zoom Out';
+        case 'pan_left': return '⬅️ Pan Trái';
+        case 'pan_right': return '➡️ Pan Phải';
+        case 'pan_up': return '⬆️ Pan Lên';
+        case 'pan_down': return '⬇️ Pan Xuống';
+        case 'zoom_pan': return '🎯 Zoom+Pan';
+        case 'zoom_in_left': return '↖️ Zoom Trái';
+        case 'zoom_in_right': return '↗️ Zoom Phải';
+        case 'none': return '⏹️ Tĩnh';
+        default: return '🎬 ' + (motion || 'Zoom');
+    }
+}
+
+// Render Media Storyboard Ribbon List
 function renderMediaList() {
     if (window.mediaItems && window.mediaItems !== mediaItems) {
         mediaItems = window.mediaItems;
@@ -249,6 +270,9 @@ function renderMediaList() {
     } else {
         window.bgmTrack = bgmTrack;
     }
+
+    const quickInspector = document.getElementById('quick-inspector');
+
     if (mediaItems.length === 0) {
         emptyState.classList.remove('hidden');
         mediaList.innerHTML = '';
@@ -257,6 +281,7 @@ function renderMediaList() {
         itemCountEl.innerText = '0';
         totalDurationEl.innerText = '0.0s';
         updateWorkflowStep(1);
+        if (quickInspector) quickInspector.classList.add('hidden');
         return;
     }
 
@@ -266,11 +291,21 @@ function renderMediaList() {
     itemCountEl.innerText = mediaItems.length;
     updateWorkflowStep(2);
 
+    if (activeSegmentIndex >= mediaItems.length) {
+        activeSegmentIndex = Math.max(0, mediaItems.length - 1);
+    }
+
     let totalDur = 0;
 
     mediaItems.forEach((item, index) => {
+        const isImage = item.type === 'image';
+        const dur = isImage 
+            ? Number(item.settings.duration || 5.0) 
+            : Math.max(0.5, Number(item.settings.trimEnd || item.duration || 5) - Number(item.settings.trimStart || 0));
+        totalDur += Math.max(0.5, dur);
+
         const card = document.createElement('div');
-        card.className = 'media-card';
+        card.className = `storyboard-card ${index === activeSegmentIndex ? 'active' : ''}`;
         card.dataset.index = index;
         card.setAttribute('draggable', 'true');
 
@@ -281,185 +316,527 @@ function renderMediaList() {
         card.addEventListener('drop', handleDrop);
         card.addEventListener('dragend', handleDragEnd);
 
-        const isImage = item.type === 'image';
-        const dur = isImage ? Number(item.settings.duration || 5.0) : Math.max(0.5, Number(item.settings.trimEnd || item.duration || 5) - Number(item.settings.trimStart || 0));
-        totalDur += Math.max(0.5, dur);
+        // Click to select
+        card.addEventListener('click', () => {
+            selectSegment(index);
+        });
+
+        const motionLabel = isImage 
+            ? getMotionShortName(item.settings.motion || 'zoom_in')
+            : '✂️ Video Trim';
+
+        const textPreview = item.settings?.overlayText?.trim() 
+            ? `✍️ ${item.settings.overlayText.trim()}` 
+            : '';
 
         card.innerHTML = `
-            <div class="card-drag-handle" title="Kéo thả chuột để đổi vị trí phân đoạn">
-                <span>⠿</span>
-            </div>
-            
-            <div class="card-index-badge">#${index + 1}</div>
-
-            <div class="card-thumb-wrapper">
+            <div class="storyboard-thumb-box">
                 ${isImage 
-                    ? `<img src="${item.url}" class="card-thumb" alt="${item.originalName}">` 
-                    : `<video src="${item.url}" class="card-thumb" muted></video>`
+                    ? `<img src="${item.url}" class="storyboard-thumb-img" alt="${item.originalName}">` 
+                    : `<video src="${item.url}" class="storyboard-thumb-img" muted></video>`
                 }
-                <span class="card-type-badge ${item.type}">${item.type === 'image' ? '🖼️ Ảnh' : '🎬 Clip'}</span>
-                <span class="card-duration-tag">⏱️ ${dur.toFixed(1)}s</span>
+                <span class="storyboard-idx-tag">#${index + 1}</span>
+                <span class="storyboard-dur-tag">⏱️ ${dur.toFixed(1)}s</span>
             </div>
-
-            <div class="card-controls">
-                <div class="card-title-row">
-                    <div class="card-filename-wrap">
-                        <span class="card-filename" title="${item.originalName}">${item.originalName}</span>
-                    </div>
-                    <div class="card-quick-actions">
-                        ${isImage ? `<button type="button" class="btn btn-xs btn-preview-card" onclick="previewItemMotion(${index})" title="Xem trước chuyển động & chữ">👁️ Xem Thử</button>` : ''}
-                    </div>
-                </div>
-
-                <div class="card-form-grid">
-                    ${isImage ? `
-                        <div class="form-group motion-select-group">
-                            <label class="form-label-xs">🎬 Hiệu ứng Motion:</label>
-                            <select class="form-control form-control-sm" onchange="updateItemSetting(${index}, 'motion', this.value)">
-                                <option value="zoom_in" ${item.settings.motion === 'zoom_in' ? 'selected' : ''}>🔍 Zoom In (Phóng to tâm)</option>
-                                <option value="zoom_out" ${item.settings.motion === 'zoom_out' ? 'selected' : ''}>🔎 Zoom Out (Thu nhỏ tâm)</option>
-                                <option value="pan_left" ${item.settings.motion === 'pan_left' ? 'selected' : ''}>⬅️ Pan Trái</option>
-                                <option value="pan_right" ${item.settings.motion === 'pan_right' ? 'selected' : ''}>➡️ Pan Phải</option>
-                                <option value="pan_up" ${item.settings.motion === 'pan_up' ? 'selected' : ''}>⬆️ Pan Lên Trên</option>
-                                <option value="pan_down" ${item.settings.motion === 'pan_down' ? 'selected' : ''}>⬇️ Pan Xuống Dưới</option>
-                                <option value="zoom_pan" ${item.settings.motion === 'zoom_pan' ? 'selected' : ''}>🎯 Zoom + Pan Chéo</option>
-                                <option value="zoom_in_left" ${item.settings.motion === 'zoom_in_left' ? 'selected' : ''}>↖️ Zoom Góc Trái</option>
-                                <option value="zoom_in_right" ${item.settings.motion === 'zoom_in_right' ? 'selected' : ''}>↗️ Zoom Góc Phải</option>
-                                <option value="none" ${item.settings.motion === 'none' ? 'selected' : ''}>⏹️ Tĩnh (Không zoom)</option>
-                            </select>
-                        </div>
-                        <div class="form-group duration-input-group">
-                            <label class="form-label-xs">⏱️ Thời lượng (s):</label>
-                            <input type="number" class="form-control form-control-sm" min="1" max="30" step="0.5" value="${item.settings.duration || 5.0}" onchange="updateItemSetting(${index}, 'duration', parseFloat(this.value))">
-                        </div>
-                        <div class="form-group intensity-group">
-                            <label class="form-label-xs">🌊 Tốc độ/Cường độ:</label>
-                            <select class="form-control form-control-sm" onchange="updateItemSetting(${index}, 'zoomIntensity', parseFloat(this.value))">
-                                <option value="1.15" ${(item.settings.zoomIntensity || 1.25) === 1.15 ? 'selected' : ''}>🌿 Rất chậm (15%)</option>
-                                <option value="1.25" ${(item.settings.zoomIntensity || 1.25) === 1.25 ? 'selected' : ''}>✨ Chuẩn mượt (25%)</option>
-                                <option value="1.40" ${(item.settings.zoomIntensity || 1.25) === 1.40 ? 'selected' : ''}>⚡ Kịch tính (40%)</option>
-                            </select>
-                        </div>
-                        <div class="form-group fade-group">
-                            <label class="form-label-xs">✨ Fade In / Out:</label>
-                            <div class="flex-row-gap">
-                                <input type="number" class="form-control form-control-sm" min="0" max="3" step="0.1" value="${item.settings.fadeIn}" title="Fade In (giây)" placeholder="In" onchange="updateItemSetting(${index}, 'fadeIn', parseFloat(this.value))">
-                                <input type="number" class="form-control form-control-sm" min="0" max="3" step="0.1" value="${item.settings.fadeOut}" title="Fade Out (giây)" placeholder="Out" onchange="updateItemSetting(${index}, 'fadeOut', parseFloat(this.value))">
-                            </div>
-                        </div>
-                    ` : `
-                        <div class="form-group">
-                            <label class="form-label-xs">✂️ Cắt từ (giây):</label>
-                            <input type="number" class="form-control form-control-sm" min="0" max="${item.duration}" step="0.5" value="${item.settings.trimStart}" onchange="updateItemSetting(${index}, 'trimStart', parseFloat(this.value))">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label-xs">✂️ Đến (giây):</label>
-                            <input type="number" class="form-control form-control-sm" min="0.5" max="${item.duration}" step="0.5" value="${item.settings.trimEnd}" onchange="updateItemSetting(${index}, 'trimEnd', parseFloat(this.value))">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label-xs">🔊 Âm lượng video:</label>
-                            <select class="form-control form-control-sm" onchange="updateItemSetting(${index}, 'videoVolume', parseFloat(this.value))">
-                                <option value="1.0" ${item.settings.videoVolume === 1.0 ? 'selected' : ''}>🔊 100% Gốc</option>
-                                <option value="0.5" ${item.settings.videoVolume === 0.5 ? 'selected' : ''}>🔉 50% Nhỏ</option>
-                                <option value="0" ${item.settings.videoVolume === 0 ? 'selected' : ''}>🔇 Tắt tiếng</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label-xs">✨ Fade In / Out:</label>
-                            <div class="flex-row-gap">
-                                <input type="number" class="form-control form-control-sm" min="0" max="2" step="0.1" value="${item.settings.fadeIn}" placeholder="In" onchange="updateItemSetting(${index}, 'fadeIn', parseFloat(this.value))">
-                                <input type="number" class="form-control form-control-sm" min="0" max="2" step="0.1" value="${item.settings.fadeOut}" placeholder="Out" onchange="updateItemSetting(${index}, 'fadeOut', parseFloat(this.value))">
-                            </div>
-                        </div>
-                    `}
-                </div>
-
-                <!-- Text Overlay / Headline Row -->
-                <div class="card-text-overlay-row">
-                    <div class="text-overlay-input-wrap">
-                        <span class="text-overlay-icon">✍️ Tiêu đề/Chữ:</span>
-                        <input type="text" class="form-control form-control-sm text-overlay-input" 
-                               placeholder="Nhập chữ/tiêu đề xuất hiện trên phân đoạn này..." 
-                               value="${item.settings?.overlayText || ''}" 
-                               onchange="updateItemSetting(${index}, 'overlayText', this.value)">
-                    </div>
-                    <div class="text-overlay-options">
-                        <select class="form-control form-control-sm" onchange="updateItemSetting(${index}, 'textPosition', this.value)" title="Vị trí hiển thị chữ">
-                            <option value="bottom" ${(item.settings?.textPosition || 'bottom') === 'bottom' ? 'selected' : ''}>📍 Dưới đáy</option>
-                            <option value="center" ${(item.settings?.textPosition || 'bottom') === 'center' ? 'selected' : ''}>📍 Giữa khung</option>
-                            <option value="top" ${(item.settings?.textPosition || 'bottom') === 'top' ? 'selected' : ''}>📍 Trên đỉnh</option>
-                        </select>
-                        <select class="form-control form-control-sm" onchange="updateItemSetting(${index}, 'textStyle', this.value)" title="Kiểu hiển thị chữ">
-                            <option value="banner" ${(item.settings?.textStyle || 'banner') === 'banner' ? 'selected' : ''}>🎨 Banner mờ</option>
-                            <option value="outline" ${(item.settings?.textStyle || 'banner') === 'outline' ? 'selected' : ''}>🎨 Viền đen</option>
-                            <option value="glow" ${(item.settings?.textStyle || 'banner') === 'glow' ? 'selected' : ''}>🎨 Neon sáng</option>
-                            <option value="plain" ${(item.settings?.textStyle || 'banner') === 'plain' ? 'selected' : ''}>🎨 Chữ trắng</option>
-                        </select>
-                        <select class="form-control form-control-sm" onchange="updateItemSetting(${index}, 'fontSize', parseInt(this.value))" title="Cỡ chữ">
-                            <option value="36" ${(item.settings?.fontSize || 48) === 36 ? 'selected' : ''}>36px (Vừa)</option>
-                            <option value="48" ${(item.settings?.fontSize || 48) === 48 ? 'selected' : ''}>48px (Lớn)</option>
-                            <option value="64" ${(item.settings?.fontSize || 48) === 64 ? 'selected' : ''}>64px (To)</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card-actions">
-                <button type="button" class="btn btn-icon btn-secondary" onclick="moveToTop(${index})" ${index === 0 ? 'disabled' : ''} title="Đưa lên đầu danh sách">⏫</button>
-                <button type="button" class="btn btn-icon btn-secondary" onclick="moveItem(${index}, -1)" ${index === 0 ? 'disabled' : ''} title="Di chuyển lên một bậc">▲</button>
-                <button type="button" class="btn btn-icon btn-secondary" onclick="moveItem(${index}, 1)" ${index === mediaItems.length - 1 ? 'disabled' : ''} title="Di chuyển xuống một bậc">▼</button>
-                <button type="button" class="btn btn-icon btn-secondary" onclick="moveToBottom(${index})" ${index === mediaItems.length - 1 ? 'disabled' : ''} title="Đưa xuống cuối danh sách">⏬</button>
-                <button type="button" class="btn btn-icon btn-ghost btn-delete-card" onclick="removeItem(${index})" title="Xóa phân đoạn">✕</button>
+            <div class="storyboard-meta-strip">
+                <span class="storyboard-motion-tag">${motionLabel}</span>
+                <span class="storyboard-text-indicator">${textPreview}</span>
             </div>
         `;
         mediaList.appendChild(card);
     });
 
     totalDurationEl.innerText = `${totalDur.toFixed(1)}s`;
+    
+    // Update Quick Inspector & Studio Canvas Player
+    selectSegment(activeSegmentIndex, false);
     triggerAutoSave();
 }
 
-// Drag and Drop Reordering Handlers
+function selectSegment(index, shouldScroll = true) {
+    if (index < 0 || index >= mediaItems.length) return;
+    activeSegmentIndex = index;
+
+    // Highlight card
+    const cards = mediaList.querySelectorAll('.storyboard-card');
+    cards.forEach((c, idx) => {
+        if (idx === index) {
+            c.classList.add('active');
+            if (shouldScroll) c.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        } else {
+            c.classList.remove('active');
+        }
+    });
+
+    updateQuickInspector(index);
+    drawStudioCanvasFrame(index, 0);
+}
+
+function updateQuickInspector(index) {
+    const quickInspector = document.getElementById('quick-inspector');
+    const item = mediaItems[index];
+    if (!item) {
+        if (quickInspector) quickInspector.classList.add('hidden');
+        return;
+    }
+    if (quickInspector) quickInspector.classList.remove('hidden');
+
+    const inspNum = document.getElementById('inspector-segment-num');
+    const inspFilename = document.getElementById('inspector-filename');
+    const inspTypeBadge = document.getElementById('inspector-type-badge');
+    const inspImageControls = document.getElementById('inspector-image-controls');
+    const inspVideoControls = document.getElementById('inspector-video-controls');
+
+    if (inspNum) inspNum.innerText = `#${index + 1}`;
+    if (inspFilename) inspFilename.innerText = item.originalName;
+    if (inspTypeBadge) {
+        inspTypeBadge.className = `card-type-badge ${item.type}`;
+        inspTypeBadge.innerText = item.type === 'image' ? '🖼️ Ảnh' : '🎬 Clip';
+    }
+
+    const isImage = item.type === 'image';
+    if (inspImageControls) inspImageControls.classList.toggle('hidden', !isImage);
+    if (inspVideoControls) inspVideoControls.classList.toggle('hidden', isImage);
+
+    // Sync input values
+    const inspMotion = document.getElementById('insp-motion');
+    const inspDuration = document.getElementById('insp-duration');
+    const inspIntensity = document.getElementById('insp-intensity');
+    const inspFadeIn = document.getElementById('insp-fadein');
+    const inspFadeOut = document.getElementById('insp-fadeout');
+    const inspTrimStart = document.getElementById('insp-trimstart');
+    const inspTrimEnd = document.getElementById('insp-trimend');
+    const inspVideoVolume = document.getElementById('insp-videovolume');
+    const inspText = document.getElementById('insp-text');
+    const inspTextPos = document.getElementById('insp-textpos');
+    const inspTextStyle = document.getElementById('insp-textstyle');
+    const inspTextSize = document.getElementById('insp-textsize');
+
+    if (isImage) {
+        if (inspMotion) inspMotion.value = item.settings.motion || 'zoom_in';
+        if (inspDuration) inspDuration.value = item.settings.duration || 5.0;
+        if (inspIntensity) inspIntensity.value = item.settings.zoomIntensity || 1.25;
+        if (inspFadeIn) inspFadeIn.value = item.settings.fadeIn ?? 0.8;
+        if (inspFadeOut) inspFadeOut.value = item.settings.fadeOut ?? 0.8;
+    } else {
+        if (inspTrimStart) {
+            inspTrimStart.max = item.duration || 10;
+            inspTrimStart.value = item.settings.trimStart || 0;
+        }
+        if (inspTrimEnd) {
+            inspTrimEnd.max = item.duration || 10;
+            inspTrimEnd.value = item.settings.trimEnd || item.duration || 5;
+        }
+        if (inspVideoVolume) inspVideoVolume.value = item.settings.videoVolume ?? 1.0;
+    }
+
+    if (inspText) inspText.value = item.settings.overlayText || '';
+    if (inspTextPos) inspTextPos.value = item.settings.textPosition || 'bottom';
+    if (inspTextStyle) inspTextStyle.value = item.settings.textStyle || 'banner';
+    if (inspTextSize) inspTextSize.value = item.settings.fontSize || 48;
+
+    // Actions
+    const btnInspPrev = document.getElementById('btn-inspector-move-prev');
+    const btnInspNext = document.getElementById('btn-inspector-move-next');
+    const btnInspDelete = document.getElementById('btn-inspector-delete');
+
+    if (btnInspPrev) {
+        btnInspPrev.disabled = (index === 0);
+        btnInspPrev.onclick = () => { moveItem(index, -1); selectSegment(Math.max(0, index - 1)); };
+    }
+    if (btnInspNext) {
+        btnInspNext.disabled = (index === mediaItems.length - 1);
+        btnInspNext.onclick = () => { moveItem(index, 1); selectSegment(Math.min(mediaItems.length - 1, index + 1)); };
+    }
+    if (btnInspDelete) {
+        btnInspDelete.onclick = () => { removeItem(index); };
+    }
+}
+
+function drawStudioCanvasFrame(index, progress = 0) {
+    const canvas = document.getElementById('studio-preview-canvas') || document.getElementById('preview-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const item = mediaItems[index];
+    if (!item) return;
+
+    // Update overlay info
+    const sceneLabel = document.getElementById('studio-scene-label');
+    const sceneMotion = document.getElementById('studio-scene-motion');
+    const timeDisplay = document.getElementById('studio-time-display');
+
+    const dur = item.type === 'image' 
+        ? (item.settings.duration || 5.0) 
+        : Math.max(0.5, (item.settings.trimEnd || item.duration || 5) - (item.settings.trimStart || 0));
+
+    if (sceneLabel) sceneLabel.innerText = `Cảnh #${index + 1} / ${mediaItems.length}`;
+    if (sceneMotion) sceneMotion.innerText = item.type === 'image' ? getMotionShortName(item.settings.motion) : '🎬 Video Clip';
+    if (timeDisplay) timeDisplay.innerText = `${(progress * dur).toFixed(1)}s / ${dur.toFixed(1)}s`;
+
+    if (item.type === 'image') {
+        let img = studioLoadedImages.get(item.url);
+        if (!img) {
+            img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.src = item.url;
+            img.onload = () => {
+                studioLoadedImages.set(item.url, img);
+                renderImageFrameOnCanvas(ctx, canvas, item, img, progress);
+            };
+        } else {
+            renderImageFrameOnCanvas(ctx, canvas, item, img, progress);
+        }
+    } else {
+        ctx.fillStyle = '#050811';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#6366F1';
+        ctx.font = 'bold 36px Outfit, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`🎬 Video: ${item.originalName}`, canvas.width / 2, canvas.height / 2 - 20);
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.font = '24px Outfit, sans-serif';
+        ctx.fillText(`Thời lượng: ${dur.toFixed(1)}s`, canvas.width / 2, canvas.height / 2 + 30);
+    }
+}
+
+function renderImageFrameOnCanvas(ctx, canvas, item, img, progress) {
+    const motion = item.settings.motion || 'zoom_in';
+    const zoomIntensity = item.settings.zoomIntensity || 1.25;
+    const delta = zoomIntensity - 1.0;
+
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    let zoom = 1.0;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    const maxPanX = (1 - 1 / zoomIntensity) * (canvas.width / 2);
+    const maxPanY = (1 - 1 / zoomIntensity) * (canvas.height / 2);
+
+    if (motion === 'zoom_in') {
+        zoom = 1.0 + (delta * progress);
+    } else if (motion === 'zoom_out') {
+        zoom = zoomIntensity - (delta * progress);
+    } else if (motion === 'pan_left') {
+        zoom = zoomIntensity;
+        offsetX = maxPanX * (1 - 2 * progress);
+    } else if (motion === 'pan_right') {
+        zoom = zoomIntensity;
+        offsetX = maxPanX * (2 * progress - 1);
+    } else if (motion === 'pan_up') {
+        zoom = zoomIntensity;
+        offsetY = maxPanY * (1 - 2 * progress);
+    } else if (motion === 'pan_down') {
+        zoom = zoomIntensity;
+        offsetY = maxPanY * (2 * progress - 1);
+    } else if (motion === 'zoom_in_left') {
+        zoom = 1.0 + (delta * progress);
+        offsetX = (1 - 1 / zoom) * (canvas.width / 2);
+        offsetY = (1 - 1 / zoom) * (canvas.height / 2);
+    } else if (motion === 'zoom_in_right') {
+        zoom = 1.0 + (delta * progress);
+        offsetX = -(1 - 1 / zoom) * (canvas.width / 2);
+        offsetY = (1 - 1 / zoom) * (canvas.height / 2);
+    } else if (motion === 'zoom_pan') {
+        zoom = 1.0 + (delta * progress);
+        offsetX = -(1 - 1 / zoom) * (canvas.width / 2) * (1 - 2 * progress);
+        offsetY = -(1 - 1 / zoom) * (canvas.height / 2) * (1 - 2 * progress);
+    } else {
+        zoom = 1.0;
+        offsetX = 0;
+        offsetY = 0;
+    }
+
+    ctx.save();
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.scale(zoom, zoom);
+    ctx.drawImage(img, -canvas.width / 2 + offsetX, -canvas.height / 2 + offsetY, canvas.width, canvas.height);
+    ctx.restore();
+
+    // Render Text Overlay
+    const overlayText = item.settings?.overlayText?.trim();
+    if (overlayText) {
+        const textPos = item.settings?.textPosition || 'bottom';
+        const textStyle = item.settings?.textStyle || 'banner';
+        const fontSize = Number(item.settings?.fontSize) || 48;
+
+        ctx.save();
+        ctx.font = `bold ${fontSize}px Outfit, -apple-system, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        const textX = canvas.width / 2;
+        let textY = canvas.height - 120;
+        if (textPos === 'top') textY = 120;
+        else if (textPos === 'center') textY = canvas.height / 2;
+
+        const metrics = ctx.measureText(overlayText);
+        const boxWidth = metrics.width + 48;
+        const boxHeight = fontSize * 1.6;
+
+        if (textStyle === 'banner') {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            const rx = textX - boxWidth / 2;
+            const ry = textY - boxHeight / 2;
+            const r = 10;
+            ctx.beginPath();
+            ctx.moveTo(rx + r, ry);
+            ctx.lineTo(rx + boxWidth - r, ry);
+            ctx.quadraticCurveTo(rx + boxWidth, ry, rx + boxWidth, ry + r);
+            ctx.lineTo(rx + boxWidth, ry + boxHeight - r);
+            ctx.quadraticCurveTo(rx + boxWidth, ry + boxHeight, rx + boxWidth - r, ry + boxHeight);
+            ctx.lineTo(rx + r, ry + boxHeight);
+            ctx.quadraticCurveTo(rx, ry + boxHeight, rx, ry + boxHeight - r);
+            ctx.lineTo(rx, ry + r);
+            ctx.quadraticCurveTo(rx, ry, rx + r, ry);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        if (textStyle === 'outline') {
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = Math.max(4, fontSize * 0.12);
+            ctx.strokeText(overlayText, textX, textY);
+        } else if (textStyle === 'glow') {
+            ctx.shadowColor = '#06B6D4';
+            ctx.shadowBlur = 18;
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillText(overlayText, textX, textY);
+            ctx.shadowBlur = 0;
+        }
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillText(overlayText, textX, textY);
+        ctx.restore();
+    }
+}
+
+function playStudioSequence() {
+    if (isStudioPlayingAll) {
+        isStudioPlayingAll = false;
+        if (studioAnimFrame) cancelAnimationFrame(studioAnimFrame);
+        const btn = document.getElementById('studio-btn-play');
+        if (btn) btn.innerHTML = '▶ Phát Toàn Bộ Video';
+        return;
+    }
+
+    if (mediaItems.length === 0) return;
+
+    isStudioPlayingAll = true;
+    const btn = document.getElementById('studio-btn-play');
+    if (btn) btn.innerHTML = '⏸️ Tạm Dừng';
+
+    let currentItemIdx = activeSegmentIndex;
+    let itemStartTime = performance.now();
+    let currentItem = mediaItems[currentItemIdx];
+    let itemDur = (currentItem.type === 'image' ? (currentItem.settings.duration || 5.0) : (currentItem.duration || 5.0)) * 1000;
+
+    function step(now) {
+        if (!isStudioPlayingAll) return;
+        const elapsed = now - itemStartTime;
+        const progress = Math.min(1.0, elapsed / itemDur);
+
+        drawStudioCanvasFrame(currentItemIdx, progress);
+
+        if (progress >= 1.0) {
+            currentItemIdx = (currentItemIdx + 1) % mediaItems.length;
+            selectSegment(currentItemIdx, true);
+            currentItem = mediaItems[currentItemIdx];
+            itemDur = (currentItem.type === 'image' ? (currentItem.settings.duration || 5.0) : (currentItem.duration || 5.0)) * 1000;
+            itemStartTime = performance.now();
+        }
+
+        studioAnimFrame = requestAnimationFrame(step);
+    }
+
+    studioAnimFrame = requestAnimationFrame(step);
+}
+
+function playSingleScene() {
+    if (isStudioPlayingAll) {
+        isStudioPlayingAll = false;
+        if (studioAnimFrame) cancelAnimationFrame(studioAnimFrame);
+        const btn = document.getElementById('studio-btn-play');
+        if (btn) btn.innerHTML = '▶ Phát Toàn Bộ Video';
+    }
+
+    if (!mediaItems[activeSegmentIndex]) return;
+
+    if (studioAnimFrame) cancelAnimationFrame(studioAnimFrame);
+    const item = mediaItems[activeSegmentIndex];
+    const itemDur = (item.type === 'image' ? (item.settings.duration || 5.0) : (item.duration || 5.0)) * 1000;
+    const startTime = performance.now();
+
+    function step(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(1.0, (elapsed % itemDur) / itemDur);
+        drawStudioCanvasFrame(activeSegmentIndex, progress);
+        studioAnimFrame = requestAnimationFrame(step);
+    }
+
+    studioAnimFrame = requestAnimationFrame(step);
+}
+
+function bindQuickInspectorInputs() {
+    const inspMotion = document.getElementById('insp-motion');
+    const inspDuration = document.getElementById('insp-duration');
+    const inspIntensity = document.getElementById('insp-intensity');
+    const inspFadeIn = document.getElementById('insp-fadein');
+    const inspFadeOut = document.getElementById('insp-fadeout');
+    const inspTrimStart = document.getElementById('insp-trimstart');
+    const inspTrimEnd = document.getElementById('insp-trimend');
+    const inspVideoVolume = document.getElementById('insp-videovolume');
+    const inspText = document.getElementById('insp-text');
+    const inspTextPos = document.getElementById('insp-textpos');
+    const inspTextStyle = document.getElementById('insp-textstyle');
+    const inspTextSize = document.getElementById('insp-textsize');
+
+    function onInspectorChange() {
+        const item = mediaItems[activeSegmentIndex];
+        if (!item) return;
+
+        if (item.type === 'image') {
+            if (inspMotion) item.settings.motion = inspMotion.value;
+            if (inspDuration) item.settings.duration = parseFloat(inspDuration.value) || 5.0;
+            if (inspIntensity) item.settings.zoomIntensity = parseFloat(inspIntensity.value) || 1.25;
+            if (inspFadeIn) item.settings.fadeIn = parseFloat(inspFadeIn.value) || 0;
+            if (inspFadeOut) item.settings.fadeOut = parseFloat(inspFadeOut.value) || 0;
+        } else {
+            if (inspTrimStart) item.settings.trimStart = parseFloat(inspTrimStart.value) || 0;
+            if (inspTrimEnd) item.settings.trimEnd = parseFloat(inspTrimEnd.value) || item.duration || 5;
+            if (inspVideoVolume) item.settings.videoVolume = parseFloat(inspVideoVolume.value) || 1.0;
+        }
+
+        if (inspText) item.settings.overlayText = inspText.value;
+        if (inspTextPos) item.settings.textPosition = inspTextPos.value;
+        if (inspTextStyle) item.settings.textStyle = inspTextStyle.value;
+        if (inspTextSize) item.settings.fontSize = parseInt(inspTextSize.value) || 48;
+
+        // Update card in ribbon
+        const activeCard = mediaList.querySelector(`.storyboard-card[data-index="${activeSegmentIndex}"]`);
+        if (activeCard) {
+            const durTag = activeCard.querySelector('.storyboard-dur-tag');
+            const motionTag = activeCard.querySelector('.storyboard-motion-tag');
+            const textInd = activeCard.querySelector('.storyboard-text-indicator');
+
+            const dur = item.type === 'image' 
+                ? (item.settings.duration || 5.0) 
+                : Math.max(0.5, (item.settings.trimEnd || item.duration || 5) - (item.settings.trimStart || 0));
+
+            if (durTag) durTag.innerText = `⏱️ ${dur.toFixed(1)}s`;
+            if (motionTag) motionTag.innerText = item.type === 'image' ? getMotionShortName(item.settings.motion) : '✂️ Video Trim';
+            if (textInd) textInd.innerText = item.settings?.overlayText?.trim() ? `✍️ ${item.settings.overlayText.trim()}` : '';
+        }
+
+        drawStudioCanvasFrame(activeSegmentIndex, 0);
+        triggerAutoSave();
+    }
+
+    [inspMotion, inspDuration, inspIntensity, inspFadeIn, inspFadeOut, inspTrimStart, inspTrimEnd, inspVideoVolume, inspText, inspTextPos, inspTextStyle, inspTextSize].forEach(el => {
+        if (el) {
+            el.addEventListener('input', onInspectorChange);
+            el.addEventListener('change', onInspectorChange);
+        }
+    });
+
+    const btnPlay = document.getElementById("studio-btn-play");
+    if (btnPlay) btnPlay.addEventListener("click", playStudioSequence);
+
+    const btnPlayScene = document.getElementById("studio-btn-play-scene");
+    if (btnPlayScene) btnPlayScene.addEventListener("click", playSingleScene);
+}
+
+// Bind studio inspector and batch events on DOMContentLoaded
+document.addEventListener("DOMContentLoaded", () => {
+    bindQuickInspectorInputs();
+
+    const batchDurSlider = document.getElementById("batch-duration-slider");
+    const batchDurVal = document.getElementById("batch-duration-val");
+    const btnApplyDurAll = document.getElementById("btn-apply-duration-all");
+
+    if (batchDurSlider && batchDurVal) {
+        batchDurSlider.addEventListener("input", (e) => {
+            batchDurVal.innerText = parseFloat(e.target.value).toFixed(1) + "s";
+        });
+    }
+    if (btnApplyDurAll && batchDurSlider) {
+        btnApplyDurAll.addEventListener("click", () => {
+            const val = parseFloat(batchDurSlider.value) || 5.0;
+            mediaItems.forEach(it => {
+                if (it.type === "image") it.settings.duration = val;
+            });
+            renderMediaList();
+        });
+    }
+
+    const batchMotionSelect = document.getElementById("batch-motion-select");
+    const btnApplyMotionAll = document.getElementById("btn-apply-motion-all");
+    if (btnApplyMotionAll && batchMotionSelect) {
+        btnApplyMotionAll.addEventListener("click", () => {
+            const val = batchMotionSelect.value;
+            mediaItems.forEach(it => {
+                if (it.type === "image") it.settings.motion = val;
+            });
+            renderMediaList();
+        });
+    }
+
+    const btnRandomize = document.getElementById("btn-randomize-motions");
+    if (btnRandomize) {
+        btnRandomize.addEventListener("click", () => {
+            const motions = ["zoom_in", "zoom_out", "pan_left", "pan_right", "pan_up", "pan_down", "zoom_pan", "zoom_in_left", "zoom_in_right"];
+            mediaItems.forEach((it, idx) => {
+                if (it.type === "image") {
+                    it.settings.motion = motions[idx % motions.length];
+                }
+            });
+            renderMediaList();
+        });
+    }
+});
+
 let draggedIndex = null;
 
 function handleDragStart(e) {
     const target = e.target;
-    if (['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON', 'OPTION', 'A'].includes(target.tagName) || target.closest('button') || target.closest('.form-control')) {
+    if (["INPUT", "SELECT", "TEXTAREA", "BUTTON", "OPTION", "A"].includes(target.tagName) || target.closest("button") || target.closest(".form-control")) {
         e.preventDefault();
         return;
     }
     draggedIndex = parseInt(this.dataset.index);
-    this.classList.add('is-dragging');
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', draggedIndex);
+    this.classList.add("is-dragging");
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", draggedIndex);
 }
 
 function handleDragOver(e) {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    this.classList.add('drag-over-target');
+    e.dataTransfer.dropEffect = "move";
+    this.classList.add("drag-over-target");
 }
 
 function handleDragLeave(e) {
-    this.classList.remove('drag-over-target');
+    this.classList.remove("drag-over-target");
 }
 
 function handleDrop(e) {
     e.preventDefault();
-    this.classList.remove('drag-over-target');
+    this.classList.remove("drag-over-target");
     const targetIndex = parseInt(this.dataset.index);
     if (draggedIndex !== null && !isNaN(draggedIndex) && draggedIndex !== targetIndex) {
         const item = mediaItems.splice(draggedIndex, 1)[0];
         mediaItems.splice(targetIndex, 0, item);
+        activeSegmentIndex = targetIndex;
         renderMediaList();
     }
 }
 
 function handleDragEnd(e) {
-    this.classList.remove('is-dragging');
-    document.querySelectorAll('.media-card').forEach(c => {
-        c.classList.remove('drag-over-target');
-        c.classList.remove('is-dragging');
+    this.classList.remove("is-dragging");
+    document.querySelectorAll(".storyboard-card").forEach(c => {
+        c.classList.remove("drag-over-target");
+        c.classList.remove("is-dragging");
     });
     draggedIndex = null;
 }
