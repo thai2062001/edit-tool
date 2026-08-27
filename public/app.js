@@ -1728,40 +1728,68 @@ btnRunAiMatch.addEventListener('click', async () => {
     }
 });
 
-function renderAiScenesResult(scenes) {
+function renderAiScenesResult(scenes, meta = {}) {
     aiResultsContainer.classList.remove('hidden');
-    aiScenesCountBadge.innerText = `${scenes.length} phân cảnh`;
+    
+    const matchedCount = scenes.filter(s => typeof s.imageIndex === 'number' && s.imageIndex >= 0).length;
+    const emptyCount = scenes.length - matchedCount;
+
+    aiScenesCountBadge.innerHTML = `<span style="color:#38BDF8">✨ ${matchedCount} ảnh độc nhất</span>${emptyCount > 0 ? ` &bull; <span style="color:#F59E0B">⚠️ ${emptyCount} cảnh để trống</span>` : ''}`;
     aiScenesList.innerHTML = '';
 
     scenes.forEach((scene, index) => {
-        const imgItem = mediaItems[scene.imageIndex] || mediaItems[index % mediaItems.length];
+        const hasImage = typeof scene.imageIndex === 'number' && scene.imageIndex >= 0 && mediaItems[scene.imageIndex];
+        const imgItem = hasImage ? mediaItems[scene.imageIndex] : null;
+        
         const card = document.createElement('div');
-        card.className = 'ai-scene-card';
+        card.className = `ai-scene-card ${hasImage ? '' : 'is-empty'}`;
+        
+        const thumbHtml = hasImage 
+            ? `<div class="ai-scene-thumb-wrapper">
+                 <img src="${imgItem.url}" class="ai-scene-thumb" alt="Scene ${index + 1}">
+                 <span class="ai-scene-img-idx">#${scene.imageIndex + 1}</span>
+               </div>`
+            : `<div class="ai-scene-thumb is-empty">
+                 <span class="empty-icon">📷</span>
+                 <span class="empty-label">Để trống</span>
+               </div>`;
+
+        const titleHtml = hasImage
+            ? `<h5>Cảnh ${index + 1}: ${imgItem.originalName}</h5>`
+            : `<h5 class="empty-title">Cảnh ${index + 1} <span class="badge-empty-scene">⚠️ Để trống (Tránh trùng lặp)</span></h5>`;
+
+        const reasonHtml = scene.reason 
+            ? `<div class="ai-scene-reason text-xs text-dim mt-1">💡 <em>${scene.reason}</em></div>`
+            : '';
+
         card.innerHTML = `
-            <img src="${imgItem ? imgItem.url : ''}" class="ai-scene-thumb" alt="Scene ${index + 1}">
+            ${thumbHtml}
             <div class="ai-scene-info">
-                <h5>Cảnh ${index + 1}: ${imgItem ? imgItem.originalName : ''}</h5>
-                <p class="ai-scene-text">${scene.sceneText || scene.reason || ''}</p>
+                ${titleHtml}
+                <p class="ai-scene-text">${scene.sceneText || ''}</p>
+                ${reasonHtml}
             </div>
             <div class="ai-scene-meta">
-                <span class="badge-motion">${(scene.suggestedMotion || 'zoom_in').replace('_', ' ')}</span>
-                <span class="ai-scene-dur">${scene.suggestedDuration || 4.0}s | Fade ${scene.fadeIn || 0.8}s</span>
+                <span class="badge-motion">${(scene.suggestedMotion || 'zoom_in').replace(/_/g, ' ')}</span>
+                <span class="ai-scene-dur">⏱️ ${scene.suggestedDuration || 4.0}s | Fade ${scene.fadeIn || 0.8}s</span>
             </div>
         `;
         aiScenesList.appendChild(card);
     });
 }
 
-// Apply AI Match to Timeline
+// Apply AI Match to Timeline (Strictly without duplicate images)
 btnApplyAiTimeline.addEventListener('click', () => {
     if (!currentAiMatchedScenes || currentAiMatchedScenes.length === 0) return;
 
     const sourceItems = (window.mediaItems && window.mediaItems.length > 0) ? window.mediaItems : mediaItems;
     const newTimeline = [];
+    const emptyScenes = [];
 
     currentAiMatchedScenes.forEach((scene, sIdx) => {
-        const originalItem = sourceItems[scene.imageIndex] || sourceItems[sIdx % sourceItems.length];
-        if (originalItem) {
+        // Only pick valid unique media items; strictly DO NOT fallback or repeat old images
+        if (typeof scene.imageIndex === 'number' && scene.imageIndex >= 0 && sourceItems[scene.imageIndex]) {
+            const originalItem = sourceItems[scene.imageIndex];
             // Deep clone item with new AI settings
             const cloned = JSON.parse(JSON.stringify(originalItem));
             if (!cloned.settings) cloned.settings = {};
@@ -1773,6 +1801,8 @@ btnApplyAiTimeline.addEventListener('click', () => {
                 cloned.settings.overlayText = scene.sceneText;
             }
             newTimeline.push(cloned);
+        } else {
+            emptyScenes.push(scene);
         }
     });
 
@@ -1781,7 +1811,14 @@ btnApplyAiTimeline.addEventListener('click', () => {
         window.mediaItems = newTimeline;
         renderMediaList();
         closeAiModal();
-        alert('🎉 Đã áp dụng thành công kịch bản và tự động sắp xếp lại Timeline theo gợi ý của Gemini AI!');
+        
+        let msg = `🎉 Đã áp dụng thành công ${newTimeline.length} phân cảnh có ảnh độc nhất vào Timeline theo kịch bản!`;
+        if (emptyScenes.length > 0) {
+            msg += `\n\nℹ️ Có ${emptyScenes.length} phân cảnh kịch bản được để trống (không gán ảnh cũ để tránh nhàm chán). Bạn có thể tải thêm ảnh mới để bổ sung vào timeline bất cứ lúc nào.`;
+        }
+        alert(msg);
+    } else {
+        alert('Không có phân cảnh nào có ảnh phù hợp để đưa vào Timeline!');
     }
 });
 

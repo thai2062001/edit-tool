@@ -196,7 +196,7 @@ function getThumbnailBase64(filePath) {
     });
 }
 
-// AI Script Matching API (Ultra-Fast Optimized)
+// AI Script Matching API (Ultra-Fast Optimized with Strict Non-Duplicate Image Policy)
 app.post('/api/ai/match-script', async (req, res) => {
     try {
         const { scriptText, items, customApiKey } = req.body;
@@ -212,24 +212,34 @@ app.post('/api/ai/match-script', async (req, res) => {
         const ai = new GoogleGenAI({ apiKey });
         const contents = [];
 
-        // Attach top lightweight thumbnails (max 15 vision parts to maintain ultra-fast speed)
+        // Attach lightweight thumbnails for vision matching (supports up to 40 images)
         const imageItems = items.filter(i => i.type === 'image');
-        const maxVisionThumbs = Math.min(15, imageItems.length);
+        const maxVisionThumbs = Math.min(40, imageItems.length);
 
         const thumbPromises = imageItems.slice(0, maxVisionThumbs).map(async (item, i) => {
-            const filePath = path.join(UPLOADS_DIR, item.filename);
+            let filePath = path.join(UPLOADS_DIR, item.filename);
+            if (!fs.existsSync(filePath)) {
+                if (item.path && fs.existsSync(item.path)) filePath = item.path;
+                else if (fs.existsSync(path.join(OUTPUTS_DIR, item.filename))) filePath = path.join(OUTPUTS_DIR, item.filename);
+            }
             if (fs.existsSync(filePath)) {
                 const base64Data = await getThumbnailBase64(filePath);
                 return { index: i, name: item.originalName, base64Data };
             }
-            return null;
+            return { index: i, name: item.originalName, base64Data: null };
         });
 
         const thumbResults = await Promise.all(thumbPromises);
 
+        // Header for available images
+        const imageCatalogText = `--- KHO ẢNH KHẢ DỤNG HIỆN CÓ (${imageItems.length} ảnh, index từ 0 đến ${imageItems.length - 1}) ---\n` +
+            imageItems.map((item, idx) => `[IMAGE ${idx}]: ${item.originalName}`).join('\n');
+        contents.push({ text: imageCatalogText });
+
+        // Add visual images
         thumbResults.forEach(r => {
             if (r && r.base64Data) {
-                contents.push({ text: `[IMAGE ${r.index}] ${r.name}` });
+                contents.push({ text: `[VISUAL PREVIEW CHO IMAGE ${r.index} - ${r.name}]` });
                 contents.push({
                     inlineData: {
                         mimeType: 'image/jpeg',
@@ -239,17 +249,46 @@ app.post('/api/ai/match-script', async (req, res) => {
             }
         });
 
-        // Ultra-compact array prompt for 4-second lightning generation
+        // Advanced AI Director Prompt strictly forbidding duplicate image reuse
         const promptText = `
-Đóng vai đạo diễn phim. Khớp kịch bản sau thành đúng ${items.length} phân cảnh tương ứng với ${items.length} ảnh (index 0 đến ${items.length - 1}):
---- KỊCH BẢN ---
+Bạn là một Đạo Diễn Dựng Phim & Biên Tập Video Chuyên Nghiệp (Senior Film Director & AI Video Editor).
+Nhiệm vụ của bạn là: Đọc kịch bản dưới đây, phân tích câu chuyện thành các phân cảnh logic theo mạch diễn tiến thời gian, và chọn bức ảnh phù hợp nhất từ kho ảnh có sẵn (index 0 đến ${imageItems.length - 1}).
+
+--- NỘI DUNG KỊCH BẢN ---
 ${scriptText.trim().slice(0, 15000)}
 ---
-Yêu cầu: Trả về JSON mảng các mảng [imageIndex, "tóm tắt câu thoại cảnh", "motion", duration, fadeIn, fadeOut]:
+
+=== CÁC NGUYÊN TẮC BẮT BUỘC ĐỂ TRÁNH NHÀM CHÁN (STRICT CRITICAL RULES) ===
+1. 🛑 NGUYÊN TẮC 1: TUYỆT ĐỐI KHÔNG DÙNG TRÙNG ẢNH (ZERO DUPLICATE IMAGES)
+   - Mỗi ảnh trong kho (index từ 0 đến ${imageItems.length - 1}) CHỈ ĐƯỢC SỬ DỤNG TỐI ĐA 1 LẦN DUY NHẤT trong toàn bộ video.
+   - Khi một ảnh index [i] đã được gán cho một phân cảnh nào đó rồi, thì TUYỆT ĐỐI KHÔNG ĐƯỢC PHÉP dùng lại ở bất kỳ phân cảnh nào khác!
+
+2. 🛑 NGUYÊN TẮC 2: ĐỂ TRỐNG (imageIndex: -1) NẾU KHÔNG CÓ ẢNH PHÙ HỢP HOẶC ẢNH TƯƠNG TỰ ĐÃ DÙNG
+   - Nếu phân cảnh đó KHÔNG CÓ ảnh nào thực sự khớp với nội dung câu thoại;
+   - HOẶC nếu các ảnh còn lại trong kho có bối cảnh/nội dung/nhân vật quá giống với ảnh đã dùng trước đó gây cảm giác trùng lặp, nhàm chán;
+   - HOẶC khi kho ảnh đã hết ảnh mới chưa dùng:
+   👉 BẮT BUỘC đặt "imageIndex": -1 (ĐỂ TRỐNG).
+   👉 TUYỆT ĐỐI KHÔNG fill lại ảnh cũ đã dùng, KHÔNG cố gán bừa ảnh không liên quan!
+
+3. 🎬 CHỌN ẢNH VÀ HIỆU ỨNG TƯƠNG THÍCH:
+   - Hãy quan sát visual từng ảnh và tên file để chọn ảnh mô tả sát nhất ý đồ phân cảnh.
+   - suggestedMotion: 'zoom_in', 'zoom_out', 'pan_left', 'pan_right', 'pan_up', 'pan_down', 'zoom_pan', 'zoom_in_left', 'zoom_in_right', 'none'.
+   - suggestedDuration: từ 3.0s đến 6.0s tùy theo độ dài câu thoại kịch bản.
+   - fadeIn, fadeOut: 0.6s - 0.8s.
+
+=== CẤU TRÚC JSON TRẢ VỀ ===
+Trả về JSON mảng các phân cảnh:
 [
-  [0, "Tóm tắt cảnh 1", "zoom_in", 4.0, 0.8, 0.8]
+  {
+    "imageIndex": 0, // Số nguyên từ 0 đến ${imageItems.length - 1}, HOẶC -1 NẾU ĐỂ TRỐNG
+    "sceneText": "Tóm tắt ngắn gọn câu thoại/nội dung cảnh này",
+    "suggestedMotion": "zoom_in",
+    "suggestedDuration": 4.5,
+    "fadeIn": 0.8,
+    "fadeOut": 0.8,
+    "reason": "Giải thích ngắn lý do chọn ảnh hoặc lý do để trống"
+  }
 ]
-Motion gồm: 'zoom_in', 'zoom_out', 'pan_left', 'pan_right', 'pan_up', 'pan_down', 'zoom_pan', 'zoom_in_left', 'zoom_in_right', 'none'.
 `;
         contents.push({ text: promptText });
 
@@ -282,28 +321,66 @@ Motion gồm: 'zoom_in', 'zoom_out', 'pan_left', 'pan_right', 'pan_up', 'pan_dow
             return validMotions.includes(norm) ? norm : 'zoom_in';
         };
 
+        // Strict deduplication tracker: ensure every imageIndex is used AT MOST ONCE
+        const usedImageIndices = new Set();
+
         const scenes = rawScenes.map((s, idx) => {
+            let candidateIdx = -1;
             if (Array.isArray(s)) {
-                return {
-                    imageIndex: typeof s[0] === 'number' ? s[0] : (idx % items.length),
-                    sceneText: s[1] || `Phân cảnh ${idx + 1}`,
-                    suggestedMotion: cleanMotion(s[2]),
-                    suggestedDuration: parseFloat(s[3] || 4.0),
-                    fadeIn: parseFloat(s[4] || 0.8),
-                    fadeOut: parseFloat(s[5] || 0.8)
-                };
+                candidateIdx = (typeof s[0] === 'number') ? s[0] : -1;
+            } else {
+                candidateIdx = (typeof s.imageIndex === 'number') ? s.imageIndex : ((typeof s.i === 'number') ? s.i : -1);
             }
+
+            let finalImageIndex = -1;
+            // Check if valid index in range and NOT already used
+            if (candidateIdx >= 0 && candidateIdx < imageItems.length) {
+                if (!usedImageIndices.has(candidateIdx)) {
+                    finalImageIndex = candidateIdx;
+                    usedImageIndices.add(candidateIdx);
+                } else {
+                    // Duplicate detected -> Strictly mark as empty (-1) to avoid viewer boredom
+                    console.log(`[AI Script Match] Duplicate image index ${candidateIdx} at scene ${idx + 1}. Enforcing empty slot.`);
+                    finalImageIndex = -1;
+                }
+            } else {
+                finalImageIndex = -1;
+            }
+
+            const sceneText = Array.isArray(s) ? (s[1] || `Phân cảnh ${idx + 1}`) : (s.sceneText || s.t || `Phân cảnh ${idx + 1}`);
+            const motion = Array.isArray(s) ? cleanMotion(s[2]) : cleanMotion(s.suggestedMotion || s.motion || s.m);
+            const duration = Array.isArray(s) ? parseFloat(s[3] || 4.0) : parseFloat(s.suggestedDuration || s.duration || s.d || 4.0);
+            const fadeIn = Array.isArray(s) ? parseFloat(s[4] || 0.8) : parseFloat(s.fadeIn || s.fi || 0.8);
+            const fadeOut = Array.isArray(s) ? parseFloat(s[5] || 0.8) : parseFloat(s.fadeOut || s.fo || 0.8);
+            const reason = Array.isArray(s) ? (s[6] || '') : (s.reason || s.matchReason || '');
+
             return {
-                imageIndex: s.i !== undefined ? s.i : (s.imageIndex !== undefined ? s.imageIndex : idx % items.length),
-                sceneText: s.t || s.sceneText || `Phân cảnh ${idx + 1}`,
-                suggestedMotion: cleanMotion(s.m || s.suggestedMotion || s.motion),
-                suggestedDuration: parseFloat(s.d || s.suggestedDuration || 4.0),
-                fadeIn: parseFloat(s.fi || s.fadeIn || 0.8),
-                fadeOut: parseFloat(s.fo || s.fadeOut || 0.8)
+                imageIndex: finalImageIndex,
+                sceneText: sceneText.trim(),
+                suggestedMotion: motion,
+                suggestedDuration: Math.max(1.0, Math.min(30.0, isNaN(duration) ? 4.0 : duration)),
+                fadeIn: Math.max(0, Math.min(3.0, isNaN(fadeIn) ? 0.8 : fadeIn)),
+                fadeOut: Math.max(0, Math.min(3.0, isNaN(fadeOut) ? 0.8 : fadeOut)),
+                reason: finalImageIndex === -1 
+                    ? (reason || 'Để trống để tránh lặp ảnh cũ / cần bổ sung ảnh mới cho câu này') 
+                    : reason
             };
         });
 
-        res.json({ success: true, result: { scenes } });
+        const matchedCount = usedImageIndices.size;
+        const emptyCount = scenes.filter(s => s.imageIndex === -1).length;
+
+        console.log(`[AI Script Match] Completed: ${scenes.length} scenes, ${matchedCount} matched unique images, ${emptyCount} empty slots (no duplicate images).`);
+
+        res.json({ 
+            success: true, 
+            result: { 
+                scenes,
+                totalScenes: scenes.length,
+                matchedCount,
+                emptyCount
+            } 
+        });
     } catch (err) {
         console.error('Gemini match error:', err);
         res.status(500).json({ error: err.message || 'Lỗi khi gọi Gemini AI' });
