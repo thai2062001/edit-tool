@@ -29,26 +29,50 @@ const btnRestoreAutosave = document.getElementById('btn-restore-autosave');
 const btnDismissAutosave = document.getElementById('btn-dismiss-autosave');
 
 // Aspect ratio selector & Smart Reframe Toggle
-const rowReframeMode = document.getElementById('row-reframe-mode');
+const rowReframeMode = document.getElementById("row-reframe-mode");
 
 function updateReframeVisibility(ratio) {
     if (rowReframeMode) {
-        if (ratio === '9:16' || ratio === '1:1') {
-            rowReframeMode.classList.remove('hidden');
+        if (ratio === "9:16" || ratio === "1:1") {
+            rowReframeMode.classList.remove("hidden");
         } else {
-            rowReframeMode.classList.add('hidden');
+            rowReframeMode.classList.add("hidden");
         }
     }
 }
 
-document.querySelectorAll('.ratio-option').forEach(option => {
-    option.addEventListener('click', () => {
-        document.querySelectorAll('.ratio-option').forEach(o => o.classList.remove('active'));
-        option.classList.add('active');
+function updateStudioCanvasAspectRatio() {
+    const canvas = document.getElementById("studio-preview-canvas");
+    const container = document.getElementById("studio-player-container");
+    if (!canvas) return;
+
+    if (currentSettings.ratio === "9:16") {
+        if (container) container.style.aspectRatio = "9 / 16";
+        canvas.width = 1080;
+        canvas.height = 1920;
+    } else if (currentSettings.ratio === "1:1") {
+        if (container) container.style.aspectRatio = "1 / 1";
+        canvas.width = 1080;
+        canvas.height = 1080;
+    } else {
+        if (container) container.style.aspectRatio = "16 / 9";
+        canvas.width = 1920;
+        canvas.height = 1080;
+    }
+    if (mediaItems.length > 0 && typeof drawStudioCanvasFrame === "function") {
+        drawStudioCanvasFrame(activeSegmentIndex, 0);
+    }
+}
+
+document.querySelectorAll(".ratio-option").forEach(option => {
+    option.addEventListener("click", () => {
+        document.querySelectorAll(".ratio-option").forEach(o => o.classList.remove("active"));
+        option.classList.add("active");
         currentSettings.ratio = option.dataset.ratio;
         currentSettings.width = parseInt(option.dataset.width);
         currentSettings.height = parseInt(option.dataset.height);
         updateReframeVisibility(currentSettings.ratio);
+        updateStudioCanvasAspectRatio();
         triggerAutoSave();
     });
 });
@@ -56,14 +80,13 @@ document.querySelectorAll('.ratio-option').forEach(option => {
 // Initialize on page load
 updateReframeVisibility(currentSettings.ratio);
 
-const selectFps = document.getElementById('select-fps');
+const selectFps = document.getElementById("select-fps");
 if (selectFps) {
-    selectFps.addEventListener('change', (e) => {
+    selectFps.addEventListener("change", (e) => {
         currentSettings.fps = parseInt(e.target.value);
         triggerAutoSave();
     });
 }
-
 const selectExportQuality = document.getElementById('select-export-quality');
 if (selectExportQuality) {
     selectExportQuality.addEventListener('change', (e) => {
@@ -794,6 +817,74 @@ document.addEventListener("DOMContentLoaded", () => {
             renderMediaList();
         });
     }
+
+    // Timeline Scrubber Dragging
+    const studioScrubber = document.getElementById('studio-scrubber');
+    if (studioScrubber) {
+        studioScrubber.addEventListener('input', (e) => {
+            if (mediaItems.length === 0) return;
+            const pct = parseFloat(e.target.value) / 100;
+            let totalDur = 0;
+            mediaItems.forEach(it => {
+                const d = it.type === 'image' ? (it.settings.duration || 5.0) : Math.max(0.5, (it.settings.trimEnd || it.duration || 5) - (it.settings.trimStart || 0));
+                totalDur += d;
+            });
+
+            const targetSec = pct * totalDur;
+            let accumulated = 0;
+            let foundIdx = 0;
+            let sceneProgress = 0;
+
+            for (let i = 0; i < mediaItems.length; i++) {
+                const it = mediaItems[i];
+                const d = it.type === 'image' ? (it.settings.duration || 5.0) : Math.max(0.5, (it.settings.trimEnd || it.duration || 5) - (it.settings.trimStart || 0));
+                if (targetSec <= accumulated + d || i === mediaItems.length - 1) {
+                    foundIdx = i;
+                    sceneProgress = Math.max(0, Math.min(1.0, (targetSec - accumulated) / d));
+                    break;
+                }
+                accumulated += d;
+            }
+
+            selectSegment(foundIdx, true);
+            drawStudioCanvasFrame(foundIdx, sceneProgress);
+
+            const scrubberTime = document.getElementById('studio-scrubber-time');
+            if (scrubberTime) {
+                const curMin = Math.floor(targetSec / 60);
+                const curSec = Math.floor(targetSec % 60);
+                const totMin = Math.floor(totalDur / 60);
+                const totSec = Math.floor(totalDur % 60);
+                scrubberTime.innerText = curMin + ':' + curSec.toString().padStart(2, '0') + ' / ' + totMin + ':' + totSec.toString().padStart(2, '0');
+            }
+        });
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+        const tag = (e.target.tagName || '').toUpperCase();
+        if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || e.target.isContentEditable) return;
+
+        if (e.code === 'Space') {
+            e.preventDefault();
+            playStudioSequence();
+        } else if (e.code === 'ArrowLeft') {
+            if (activeSegmentIndex > 0) {
+                e.preventDefault();
+                selectSegment(activeSegmentIndex - 1);
+            }
+        } else if (e.code === 'ArrowRight') {
+            if (activeSegmentIndex < mediaItems.length - 1) {
+                e.preventDefault();
+                selectSegment(activeSegmentIndex + 1);
+            }
+        } else if (e.code === 'Delete' || e.code === 'Backspace') {
+            if (mediaItems.length > 0 && activeSegmentIndex >= 0) {
+                e.preventDefault();
+                removeItem(activeSegmentIndex);
+            }
+        }
+    });
 });
 
 let draggedIndex = null;
@@ -894,6 +985,16 @@ function moveItem(index, dir) {
     const temp = mediaItems[index];
     mediaItems[index] = mediaItems[newIdx];
     mediaItems[newIdx] = temp;
+    renderMediaList();
+}
+
+
+function duplicateItem(index) {
+    if (!mediaItems[index]) return;
+    const clone = JSON.parse(JSON.stringify(mediaItems[index]));
+    clone.originalName = clone.originalName + ' (Bản sao)';
+    mediaItems.splice(index + 1, 0, clone);
+    activeSegmentIndex = index + 1;
     renderMediaList();
 }
 
