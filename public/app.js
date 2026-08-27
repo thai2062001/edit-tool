@@ -352,6 +352,8 @@ function renderMediaList() {
             ? `✍️ ${item.settings.overlayText.trim()}` 
             : '';
 
+        const loopCount = item.settings?.loopCount || 1;
+
         card.innerHTML = `
             <div class="storyboard-thumb-box">
                 ${isImage 
@@ -424,6 +426,8 @@ function updateQuickInspector(index) {
     // Sync input values
     const inspMotion = document.getElementById('insp-motion');
     const inspDuration = document.getElementById('insp-duration');
+    const inspLoopCount = document.getElementById('insp-loopcount');
+    const inspLoopCountVideo = document.getElementById('insp-loopcount-video');
     const inspIntensity = document.getElementById('insp-intensity');
     const inspFadeIn = document.getElementById('insp-fadein');
     const inspFadeOut = document.getElementById('insp-fadeout');
@@ -438,6 +442,7 @@ function updateQuickInspector(index) {
     if (isImage) {
         if (inspMotion) inspMotion.value = item.settings.motion || 'zoom_in';
         if (inspDuration) inspDuration.value = item.settings.duration || 5.0;
+        if (inspLoopCount) inspLoopCount.value = item.settings.loopCount || 1;
         if (inspIntensity) inspIntensity.value = item.settings.zoomIntensity || 1.25;
         if (inspFadeIn) inspFadeIn.value = item.settings.fadeIn ?? 0.8;
         if (inspFadeOut) inspFadeOut.value = item.settings.fadeOut ?? 0.8;
@@ -450,6 +455,7 @@ function updateQuickInspector(index) {
             inspTrimEnd.max = item.duration || 10;
             inspTrimEnd.value = item.settings.trimEnd || item.duration || 5;
         }
+        if (inspLoopCountVideo) inspLoopCountVideo.value = item.settings.loopCount || 1;
         if (inspVideoVolume) inspVideoVolume.value = item.settings.videoVolume ?? 1.0;
     }
 
@@ -704,6 +710,8 @@ function playSingleScene() {
 function bindQuickInspectorInputs() {
     const inspMotion = document.getElementById('insp-motion');
     const inspDuration = document.getElementById('insp-duration');
+    const inspLoopCount = document.getElementById('insp-loopcount');
+    const inspLoopCountVideo = document.getElementById('insp-loopcount-video');
     const inspIntensity = document.getElementById('insp-intensity');
     const inspFadeIn = document.getElementById('insp-fadein');
     const inspFadeOut = document.getElementById('insp-fadeout');
@@ -722,12 +730,14 @@ function bindQuickInspectorInputs() {
         if (item.type === 'image') {
             if (inspMotion) item.settings.motion = inspMotion.value;
             if (inspDuration) item.settings.duration = parseFloat(inspDuration.value) || 5.0;
+            if (inspLoopCount) item.settings.loopCount = parseInt(inspLoopCount.value) || 1;
             if (inspIntensity) item.settings.zoomIntensity = parseFloat(inspIntensity.value) || 1.25;
             if (inspFadeIn) item.settings.fadeIn = parseFloat(inspFadeIn.value) || 0;
             if (inspFadeOut) item.settings.fadeOut = parseFloat(inspFadeOut.value) || 0;
         } else {
             if (inspTrimStart) item.settings.trimStart = parseFloat(inspTrimStart.value) || 0;
             if (inspTrimEnd) item.settings.trimEnd = parseFloat(inspTrimEnd.value) || item.duration || 5;
+            if (inspLoopCountVideo) item.settings.loopCount = parseInt(inspLoopCountVideo.value) || 1;
             if (inspVideoVolume) item.settings.videoVolume = parseFloat(inspVideoVolume.value) || 1.0;
         }
 
