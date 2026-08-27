@@ -691,16 +691,17 @@ app.post('/api/render', async (req, res) => {
 });
 
 // Helper to build FFmpeg drawtext filter for Text Overlay
-function buildDrawtextFilter(settings, width, height) {
+// Helper to build FFmpeg drawtext filter for Text Overlay safely via textfile
+function buildDrawtextFilter(settings, width, height, tempFiles = []) {
     if (!settings || !settings.overlayText || !settings.overlayText.trim()) {
         return '';
     }
     const text = settings.overlayText.trim();
-    // Escape single quotes, colons, and backslashes for FFmpeg drawtext filter syntax
-    const escapedText = text
-        .replace(/\\/g, '\\\\')
-        .replace(/'/g, "\\'")
-        .replace(/:/g, '\\:');
+    
+    // Write text to temporary UTF-8 file to avoid all FFmpeg command line & filter graph escaping issues
+    const textTmpFile = path.join(OUTPUTS_DIR, `txt_${Date.now()}_${Math.round(Math.random() * 1e8)}.txt`);
+    fs.writeFileSync(textTmpFile, text, 'utf8');
+    tempFiles.push(textTmpFile);
 
     const position = settings.textPosition || 'bottom';
     const style = settings.textStyle || 'banner';
@@ -716,7 +717,7 @@ function buildDrawtextFilter(settings, width, height) {
         y = '(h-text_h)/2';
     } else {
         // bottom
-y = `h-text_h-${Math.round(height * 0.10)}`;
+        y = `h-text_h-${Math.round(height * 0.10)}`;
     }
 
     let styleParams = ':fontcolor=white';
@@ -736,11 +737,12 @@ y = `h-text_h-${Math.round(height * 0.10)}`;
         animParams = ":enable='between(t,0,2.8)'";
     }
 
-    return `drawtext=fontfile='C\\:/Windows/Fonts/arial.ttf':expansion=none:text='${escapedText}':fontsize=${scaledFontSize}:x=${x}:y=${y}${styleParams}${animParams}`;
+    const safeTextFilePath = textTmpFile.replace(/\\/g, '/').replace(/:/g, '\\:');
+    return `drawtext=fontfile='C\\:/Windows/Fonts/arial.ttf':expansion=none:textfile='${safeTextFilePath}':fontsize=${scaledFontSize}:x=${x}:y=${y}${styleParams}${animParams}`;
 }
 
 // Function to render a single batch/chunk of items
-function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, config) {
+function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, config, tempFiles = []) {
     return new Promise((resolve, reject) => {
         const { width, height, fps, crf, preset, reframeMode } = config;
         const args = ['-y'];
@@ -847,7 +849,7 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
                     vFilters += `,fade=t=out:st=${fadeStart}:d=${fadeOut}`;
                 }
 
-                const drawtextFilter = buildDrawtextFilter(item.settings, width, height);
+                const drawtextFilter = buildDrawtextFilter(item.settings, width, height, tempFiles);
                 if (drawtextFilter) {
                     vFilters += `,${drawtextFilter}`;
                 }
@@ -882,7 +884,7 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
                     vFilters += `,fade=t=out:st=${fadeStart}:d=${fadeOut}`;
                 }
 
-                const drawtextFilter = buildDrawtextFilter(item.settings, width, height);
+                const drawtextFilter = buildDrawtextFilter(item.settings, width, height, tempFiles);
                 if (drawtextFilter) {
                     vFilters += `,${drawtextFilter}`;
                 }
@@ -958,7 +960,7 @@ async function executeFFmpegRender(job, items, bgm, config) {
 
         if (items.length <= CHUNK_SIZE && (!bgm || !bgm.filename)) {
             // Direct single render
-            await renderChunk(job, items, outputPath, 0, 1, config);
+            await renderChunk(job, items, outputPath, 0, 1, config, tempFiles);
             job.status = 'completed';
             job.progress = 100;
             job.outputUrl = `/outputs/${job.outputFilename}`;
@@ -986,7 +988,7 @@ async function executeFFmpegRender(job, items, bgm, config) {
                 const chunkFile = path.join(OUTPUTS_DIR, `temp_chunk_${job.id}_${chunkIdx}.mp4`);
                 tempFiles.push(chunkFile);
                 chunkOutputPaths[chunkIdx] = chunkFile;
-                return renderChunk(job, chunk, chunkFile, chunkIdx, chunks.length, config).then(() => {
+                return renderChunk(job, chunk, chunkFile, chunkIdx, chunks.length, config, tempFiles).then(() => {
                     completedChunks++;
                     const pct = Math.min(88, Math.round((completedChunks / chunks.length) * 88));
                     job.progress = Math.max(job.progress || 0, pct);
