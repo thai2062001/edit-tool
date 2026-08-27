@@ -1,18 +1,18 @@
 Ê, tưởng tượng một sáng thứ Bảy đẹp trời thức dậy tại New York hay Los Angeles lúc 8 giờ sáng. Vừa vươn vai mở mắt ra, phản xạ đầu tiên theo thói quen là quờ tay sang chiếc bàn cạnh giường để tìm chiếc điện thoại, định bụng check thông báo tin nhắn từ crush hay Snapchat... à mà quên, bạn vẫn đang ế chỏng chơ! Bạn tặc lưỡi định mở TikTok lướt vài cái video xem drama showbiz cho tỉnh ngủ.
 
-Nhưng ơ kìa... chiếc vòng loading xoay tít mù. Bật 5G? Vẫn xoay. Bật tắt chế độ máy bay ba lần bảy lượt? Vẫn hiện "No Service" to đùng! Tưởng Wi-Fi nhà mình bị hỏng, bạn vội xỏ đôi dép Crocs chạy thẳng ra đường. Và rồi bạn đứng hình: Cả con phố từ Brooklyn đến Beverly Hills, hàng xóm láng giềng đang đứng đực mặt ra giơ điện thoại lên trời như đang làm lễ tế thần cầu sóng!
+Nhưng ơ kìa... chiếc vòng loading xoay tít mù. Bật 5G? Vẫn xoay. Bật tắt chế độ máy bay ba lần bảy lượt? Vẫn hiện dòng chữ "No Service" to đùng! Tưởng Wi-Fi nhà mình bị hỏng, bạn vội xỏ đôi dép Crocs chạy thẳng ra đường. Và rồi bạn đứng hình: Cả con phố từ Brooklyn đến Beverly Hills, hàng xóm láng giềng đang đứng đực mặt ra giơ điện thoại lên trời như đang làm lễ tế thần cầu sóng!
 
 Chúc mừng nước Mỹ! Không phải do cá mập cắn cáp quang đâu. Mạng Internet toàn cầu chính thức... "bay màu" vĩnh viễn rồi!
 
 Không còn lướt Instagram flexing xe Tesla, không còn drama nhà Kardashian, không còn cày phim Netflix lúc 2 giờ sáng, và chấm dứt luôn cái trò quẹt Tinder lúc nửa đêm. Chuyện gì sẽ xảy ra khi một quốc gia sống bằng Wi-Fi, Apple Pay và cà phê đá bỗng nhiên bị "cúp cầu dao" vĩnh viễn? Cùng xem nước Mỹ sẽ trải qua cơn sang chấn tâm lý và "tấu hài" sinh tồn như thế nào nhé!
 
-Cơn ác mộng đầu tiên giáng xuống đầu những công dân Mỹ hiện đại không phải là thiếu đồ ăn, mà chính là sự phản bội tàn nhẫn của "Hệ sinh thái nhà thông minh" (Smart Home).
+Cơn ác mộng đầu tiên giáng xuống đầu những công dân Mỹ hiện đại chính là sự "đình công" tập thể của các thiết bị thông minh trong nhà (Smart Home).
 
-Hãy tưởng tượng bạn bước vào bếp, định mở chiếc tủ lạnh thông minh Samsung Family Hub để lấy chai sữa tươi, nhưng màn hình cảm ứng của tủ lạnh chỉ hiện vòng xoay vô tận kèm dòng chữ: "Vui lòng kết nối mạng đám mây để xác thực danh tính chủ nhà!". Cửa tủ lạnh khóa cứng ngắc!
+Bạn định cất tiếng gọi: "Alexa, bật đèn phòng khách và mở nhạc Spotify nào!", nhưng chiếc loa thông minh hình cầu chỉ nhấp nháy vòng tròn đỏ kèm giọng nói máy móc lạnh lùng: "Sorry, I'm having trouble connecting to the internet". 
 
-Chưa hết, chiếc rèm cửa sổ thông minh tự động đóng kín mít không chịu mở vì mất tín hiệu vệ tinh, máy hút bụi tự động Roomba chạy lòng vòng va đầu vào chân bàn rồi tự động phát ra tiếng kêu tít tít cầu cứu, còn chiếc bồn cầu thông minh Toto xịn sò thì báo lỗi "404 Not Found" không cho xả nước! Cả căn hộ thông minh bỗng biến thành một mê cung sinh tồn thời đồ đá!
+Khóa cửa thông minh không nhận lệnh từ ứng dụng điện thoại, rèm cửa tự động đóng kín mít vì mất tín hiệu điều khiển đám mây, còn robot hút bụi Roomba thì chạy lòng vòng va đầu vào chân bàn rồi đứng im một chỗ. Giới trẻ Mỹ bỗng phát hiện ra một sự thật chấn động: hóa ra bấy lâu nay nhà mình vẫn có công tắc cơ bằng nhựa trên tường và cái chổi quét nhà bằng tay truyền thống!
 
-Sau khi chật vật thoát ra khỏi nhà, thảm họa tiếp theo giáng thẳng vào túi tiền của giới trẻ: APPLE PAY VÀ CÁC THỂ LOẠI THẺ CHÍNH THỨC BIẾN THÀNH MIẾNG NHỰA VÔ TRI!
+Sau khi chật vật bước ra khỏi nhà, thảm họa tiếp theo giáng thẳng vào túi tiền của giới trẻ: APPLE PAY VÀ CÁC THỂ LOẠI THẺ CHÍNH THỨC BIẾN THÀNH MIẾNG NHỰA VÔ TRI!
 
 Hãy tưởng tượng bạn đang đứng ở quầy Drive-thru của Starbucks, vừa order một ly Iced Caramel Macchiato sữa yến mạch, thêm 3 shot vanilla, đổi cold foam trị giá tận 9 đô la. Bạn giơ chiếc Apple Watch lên máy POS định quẹt cái "Tít" cho thật ngầu lòi.
 
@@ -24,7 +24,7 @@ Tại Mỹ — cái xứ sở mà người ta có thể sống cả năm trời 
 
 Ở các tiệm gà rán Popeyes hay burger In-N-Out, các làn xe Drive-Thru kẹt cứng dài cả 5 cây số vì khách chẳng ai có sẵn tiền mặt, màn hình gọi món tự động thì tê liệt hoàn toàn khiến nhân viên phải chạy lăng xăng ra từng xe để ghi chép bằng sổ tay giấy.
 
-
+Nhiều bạn trẻ lúng túng lục tìm được tập séc cá nhân (Checkbook) phủ bụi của bố mẹ để đi mua đồ, nhưng đứng đực mặt ra vì không biết phải điền số tiền bằng chữ tiếng Anh vào dòng "Pay to the order of" như thế nào!
 
 Nhưng bi kịch tâm lý cay đắng nhất lúc này chính là: Bạn muốn đăng ngay một dòng tweet lên X (Twitter) để gào thét rằng "Thế giới này toang thật rồi!" mà... không có mạng để đăng! Cảm giác vừa hốt hoảng vừa bất lực mà không được lên mạng than thở nó bức bối đến mức muốn đập đầu vào tường!
 
@@ -34,23 +34,23 @@ Chưa dừng lại ở đó, thảm họa tiếp theo gọi tên "hội mù đư
 
 Những chiếc xe điện thông minh như Tesla bỗng chốc mất đi tính năng Autopilot và bản đồ vệ tinh trực tuyến, biến thành những cỗ xe bình thường chạy bằng điện mà tài xế thì không biết rẽ vào đâu.
 
-Những cuốn bản đồ giấy khổng lồ của hội AAA vốn chỉ để phủ bụi trong góc gara bỗng nhiên cháy hàng với giá chợ đen lên tới 50 đô la một cuốn. Các thanh niên lái bán tải Ford F-150 hay Jeep đành phải hạ kính xe xuống, thò đầu ra dùng tính năng giao tiếp nguyên thủy nhất: "Hey bro, cho hỏi lối rẽ vào đường cao tốc số 5 đi hướng nào thế?".
+Những cuốn bản đồ giấy khổng lồ của hội đồng ô tô Mỹ (AAA) vốn chỉ để phủ bụi trong góc gara bỗng nhiên cháy hàng với giá chợ đen lên tới 50 đô la một cuốn. Các thanh niên lái bán tải Ford F-150 hay Jeep đành phải hạ kính xe xuống, thò đầu ra dùng tính năng giao tiếp nguyên thủy nhất: "Hey bro, cho hỏi lối rẽ vào đường cao tốc số 5 đi hướng nào thế?".
 
 Thanh thiếu niên cưỡi xe đạp BMX và trượt ván Skateboard bỗng nhiên trở thành những "vua tốc độ đô thị" vì luồn lách qua mọi ngõ ngách mà chẳng cần bản đồ số!
 
 Thị trường việc làm tại Thung lũng Silicon cũng chứng kiến một cuộc thanh trừng thế kỷ.
 
-Hàng loạt danh xưng hào nhoáng như "Senior Software Engineer lương 350k đô", "Hot TikToker triệu view", "Streamer Twitch", "Chiến thần Crypto" bỗng chốc rủ nhau đi nộp đơn xin việc lao động chân tay. Những dòng code thuật toán hay những video nhảy nhót bắt trend giờ đây không đổi nổi một cái bánh kẹp xúc xích hay một lát pizza Pepperoni.
+Hàng loạt danh xưng hào nhoáng như "Senior Software Engineer lương 350k đô", "Hot TikToker triệu view", "Streamer Twitch", "Chiến thần Crypto" bỗng chốc rơi vào cảnh thất nghiệp tạm thời vì server sập, Slack tắt ngấm và GitHub không thể truy cập. Các văn phòng công nghệ bỗng biến thành những phòng sinh hoạt tập thể nơi mọi người ngồi chơi cờ và tán gẫu.
 
-Thay vào đó, bảng xếp hạng "những người thành đạt và quyền lực nhất nước Mỹ" bị đảo lộn 180 độ. Anh thợ cơ khí biết sửa động cơ xe bán tải không cần cắm máy tính quét lỗi, chú thợ điện nước nắm rõ đường ống ngầm, anh nông dân miền Trung Tây sở hữu trang trại ngô bạt ngàn hay bác thợ mộc lành nghề bỗng nhiên trở thành "Hình mẫu bạn trai lý tưởng số một" được các cô gái và gia đình săn đón nồng nhiệt vì họ là những người thực sự giữ cho cuộc sống vận hành!
+Thay vào đó, bảng xếp hạng "những nghề nghiệp được săn đón nhất nước Mỹ" bị đảo lộn 180 độ. Anh thợ cơ khí lành nghề biết sửa động cơ xe không cần cắm máy tính quét lỗi, chú thợ điện nước (Handyman/Plumber), anh nông dân miền Trung Tây sở hữu trang trại bạt ngàn hay bác thợ mộc bỗng nhiên trở thành "Hình mẫu bạn trai lý tưởng số một" với lịch hẹn kín mít cả tháng, vì họ là những người thực sự giữ cho xã hội vận hành!
 
-Các tòa nhà văn phòng chọc trời của Google hay Meta bỗng biến thành những xưởng in ấn báo giấy khổng lồ, nơi các cựu kỹ sư công nghệ chuyển sang vận hành máy in thủ công và chuyển phát tin tức bằng xe đạp!
+Những thiết bị truyền thống cổ điển như đài phát thanh Radio FM, máy đánh chữ, điện thoại bàn có dây và máy Fax bỗng hồi sinh rực rỡ, trở thành huyết mạch liên lạc của các cơ quan và doanh nghiệp.
 
 Chuyện hẹn hò và đời sống tình cảm của Gen Z Mỹ cũng bước sang một trang sử hoàn toàn mới.
 
 Muốn "tán crush" thời không có Internet ư? Quên ngay cái trò quẹt Tinder sang phải, thả tim story Instagram hay trượt vào tin nhắn DM đi nhé! Không còn các filter làm đẹp lung linh của Snapchat hay Facetune nữa, muốn gặp nhau là phải vác nguyên bản mặt mộc 100% ra đường đối diện với sự thật trần trụi.
 
-Muốn rủ bạn gái đi chơi, các chàng trai phải lấy hết can đảm lái xe đến tận cửa nhà nàng, gõ cửa, bắt tay chào bố mẹ nàng thật đĩnh đạc và lễ phép rồi mới được chở nàng đi uống sữa lắc Milkshake tại quán Diner. Muốn tỏ tình lãng mạn thì phải tự tay nắn nót viết từng dòng thư tình bằng giấy mực, dán tem bưu chính USPS và nơm nớp chờ đợi cả tuần lễ để nhận lại hồi âm qua hòm thư trước cổng nhà!
+Muốn rủ bạn gái đi chơi, các chàng trai phải lấy hết can đảm lái xe đến tận cửa nhà nàng, gõ cửa, bắt tay chào bố mẹ nàng thật đĩnh đạc và lễ phép rồi mới được chở nàng đi uống sữa lắc Milkshake tại quán Diner. Muốn tỏ tình lãng mạn thì phải tự tay nắn nót viết từng dòng thư tình bằng giấy mực, dán tem bưu chính USPS và bỏ vào hòm thư hình vòm trước cổng nhà, gạt chiếc cờ đỏ lên rồi nơm nớp chờ đợi cả tuần lễ để nhận lại hồi âm!
 
 Còn nếu lỡ ghét đứa nào thì sao? Xin chia buồn, không còn nút "Block", "Unfollow" hay "Hủy kết bạn" thần thánh nào cứu bạn được đâu. Muốn né mặt đứa mình ghét thì chỉ có cách thấy nó đi ngược chiều ở hành lang trường trung học là phải giả vờ cúi gầm mặt xuống nhặt chìa khóa hoặc né vội sang dãy tủ locker khác!
 
@@ -66,7 +66,7 @@ Không gian sống và văn hóa đường phố Mỹ bắt đầu biến hình 
 
 Các quán Diner cổ điển, công viên trung tâm và bãi biển California không còn cảnh tượng 4 người bạn hẹn nhau đi ăn nhưng mỗi người cắm mặt vào một chiếc màn hình phát sáng suốt 2 tiếng đồng hồ mà không ai nói với ai câu nào.
 
-Mọi người bắt đầu ngẩng cao đầu lên, nhìn thẳng vào mắt nhau, bắt đầu những cuộc trò chuyện thực sự. Những nét văn hóa cổ điển tuyệt đẹp của Mỹ bùng nổ trở lại: những buổi tiệc nướng BBQ ngoài sân vườn ngập tràn tiếng cười rộn rã, những đêm chơi cờ tỷ phú Monopoly hay cờ cá ngựa thâu đêm cùng gia đình, thanh thiếu niên tụ tập trượt ván Skateboard trên đường phố, ôm đàn guitar thùng nghêu ngao hát nhạc đồng quê Country bên đống lửa trại rực rỡ.
+Mọi người bắt đầu ngẩng cao đầu lên, nhìn thẳng vào mắt nhau, bắt đầu những cuộc trò chuyện thực sự. Những nét văn hóa cổ điển tuyệt đẹp của Mỹ bùng nổ trở lại: những buổi tiệc nướng BBQ ngoài sân vườn ngập tràn tiếng cười rộn rã, những đêm chơi cờ tỷ phú Monopoly, bài UNO hay rút gỗ Jenga thâu đêm cùng gia đình, thanh thiếu niên tụ tập trượt ván Skateboard trên đường phố, ôm đàn guitar thùng nghêu ngao hát nhạc đồng quê Country bên đống lửa trại rực rỡ.
 
 Những bữa tối ngày Lễ Tạ Ơn (Thanksgiving) hay Giáng Sinh cũng lấy lại được linh hồn nguyên bản. Không còn cảnh cả nhà ngồi quanh bàn ăn nhưng mắt ai cũng liếc nhìn thông báo điện thoại. Món gà tây nướng vừa dọn ra nóng hổi là cả gia đình quây quần nâng ly chúc mừng, chia sẻ cho nhau nghe những câu chuyện chân thật về cuộc sống.
 
