@@ -119,8 +119,14 @@ if (btnRunQaAudit) {
 
         // UI Loading state
         btnRunQaAudit.disabled = true;
-        btnRunQaAudit.innerHTML = '⏳ Đang phân tích khung hình & âm thanh...';
+        btnRunQaAudit.innerHTML = '⚡ Đang bóc tách Audio & Khung hình siêu tốc...';
         if (qaLoadingOverlay) qaLoadingOverlay.classList.remove('hidden');
+
+        const statusTimer = setTimeout(() => {
+            if (btnRunQaAudit.disabled) {
+                btnRunQaAudit.innerHTML = '🧠 Gemini AI đang đối chiếu kịch bản & phân tích từng giây...';
+            }
+        }, 1200);
 
         try {
             const formData = new FormData();
@@ -136,6 +142,7 @@ if (btnRunQaAudit) {
                 body: formData
             });
 
+            clearTimeout(statusTimer);
             const data = await res.json();
             if (!res.ok || !data.success) {
                 throw new Error(data.error || 'Lỗi khi gọi API kiểm định');

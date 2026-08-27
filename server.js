@@ -1352,48 +1352,45 @@ app.post('/api/watermark/process-video', async (req, res) => {
 // TAB 4: AI Video QA Auditor
 // ==========================================
 
-function extractVideoKeyframes(videoPath, duration, maxFrames = 24) {
-    return new Promise(async (resolve) => {
-        // Adaptively calculate frame count based on video length (up to 36 frames for 15-20 min videos)
-        const targetFrames = Math.min(36, Math.max(12, Math.floor(duration / 15)));
+function extractVideoKeyframes(videoPath, duration) {
+    return new Promise((resolve) => {
+        const targetFrames = Math.min(30, Math.max(8, Math.floor(duration / 15)));
         const frameInterval = Math.max(2.0, duration / targetFrames);
-        const timestamps = [];
-        for (let t = 0.5; t < duration; t += frameInterval) {
-            timestamps.push(t);
-            if (timestamps.length >= targetFrames) break;
-        }
+        const tempDir = path.join(UPLOADS_DIR, `qa_frames_${Date.now()}_${Math.round(Math.random() * 1e4)}`);
+        if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
 
-        const promises = timestamps.map(t => {
-            return new Promise((resFrame) => {
-                const proc = spawn('ffmpeg', [
-                    '-ss', t.toFixed(2),
-                    '-i', videoPath,
-                    '-vframes', '1',
-                    '-vf', 'scale=480:-1',
-                    '-q:v', '7',
-                    '-f', 'image2pipe',
-                    '-vcodec', 'mjpeg',
-                    'pipe:1'
-                ]);
-                const chunks = [];
-                proc.stdout.on('data', d => chunks.push(d));
-                proc.on('close', code => {
-                    if (code === 0 && chunks.length > 0) {
-                        resFrame({
-                            timeSec: parseFloat(t.toFixed(1)),
-                            timeFormatted: formatTimeSec(t),
-                            base64: Buffer.concat(chunks).toString('base64')
-                        });
-                    } else {
-                        resFrame(null);
-                    }
+        const proc = spawn('ffmpeg', [
+            '-i', videoPath,
+            '-vf', `fps=1/${frameInterval.toFixed(2)},scale=420:-1`,
+            '-q:v', '7',
+            path.join(tempDir, 'frame_%03d.jpg')
+        ]);
+
+        proc.on('close', (code) => {
+            if (code === 0 && fs.existsSync(tempDir)) {
+                const files = fs.readdirSync(tempDir).filter(f => f.endsWith('.jpg')).sort();
+                const results = files.map((f, idx) => {
+                    const filePath = path.join(tempDir, f);
+                    const timeSec = parseFloat((idx * frameInterval).toFixed(1));
+                    const base64 = fs.readFileSync(filePath).toString('base64');
+                    try { fs.unlinkSync(filePath); } catch (e) {}
+                    return {
+                        timeSec,
+                        timeFormatted: formatTimeSec(timeSec),
+                        base64
+                    };
                 });
-                proc.on('error', () => resFrame(null));
-            });
+                try { fs.rmdirSync(tempDir); } catch (e) {}
+                resolve(results);
+            } else {
+                try { if (fs.existsSync(tempDir)) fs.rmdirSync(tempDir); } catch (e) {}
+                resolve([]);
+            }
         });
-
-        const results = (await Promise.all(promises)).filter(Boolean);
-        resolve(results);
+        proc.on('error', () => {
+            try { if (fs.existsSync(tempDir)) fs.rmdirSync(tempDir); } catch (e) {}
+            resolve([]);
+        });
     });
 }
 
@@ -1456,12 +1453,13 @@ app.post('/api/qa/audit-video', upload.single('video'), async (req, res) => {
         const mediaInfo = await getMediaInfo(videoPath);
         const duration = mediaInfo.duration || 10;
 
-        // 1. Extract sample keyframes (adaptive count)
-        const keyframes = await extractVideoKeyframes(videoPath, duration, 24);
-        console.log(`[QA Auditor] Extracted ${keyframes.length} keyframes`);
+        // 1 & 2. High-performance concurrent extraction of Keyframes & Audio in parallel
+        const [keyframes, audioBase64] = await Promise.all([
+            extractVideoKeyframes(videoPath, duration),
+            extractAudioBase64(videoPath, Math.min(1800, duration))
+        ]);
 
-        // 2. Extract audio track base64 (up to 30 mins)
-        const audioBase64 = await extractAudioBase64(videoPath, Math.min(1800, duration));
+        console.log(`[QA Auditor] Fast extracted ${keyframes.length} keyframes and audio`);
 
         // 3. Build Gemini multimodal payload
         const ai = new GoogleGenAI({ apiKey });
