@@ -600,11 +600,28 @@ function extractLightweightAudio(inputPath, outputPath) {
 // =========================================================================
 app.post('/api/ai/auto-sync-voiceover', upload.single('audioFile'), async (req, res) => {
     try {
-        if (!req.file) {
-            return res.status(400).json({ error: 'Vui lòng tải lên tệp âm thanh (MP3, WAV, M4A)' });
+        let audioPath = null;
+        let audioFileName = '';
+        let originalName = '';
+
+        if (req.file) {
+            audioPath = req.file.path;
+            audioFileName = req.file.filename;
+            originalName = req.file.originalname;
+        } else if (req.body.bgmFilename) {
+            const safeName = path.basename(req.body.bgmFilename);
+            const candidatePath = path.join(UPLOADS_DIR, safeName);
+            if (fs.existsSync(candidatePath)) {
+                audioPath = candidatePath;
+                audioFileName = safeName;
+                originalName = req.body.bgmOriginalName || safeName;
+            }
         }
 
-        const audioPath = req.file.path;
+        if (!audioPath || !fs.existsSync(audioPath)) {
+            return res.status(400).json({ error: 'Vui lòng tải lên tệp âm thanh (MP3, WAV, M4A) hoặc nạp BGM trước' });
+        }
+
         let items = [];
         try {
             items = req.body.items ? JSON.parse(req.body.items) : [];
@@ -775,11 +792,11 @@ YÊU CẦU:
         });
 
         const bgmTrack = {
-            filename: req.file.filename,
-            originalName: req.file.originalname,
+            filename: audioFileName,
+            originalName: originalName,
             duration: totalAudioDuration,
             volume: 1.0,
-            url: `/uploads/${req.file.filename}`
+            url: `/uploads/${audioFileName}`
         };
 
         res.json({

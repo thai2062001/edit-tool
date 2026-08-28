@@ -3477,13 +3477,21 @@ const btnCancelVoiceoverModal = document.getElementById('btn-cancel-voiceover-mo
 
 if (btnAutoSyncVoiceover && inputVoiceoverFile) {
     btnAutoSyncVoiceover.addEventListener('click', () => {
-        inputVoiceoverFile.click();
+        if (bgmTrack && bgmTrack.filename) {
+            executeVoiceoverSync(null, bgmTrack);
+        } else {
+            inputVoiceoverFile.click();
+        }
     });
 }
 
 if (btnBgmVoiceoverSync && inputVoiceoverFile) {
     btnBgmVoiceoverSync.addEventListener('click', () => {
-        inputVoiceoverFile.click();
+        if (bgmTrack && bgmTrack.filename) {
+            executeVoiceoverSync(null, bgmTrack);
+        } else {
+            inputVoiceoverFile.click();
+        }
     });
 }
 
@@ -3496,7 +3504,7 @@ if (inputVoiceoverFile) {
     });
 }
 
-async function executeVoiceoverSync(file) {
+async function executeVoiceoverSync(file, existingBgm = null) {
     if (!voiceoverSyncModal) return;
 
     voiceoverSyncModal.classList.remove('hidden');
@@ -3505,11 +3513,25 @@ async function executeVoiceoverSync(file) {
     if (btnConfirmVoiceoverSync) btnConfirmVoiceoverSync.disabled = true;
 
     const formData = new FormData();
-    formData.append('audioFile', file);
+    let displayName = 'Audio giọng đọc';
+
+    if (file) {
+        formData.append('audioFile', file);
+        displayName = file.name;
+    } else if (existingBgm) {
+        formData.append('bgmFilename', existingBgm.filename);
+        formData.append('bgmOriginalName', existingBgm.originalName || existingBgm.filename);
+        displayName = existingBgm.originalName || existingBgm.filename;
+    } else {
+        alert('Vui lòng chọn hoặc nạp một file audio.');
+        voiceoverSyncModal.classList.add('hidden');
+        return;
+    }
+
     formData.append('items', JSON.stringify(mediaItems || []));
 
     // Check if there is script text available in AI modal or somewhere
-    const scriptInput = document.getElementById('ai-script-input') || document.getElementById('sub-script-textarea');
+    const scriptInput = document.getElementById('ai-script-input') || document.getElementById('sub-script-textarea') || document.getElementById('script-textarea');
     if (scriptInput && scriptInput.value) {
         formData.append('scriptText', scriptInput.value);
     }
@@ -3526,7 +3548,7 @@ async function executeVoiceoverSync(file) {
         }
 
         currentVoiceoverSyncData = data;
-        renderVoiceoverSyncResults(data, file.name);
+        renderVoiceoverSyncResults(data, displayName);
 
     } catch (err) {
         alert('❌ Lỗi đồng bộ giọng đọc: ' + err.message);

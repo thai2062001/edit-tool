@@ -1898,8 +1898,9 @@
     <input type="file" id="input-voiceover-file" accept="audio/*,video/*" hidden>
 
     <!-- Modal: AI One-Click Voiceover & Audio Sync -->
-    <div id="voiceover-sync-modal" class="modal-backdrop hidden">
-        <div class="modal-dialog modal-alignment-dialog">
+    <div id="voiceover-sync-modal" class="modal hidden">
+        <div class="modal-backdrop" onclick="document.getElementById('btn-close-voiceover-modal')?.click()"></div>
+        <div class="modal-dialog audit-dialog modal-alignment-dialog">
             <div class="modal-header">
                 <div class="flex-row align-center gap-xs">
                     <span style="font-size: 1.5rem;">🎙️</span>

@@ -1354,14 +1354,25 @@ body {
     justify-content: center;
 }
 
-.spinner-neon {
+.progress-ring-container .spinner-neon {
     position: absolute;
     width: 100%;
     height: 100%;
-    border: 4px solid rgba(99, 102, 241, 0.2);
-    border-top: 4px solid var(--primary);
+    top: 0;
+    left: 0;
+}
+
+.spinner-neon, .audit-spinner {
+    width: 48px;
+    height: 48px;
+    border: 3px solid rgba(99, 102, 241, 0.2);
+    border-top: 3px solid var(--accent-cyan);
+    border-right: 3px solid var(--primary);
     border-radius: 50%;
-    animation: spin 1s linear infinite;
+    animation: spin 0.9s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    display: inline-block;
+    margin: 0 auto;
+    box-shadow: 0 0 15px rgba(6, 182, 212, 0.25);
 }
 
 @keyframes spin {
@@ -1971,10 +1982,20 @@ body {
 }
 
 .audit-loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     text-align: center;
-    padding: 40px 20px;
+    padding: 48px 24px;
     color: var(--accent-cyan);
     font-size: 14px;
+    gap: 12px;
+}
+
+.audit-loading-state h4,
+.audit-loading-state p {
+    margin: 0;
 }
 
 .audit-score-card {
