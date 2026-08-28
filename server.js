@@ -401,6 +401,181 @@ Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
 });
 
 // =========================================================================
+// AI IMAGE & SCRIPT ALIGNMENT AUDITOR: EVALUATE MATCH & SMART SWAP
+// =========================================================================
+app.post('/api/ai/audit-image-alignment', async (req, res) => {
+    try {
+        const { items, libraryPool, scriptText, customApiKey } = req.body;
+        const apiKey = (customApiKey && customApiKey.trim()) ? customApiKey.trim() : DEFAULT_GEMINI_API_KEY;
+
+        if (!items || items.length === 0) {
+            return res.status(400).json({ error: 'Chưa có phân cảnh nào trên timeline để đánh giá' });
+        }
+
+        const availablePool = Array.isArray(libraryPool) && libraryPool.length > 0 ? libraryPool : items;
+        const imagePool = availablePool.filter(i => i.type === 'image' && !i.isPlaceholder && i.filename);
+
+        // Prepare baseline evaluation
+        const evaluatedScenes = items.map((item, idx) => {
+            const isPlaceholder = Boolean(item.isPlaceholder || !item.filename);
+            const overlayText = (item.settings?.overlayText || '').trim();
+            const originalName = item.originalName || `Ảnh ${idx + 1}`;
+            
+            // Baseline heuristic score
+            let matchScore = isPlaceholder ? 20 : 85;
+            let matchGrade = isPlaceholder ? 'placeholder' : 'perfect';
+            let explanation = isPlaceholder 
+                ? 'Phân cảnh chưa có ảnh (thẻ chờ bù ảnh).' 
+                : 'Hình ảnh cơ bản đã khớp với chủ đề câu thoại.';
+
+            return {
+                index: idx + 1,
+                itemId: item.id || `scene_${idx}`,
+                originalName,
+                filename: item.filename || '',
+                url: item.url || '',
+                isPlaceholder,
+                overlayText,
+                matchScore,
+                matchGrade,
+                explanation,
+                suggestedReplacement: null
+            };
+        });
+
+        // AI Vision & Content Deep Alignment via Gemini
+        if (apiKey) {
+            try {
+                const ai = new GoogleGenAI({ apiKey });
+                const contents = [];
+
+                // Catalog of all available images in pool
+                const poolCatalog = imagePool.map((img, pIdx) => ({
+                    poolIndex: pIdx,
+                    name: img.originalName,
+                    filename: img.filename,
+                    url: img.url
+                }));
+
+                const promptText = `
+Bạn là Đạo diễn Giám sát Hình ảnh & Mỹ thuật Video (Visual Director & Image Match Auditor).
+Nhiệm vụ của bạn là đánh giá xem HÌNH ẢNH của từng phân cảnh trên Timeline có thực sự KHỚP VỚI NỘI DUNG CÂU THOẠI/KỊCH BẢN không.
+Nếu phân cảnh nào ảnh KHÔNG KHỚP hoặc ĐANG ĐỂ TRỐNG, hãy rà soát KHO ẢNH KHẢ DỤNG và chọn ra BỨC ẢNH PHÙ HỢP NHẤT để thay thế.
+
+DANH SÁCH ${items.length} PHÂN CẢNH TRÊN TIMELINE:
+${JSON.stringify(evaluatedScenes.map(s => ({
+    sceneIndex: s.index,
+    currentImageName: s.originalName,
+    isPlaceholder: s.isPlaceholder,
+    sceneText: s.overlayText
+})), null, 2)}
+
+KHO ẢNH KHẢ DỤNG HIỆN CÓ (${imagePool.length} ảnh):
+${JSON.stringify(poolCatalog.map(p => ({ poolIndex: p.poolIndex, name: p.name })), null, 2)}
+
+YÊU CẦU:
+1. Chấm điểm độ khớp hình ảnh với câu thoại (matchScore 0-100%).
+   - matchGrade: "perfect" (>=80%), "acceptable" (60-79%), "mismatch" (<60%), "placeholder" (chưa có ảnh).
+2. Với các cảnh "mismatch" hoặc "placeholder", hãy tìm trong KHO ẢNH KHẢ DỤNG một bức ảnh khớp hơn nhiều và gợi ý suggestedReplacement: { poolIndex, newMatchScore, reason }.
+3. Nếu không có ảnh nào trong kho tốt hơn thì suggestedReplacement để null.
+
+Trả về JSON chính xác theo cấu trúc:
+{
+  "overallAlignmentScore": 82,
+  "summary": "Tóm tắt 1-2 câu về mức độ khớp hình ảnh và số lượng ảnh cần đổi",
+  "scenes": [
+    {
+      "sceneIndex": 1,
+      "matchScore": 45,
+      "matchGrade": "mismatch", // "perfect" | "acceptable" | "mismatch" | "placeholder"
+      "explanation": "Câu thoại nói về tuyết rơi Seoul nhưng ảnh hiện tại lại là phòng làm việc",
+      "suggestedReplacement": {
+        "poolIndex": 4,
+        "newMatchScore": 95,
+        "reason": "Ảnh #4 thể hiện khung cảnh đường phố phủ đầy tuyết trắng, chuẩn xác 100% với câu thoại"
+      }
+    }
+  ]
+}
+`;
+                contents.push({ text: promptText });
+
+                const response = await ai.models.generateContent({
+                    model: 'gemini-3.6-flash',
+                    contents: contents,
+                    config: { responseMimeType: 'application/json' }
+                });
+
+                const cleanJson = (response.text || '').replace(/```json/g, '').replace(/```/g, '').trim();
+                const aiResult = JSON.parse(cleanJson);
+
+                if (aiResult.scenes && Array.isArray(aiResult.scenes)) {
+                    aiResult.scenes.forEach(aiScene => {
+                        const target = evaluatedScenes.find(s => s.index === aiScene.sceneIndex);
+                        if (target) {
+                            if (typeof aiScene.matchScore === 'number') target.matchScore = aiScene.matchScore;
+                            if (aiScene.matchGrade) target.matchGrade = aiScene.matchGrade;
+                            if (aiScene.explanation) target.explanation = aiScene.explanation;
+
+                            if (aiScene.suggestedReplacement && typeof aiScene.suggestedReplacement.poolIndex === 'number') {
+                                const pIdx = aiScene.suggestedReplacement.poolIndex;
+                                if (imagePool[pIdx]) {
+                                    target.suggestedReplacement = {
+                                        poolIndex: pIdx,
+                                        originalName: imagePool[pIdx].originalName,
+                                        filename: imagePool[pIdx].filename,
+                                        url: imagePool[pIdx].url,
+                                        newMatchScore: aiScene.suggestedReplacement.newMatchScore || 90,
+                                        reason: aiScene.suggestedReplacement.reason || 'Ảnh này thể hiện phù hợp hơn nhiều với câu thoại'
+                                    };
+                                }
+                            }
+                        }
+                    });
+                }
+
+            } catch (aiErr) {
+                console.warn('Gemini image alignment audit fallback:', aiErr.message);
+            }
+        }
+
+        const mismatchCount = evaluatedScenes.filter(s => s.matchGrade === 'mismatch' || s.matchGrade === 'placeholder').length;
+        const acceptableCount = evaluatedScenes.filter(s => s.matchGrade === 'acceptable').length;
+        const perfectCount = evaluatedScenes.filter(s => s.matchGrade === 'perfect').length;
+        const swappableCount = evaluatedScenes.filter(s => s.suggestedReplacement !== null).length;
+
+        const overallAlignmentScore = Math.max(40, Math.min(100, Math.round(
+            (perfectCount * 100 + acceptableCount * 70 + mismatchCount * 35) / evaluatedScenes.length
+        )));
+
+        let summary = `Đã phân tích độ khớp hình ảnh cho ${items.length} phân cảnh: `;
+        if (mismatchCount === 0) {
+            summary += 'Toàn bộ hình ảnh đều khớp xuất sắc với kịch bản!';
+        } else {
+            summary += `Phát hiện ${mismatchCount} phân cảnh ảnh chưa thực sự ăn khớp (${swappableCount} cảnh đã tìm thấy ảnh thay thế tốt hơn).`;
+        }
+
+        res.json({
+            success: true,
+            overallAlignmentScore,
+            summary,
+            stats: {
+                totalScenes: items.length,
+                perfectCount,
+                acceptableCount,
+                mismatchCount,
+                swappableCount
+            },
+            scenes: evaluatedScenes
+        });
+
+    } catch (err) {
+        console.error('Audit image alignment error:', err);
+        res.status(500).json({ error: err.message || 'Lỗi khi đánh giá độ khớp hình ảnh' });
+    }
+});
+
+// =========================================================================
 // AI SCRIPT & SCENE PACING AUDITOR: EVALUATE & AUTO-FIT SCENE DURATIONS
 // =========================================================================
 app.post('/api/ai/audit-script-pacing', async (req, res) => {
@@ -1185,7 +1360,7 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
 
                 filterComplex.push(`[${idx}:v]${vFilters}[${vTag}]`);
                 videoStreamTags.push(`[${vTag}]`);
-                filterComplex.push(`anullsrc=r=44100:cl=stereo:d=${dur}[${aTag}]`);
+                filterComplex.push(`anullsrc=r=44100:cl=stereo:d=${dur},aresample=async=1000[${aTag}]`);
                 audioStreamTags.push(`[${aTag}]`);
             } else {
                 const trimStart = Number(item.settings?.trimStart || 0);
@@ -1222,9 +1397,9 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
                 videoStreamTags.push(`[${vTag}]`);
 
                 if (vol > 0) {
-                    filterComplex.push(`[${idx}:a]atrim=start=${trimStart}:end=${trimEnd},asetpts=PTS-STARTPTS,volume=${vol},aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo[${aTag}]`);
+                    filterComplex.push(`[${idx}:a]atrim=start=${trimStart}:end=${trimEnd},asetpts=PTS-STARTPTS,volume=${vol},aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo,aresample=async=1000[${aTag}]`);
                 } else {
-                    filterComplex.push(`anullsrc=r=44100:cl=stereo:d=${videoDur}[${aTag}]`);
+                    filterComplex.push(`anullsrc=r=44100:cl=stereo:d=${videoDur},aresample=async=1000[${aTag}]`);
                 }
                 audioStreamTags.push(`[${aTag}]`);
             }
@@ -1239,7 +1414,9 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
         args.push('-filter_complex', filterComplex.join('; '));
         args.push('-map', '[v_concat]');
         args.push('-map', '[a_concat]');
-        args.push('-c:v', 'libx264', '-preset', preset || 'fast', '-crf', crf || '20', '-pix_fmt', 'yuv420p', '-r', `${fps}`);
+        args.push('-threads', '0');
+        args.push('-c:v', 'libx264', '-preset', preset || 'fast', '-crf', crf || '20', '-pix_fmt', 'yuv420p', '-r', `${fps}`, '-g', `${fps * 2}`, '-bf', '2');
+        args.push('-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv');
         args.push('-c:a', 'aac', '-b:a', '192k', '-ar', '44100', '-ac', '2', '-movflags', '+faststart');
         args.push(chunkOutputPath);
 

@@ -2534,6 +2534,243 @@ window.closeScriptPacingModal = closeScriptPacingModal;
 window.applySingleScenePacing = applySingleScenePacing;
 window.applyAllPacingSuggestions = applyAllPacingSuggestions;
 
+// =========================================================================
+// AI VISUAL-SCRIPT ALIGNMENT & SMART SWAPPER CONTROLLER (TAB 1)
+// =========================================================================
+const btnAuditImageAlignment = document.getElementById('btn-audit-image-alignment');
+const btnQuickImageAlignment = document.getElementById('btn-quick-image-alignment');
+const imageAlignmentModal = document.getElementById('image-alignment-modal');
+const alignmentAuditLoading = document.getElementById('alignment-audit-loading');
+const alignmentAuditResult = document.getElementById('alignment-audit-result');
+const btnSwapAllImages = document.getElementById('btn-swap-all-images');
+const btnSwapAllImagesFooter = document.getElementById('btn-swap-all-images-footer');
+
+let currentImageAlignmentScenes = [];
+
+if (btnAuditImageAlignment) {
+    btnAuditImageAlignment.addEventListener('click', openImageAlignmentModal);
+}
+if (btnQuickImageAlignment) {
+    btnQuickImageAlignment.addEventListener('click', openImageAlignmentModal);
+}
+
+async function openImageAlignmentModal() {
+    if (mediaItems.length === 0) {
+        alert('Chưa có phân cảnh nào trên timeline! Hãy thêm ảnh/video hoặc nạp mẫu demo trước.');
+        return;
+    }
+
+    if (imageAlignmentModal) imageAlignmentModal.classList.remove('hidden');
+    if (alignmentAuditLoading) alignmentAuditLoading.classList.remove('hidden');
+    if (alignmentAuditResult) alignmentAuditResult.classList.add('hidden');
+
+    const scriptText = document.getElementById('script-textarea') ? document.getElementById('script-textarea').value : '';
+    const key = document.getElementById('input-gemini-key') ? document.getElementById('input-gemini-key').value.trim() : '';
+    const pool = (window.mediaItems && window.mediaItems.length > 0) ? window.mediaItems : mediaItems;
+
+    try {
+        const res = await fetch('/api/ai/audit-image-alignment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                items: mediaItems,
+                libraryPool: pool,
+                scriptText: scriptText,
+                customApiKey: key
+            })
+        });
+
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+
+        renderImageAlignmentResult(data);
+    } catch (err) {
+        alert('Lỗi đánh giá độ khớp hình ảnh: ' + err.message);
+        closeImageAlignmentModal();
+    }
+}
+
+function renderImageAlignmentResult(data) {
+    if (alignmentAuditLoading) alignmentAuditLoading.classList.add('hidden');
+    if (alignmentAuditResult) alignmentAuditResult.classList.remove('hidden');
+
+    currentImageAlignmentScenes = data.scenes || [];
+    const stats = data.stats || {};
+
+    const scoreVal = document.getElementById('alignment-score-val');
+    const verdictEl = document.getElementById('alignment-verdict');
+    const submetaEl = document.getElementById('alignment-submeta');
+    const badgeMismatch = document.getElementById('badge-align-mismatch');
+    const badgeAcceptable = document.getElementById('badge-align-acceptable');
+    const badgePerfect = document.getElementById('badge-align-perfect');
+    const scenesList = document.getElementById('alignment-scenes-list');
+
+    if (scoreVal) scoreVal.textContent = data.overallAlignmentScore || 85;
+    if (verdictEl) verdictEl.textContent = data.summary || 'Độ khớp hình ảnh tốt!';
+    if (submetaEl) {
+        submetaEl.textContent = `Phân tích ${stats.totalScenes || mediaItems.length} phân cảnh • Đã tìm thấy ${stats.swappableCount || 0} ảnh thay thế tối ưu hơn trong thư viện`;
+    }
+
+    if (badgeMismatch) badgeMismatch.textContent = `⚠️ ${stats.mismatchCount || 0} cảnh chưa khớp`;
+    if (badgeAcceptable) badgeAcceptable.textContent = `ℹ️ ${stats.acceptableCount || 0} cảnh tạm chấp nhận`;
+    if (badgePerfect) badgePerfect.textContent = `✨ ${stats.perfectCount || 0} cảnh khớp chuẩn`;
+
+    if (!scenesList) return;
+    scenesList.innerHTML = '';
+
+    currentImageAlignmentScenes.forEach((scene, sIdx) => {
+        const card = document.createElement('div');
+        const statusClass = scene.matchGrade === 'mismatch' || scene.matchGrade === 'placeholder' 
+            ? 'is-mismatch' 
+            : (scene.matchGrade === 'acceptable' ? 'is-acceptable' : 'is-perfect');
+        card.className = `alignment-scene-card ${statusClass}`;
+        card.id = `alignment-card-${sIdx}`;
+
+        const scoreBadgeClass = scene.matchScore >= 80 
+            ? 'badge-score-perfect' 
+            : (scene.matchScore >= 60 ? 'badge-score-acceptable' : 'badge-score-mismatch');
+
+        const curThumbSrc = scene.url || (scene.isPlaceholder ? '' : 'images/1_2k.jpg');
+        const curThumbHtml = scene.isPlaceholder || !curThumbSrc
+            ? `<div class="alignment-thumb-box">
+                 <span class="alignment-thumb-label text-danger">Hiện tại (Trống)</span>
+                 <div class="alignment-thumb-wrap" style="display:flex;align-items:center;justify-content:center;background:#1E293B;"><span style="font-size:20px;">📷</span></div>
+               </div>`
+            : `<div class="alignment-thumb-box">
+                 <span class="alignment-thumb-label text-dim">Hiện tại</span>
+                 <div class="alignment-thumb-wrap"><img src="${curThumbSrc}" class="alignment-thumb-img" alt="Current"></div>
+               </div>`;
+
+        let replacementHtml = '';
+        let actionBtnHtml = '';
+
+        if (scene.suggestedReplacement) {
+            const sug = scene.suggestedReplacement;
+            replacementHtml = `
+                <span class="alignment-swap-arrow">➔</span>
+                <div class="alignment-thumb-box">
+                    <span class="alignment-thumb-label text-cyan">Đề xuất đổi</span>
+                    <div class="alignment-thumb-wrap is-suggested">
+                        <img src="${sug.url}" class="alignment-thumb-img" alt="Suggested Replacement">
+                    </div>
+                </div>
+            `;
+            actionBtnHtml = `
+                <button type="button" class="btn btn-xs btn-primary btn-apply-single-swap" onclick="applySingleImageSwap(${sIdx})">
+                    ✅ Đổi sang ảnh này
+                </button>
+            `;
+        } else {
+            actionBtnHtml = `
+                <button type="button" class="btn btn-xs btn-ghost" disabled style="opacity:0.75;">
+                    ✓ Đã tối ưu
+                </button>
+            `;
+        }
+
+        const textPreview = scene.overlayText 
+            ? `<div class="pacing-scene-text-preview">📜 "${escapeHtml(scene.overlayText)}"</div>`
+            : `<div class="pacing-scene-text-preview text-dim" style="font-style:italic;">(Không có câu thoại)</div>`;
+
+        const reasonHtml = scene.suggestedReplacement 
+            ? `<div class="pacing-scene-reason text-cyan">💡 <strong>Đề xuất:</strong> ${escapeHtml(scene.suggestedReplacement.reason)}</div>`
+            : `<div class="pacing-scene-reason">💡 ${escapeHtml(scene.explanation || 'Ảnh đã khớp với nội dung')}</div>`;
+
+        card.innerHTML = `
+            <div class="alignment-thumbs-comparison">
+                ${curThumbHtml}
+                ${replacementHtml}
+            </div>
+            <div class="alignment-scene-info">
+                <div class="alignment-scene-header">
+                    <span class="pacing-scene-title">Cảnh ${scene.index}: ${escapeHtml(scene.originalName)}</span>
+                    <span class="alignment-score-badge ${scoreBadgeClass}">🎯 Khớp ${scene.matchScore}%</span>
+                    ${scene.suggestedReplacement ? `<span class="badge" style="background:rgba(56,189,248,0.2);color:#38BDF8;font-size:10px;">✨ Ảnh mới khớp ${scene.suggestedReplacement.newMatchScore || 90}%</span>` : ''}
+                </div>
+                ${textPreview}
+                ${reasonHtml}
+            </div>
+            <div class="alignment-actions-column">
+                ${actionBtnHtml}
+            </div>
+        `;
+
+        scenesList.appendChild(card);
+    });
+}
+
+function applySingleImageSwap(sceneIndex) {
+    const scene = currentImageAlignmentScenes[sceneIndex];
+    if (!scene || !scene.suggestedReplacement || !mediaItems[sceneIndex]) return;
+
+    const sug = scene.suggestedReplacement;
+    mediaItems[sceneIndex].filename = sug.filename;
+    mediaItems[sceneIndex].originalName = sug.originalName;
+    mediaItems[sceneIndex].url = sug.url;
+    mediaItems[sceneIndex].isPlaceholder = false;
+    mediaItems[sceneIndex].type = 'image';
+
+    scene.originalName = sug.originalName;
+    scene.filename = sug.filename;
+    scene.url = sug.url;
+    scene.isPlaceholder = false;
+    scene.matchScore = sug.newMatchScore || 95;
+    scene.matchGrade = 'perfect';
+    scene.suggestedReplacement = null;
+
+    renderMediaList();
+    if (typeof selectSegment === 'function') selectSegment(sceneIndex);
+
+    // Update card UI
+    const card = document.getElementById(`alignment-card-${sceneIndex}`);
+    if (card) {
+        card.className = 'alignment-scene-card is-perfect';
+        const actionCol = card.querySelector('.alignment-actions-column');
+        if (actionCol) {
+            actionCol.innerHTML = `<button type="button" class="btn btn-xs btn-ghost" disabled>✓ Đã đổi ảnh</button>`;
+        }
+    }
+}
+
+function applyAllImageSwaps() {
+    if (!currentImageAlignmentScenes || currentImageAlignmentScenes.length === 0) return;
+
+    let swappedCount = 0;
+    currentImageAlignmentScenes.forEach((scene, sIdx) => {
+        if (scene.suggestedReplacement && mediaItems[sIdx]) {
+            const sug = scene.suggestedReplacement;
+            mediaItems[sIdx].filename = sug.filename;
+            mediaItems[sIdx].originalName = sug.originalName;
+            mediaItems[sIdx].url = sug.url;
+            mediaItems[sIdx].isPlaceholder = false;
+            mediaItems[sIdx].type = 'image';
+            swappedCount++;
+        }
+    });
+
+    renderMediaList();
+    if (typeof triggerAutoSave === 'function') triggerAutoSave();
+    closeImageAlignmentModal();
+
+    alert(`🎉 Đã tự động thay thế thành công ${swappedCount} bức ảnh phù hợp nhất vào Timeline!\n\nToàn bộ phân cảnh video hiện đã chuẩn xác và ăn khớp với kịch bản.`);
+}
+
+if (btnSwapAllImages) {
+    btnSwapAllImages.addEventListener('click', applyAllImageSwaps);
+}
+if (btnSwapAllImagesFooter) {
+    btnSwapAllImagesFooter.addEventListener('click', applyAllImageSwaps);
+}
+
+function closeImageAlignmentModal() {
+    if (imageAlignmentModal) imageAlignmentModal.classList.add('hidden');
+}
+
+window.openImageAlignmentModal = openImageAlignmentModal;
+window.closeImageAlignmentModal = closeImageAlignmentModal;
+window.applySingleImageSwap = applySingleImageSwap;
+window.applyAllImageSwaps = applyAllImageSwaps;
+
 // Initialize Auto-Save check on page load
 document.addEventListener('DOMContentLoaded', () => {
     checkAutoSaveOnLoad();

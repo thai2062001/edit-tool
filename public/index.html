@@ -40,6 +40,9 @@
                     <button id="btn-open-ai-modal" class="btn btn-ai btn-small" title="Tự động phân tích kịch bản và khớp các phân cảnh">
                         <span class="icon">🤖</span> Khớp Kịch Bản (AI)
                     </button>
+                    <button id="btn-audit-image-alignment" class="btn btn-ai btn-small" title="AI Đánh giá xem hình ảnh đã khớp nội dung câu kịch bản chưa, gợi ý đổi ảnh chuẩn hơn từ kho ảnh">
+                        <span class="icon">🖼️</span> Khớp Hình Ảnh (AI)
+                    </button>
                     <button id="btn-audit-script-pacing" class="btn btn-ai btn-small" title="AI Đánh giá xem ảnh & thời lượng đã khớp kịch bản chưa, tự động cân chỉnh nhanh/chậm">
                         <span class="icon">⚖️</span> Khớp Script & Nhịp Điệu (AI)
                     </button>
@@ -438,6 +441,9 @@
                             <span class="badge-total-duration">⏱️ Tổng thời lượng: <strong id="total-est-duration">0.0s</strong></span>
                         </div>
                         <div class="timeline-quick-actions">
+                            <button type="button" id="btn-quick-image-alignment" class="btn btn-xs btn-ai" title="AI Đánh giá xem hình ảnh từng cảnh đã khớp kịch bản chưa và tự động đổi ảnh tối ưu">
+                                🖼️ Khớp Hình Ảnh
+                            </button>
                             <button type="button" id="btn-quick-pacing-audit" class="btn btn-xs btn-ai" title="AI Đánh giá xem ảnh đã khớp script chưa và tự động cân chỉnh thời lượng nhanh/chậm">
                                 ⚖️ Khớp Script & Nhịp Điệu
                             </button>
@@ -1684,6 +1690,72 @@
                         </button>
                         <button type="button" id="btn-apply-all-pacing-footer" class="btn btn-primary btn-small">
                             ⚡ Áp Dụng Toàn Bộ Đề Xuất Thời Lượng Vào Timeline
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 1: AI Visual-Script Match & Smart Image Swapper Modal -->
+    <div id="image-alignment-modal" class="modal hidden">
+        <div class="modal-backdrop" onclick="closeImageAlignmentModal()"></div>
+        <div class="modal-dialog audit-dialog modal-alignment-dialog">
+            <div class="modal-header">
+                <div class="modal-header-title">
+                    <span class="ai-badge">🖼️ Visual Match & Smart Swapper</span>
+                    <h3>Đánh Giá Độ Khớp Hình Ảnh & Tự Động Đổi Ảnh Tối Ưu</h3>
+                </div>
+                <button class="btn-close" onclick="closeImageAlignmentModal()">✕</button>
+            </div>
+            <div class="modal-body audit-body">
+                <!-- State: Loading / Auditing -->
+                <div id="alignment-audit-loading" class="audit-loading-state">
+                    <div class="spinner-neon"></div>
+                    <h4 class="mt-3 text-cyan">🤖 Gemini AI đang so khớp hình ảnh từng cảnh với nội dung kịch bản...</h4>
+                    <p class="text-xs text-dim mt-1">Đang rà soát toàn bộ thư viện ảnh để tìm bức ảnh xuất sắc nhất cho các câu thoại</p>
+                </div>
+
+                <!-- State: Results -->
+                <div id="alignment-audit-result" class="alignment-audit-result hidden">
+                    <!-- Overview Header Card -->
+                    <div class="audit-score-card">
+                        <div class="audit-score-circle" id="alignment-score-circle">
+                            <span id="alignment-score-val" class="score-number">85</span>
+                            <span class="score-label">ĐỘ KHỚP</span>
+                        </div>
+                        <div class="audit-verdict-wrap">
+                            <h4 id="alignment-verdict" class="audit-verdict-text">Độ khớp hình ảnh tốt!</h4>
+                            <p class="text-xs text-dim mt-1" id="alignment-submeta">Phân tích 12 phân cảnh • Đã tìm thấy 3 ảnh thay thế tối ưu hơn trong thư viện</p>
+                            
+                            <div class="pacing-quick-stats-row mt-2">
+                                <span class="badge-pacing badge-too-fast" id="badge-align-mismatch">⚠️ 0 cảnh chưa khớp</span>
+                                <span class="badge-pacing badge-too-slow" id="badge-align-acceptable">ℹ️ 0 cảnh chấp nhận được</span>
+                                <span class="badge-pacing badge-optimal" id="badge-align-perfect">✨ 0 cảnh khớp chuẩn</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Scene by Scene List Header -->
+                    <div class="pacing-scenes-header mt-3 flex-between">
+                        <h5 style="margin: 0;">🖼️ Đánh Giá Độ Khớp & Đề Xuất Đổi Ảnh Theo Từng Cảnh:</h5>
+                        <button type="button" id="btn-swap-all-images" class="btn btn-primary btn-small">
+                            ⚡ Tự Động Đổi Toàn Bộ Ảnh Chưa Khớp
+                        </button>
+                    </div>
+
+                    <!-- Scene by Scene Cards List -->
+                    <div id="alignment-scenes-list" class="alignment-scenes-list custom-scrollbar mt-2">
+                        <!-- Dynamic scenes injected here -->
+                    </div>
+
+                    <!-- Footer Action Buttons -->
+                    <div class="audit-footer mt-3 flex-between">
+                        <button type="button" class="btn btn-secondary btn-small" onclick="closeImageAlignmentModal()">
+                            Đóng
+                        </button>
+                        <button type="button" id="btn-swap-all-images-footer" class="btn btn-primary btn-small">
+                            ⚡ Thay Thế Toàn Bộ Ảnh Đề Xuất Vào Timeline
                         </button>
                     </div>
                 </div>
