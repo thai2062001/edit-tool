@@ -25,8 +25,6 @@ const btnSampleDemo = document.getElementById('btn-sample-demo');
 const btnSaveProject = document.getElementById('btn-save-project');
 const btnOpenProject = document.getElementById('btn-open-project');
 const inputProjectFile = document.getElementById('input-project-file');
-const btnRestoreAutosave = document.getElementById('btn-restore-autosave');
-const btnDismissAutosave = document.getElementById('btn-dismiss-autosave');
 
 // Aspect ratio selector & Smart Reframe Toggle
 const rowReframeMode = document.getElementById("row-reframe-mode");
@@ -127,12 +125,7 @@ if (inputProjectFile) {
         }
     });
 }
-if (btnRestoreAutosave) {
-    btnRestoreAutosave.addEventListener('click', restoreAutoSave);
-}
-if (btnDismissAutosave) {
-    btnDismissAutosave.addEventListener('click', dismissAutoSave);
-}
+
 
 // Drag and drop handling
 uploadZone.addEventListener('dragover', (e) => {
@@ -2426,63 +2419,14 @@ btnApplyAiTimeline.addEventListener('click', () => {
 
 
 // =========================================================================
-// PROJECT AUTO-SAVE, EXPORT & IMPORT SYSTEM
+// PROJECT EXPORT & IMPORT SYSTEM (Auto-save disabled per user request)
 // =========================================================================
-let autoSaveTimer = null;
+try {
+    localStorage.removeItem('edt_project_autosave');
+} catch (e) {}
 
 function triggerAutoSave() {
-    clearTimeout(autoSaveTimer);
-    autoSaveTimer = setTimeout(() => {
-        if (mediaItems.length === 0 && !bgmTrack) return;
-        try {
-            const projectData = {
-                version: '1.0',
-                timestamp: Date.now(),
-                mediaItems,
-                bgmTrack,
-                currentSettings
-            };
-            localStorage.setItem('edt_project_autosave', JSON.stringify(projectData));
-        } catch (e) {
-            console.warn('Auto-save error:', e);
-        }
-    }, 800);
-}
-
-function checkAutoSaveOnLoad() {
-    try {
-        const saved = localStorage.getItem('edt_project_autosave');
-        if (!saved) return;
-        const project = JSON.parse(saved);
-        if (project && project.mediaItems && project.mediaItems.length > 0 && mediaItems.length === 0) {
-            const banner = document.getElementById('autosave-banner');
-            const timeLabel = document.getElementById('autosave-time-label');
-            if (banner && timeLabel) {
-                const date = new Date(project.timestamp || Date.now());
-                timeLabel.textContent = `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')} (${project.mediaItems.length} ảnh/clip)`;
-                banner.classList.remove('hidden');
-            }
-        }
-    } catch (e) {}
-}
-
-function restoreAutoSave() {
-    try {
-        const saved = localStorage.getItem('edt_project_autosave');
-        if (!saved) return;
-        const project = JSON.parse(saved);
-        applyLoadedProject(project);
-        const banner = document.getElementById('autosave-banner');
-        if (banner) banner.classList.add('hidden');
-        alert(`🎉 Đã khôi phục thành công dự án với ${project.mediaItems.length} phân đoạn!`);
-    } catch (e) {
-        alert('Lỗi khôi phục: ' + e.message);
-    }
-}
-
-function dismissAutoSave() {
-    const banner = document.getElementById('autosave-banner');
-    if (banner) banner.classList.add('hidden');
+    // Disabled: Không lưu ảnh/video vào RAM/localStorage
 }
 
 // Export Project File (.json / .edtproject)
@@ -3126,11 +3070,7 @@ window.closeImageAlignmentModal = closeImageAlignmentModal;
 window.applySingleImageSwap = applySingleImageSwap;
 window.applyAllImageSwaps = applyAllImageSwaps;
 
-// Initialize Auto-Save check on page load
-document.addEventListener('DOMContentLoaded', () => {
-    checkAutoSaveOnLoad();
-});
-setTimeout(checkAutoSaveOnLoad, 300);
+
 
 
 
