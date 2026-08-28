@@ -654,6 +654,17 @@ function drawStudioCanvasFrame(index, progress = 0) {
             vid.preload = 'auto';
             vid.muted = true;
             vid.playsInline = true;
+            
+            // Force redraw as soon as video frame is decoded or seek completes
+            const onFrameReady = () => {
+                if (activeSegmentIndex === index && !isStudioPlayingAll && !isStudioPlayingSingle) {
+                    drawStudioCanvasFrame(index, progress);
+                }
+            };
+            vid.addEventListener('loadeddata', onFrameReady);
+            vid.addEventListener('seeked', onFrameReady);
+            vid.addEventListener('canplay', onFrameReady);
+
             studioLoadedVideos.set(item.url, vid);
         }
 
@@ -661,8 +672,10 @@ function drawStudioCanvasFrame(index, progress = 0) {
         const targetVideoTime = trimStart + (progress * dur);
 
         // Keep video frame synchronized with canvas progress
-        if (Math.abs(vid.currentTime - targetVideoTime) > 0.3 && !vid.seeking) {
-            vid.currentTime = targetVideoTime;
+        if (Math.abs(vid.currentTime - targetVideoTime) > 0.1 && !vid.seeking) {
+            try {
+                vid.currentTime = targetVideoTime;
+            } catch (e) {}
         }
 
         ctx.fillStyle = '#000';
