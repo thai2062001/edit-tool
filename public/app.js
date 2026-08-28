@@ -655,21 +655,19 @@ function renderImageFrameOnCanvas(ctx, canvas, item, img, progress) {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Calculate smart aspect-ratio cover dimensions matching FFmpeg
+    // Calculate smart aspect-ratio cover crop coordinates matching FFmpeg preScaleFilter
     const imgW = img.naturalWidth || img.width || canvas.width;
     const imgH = img.naturalHeight || img.height || canvas.height;
     const imgRatio = imgW / imgH;
     const canvasRatio = canvas.width / canvas.height;
 
-    let drawW = canvas.width;
-    let drawH = canvas.height;
-
+    let sx = 0, sy = 0, sWidth = imgW, sHeight = imgH;
     if (imgRatio > canvasRatio) {
-        drawH = canvas.height;
-        drawW = canvas.height * imgRatio;
+        sWidth = imgH * canvasRatio;
+        sx = (imgW - sWidth) / 2;
     } else {
-        drawW = canvas.width;
-        drawH = canvas.width / imgRatio;
+        sHeight = imgW / canvasRatio;
+        sy = (imgH - sHeight) / 2;
     }
 
     let zoom = 1.0;
@@ -727,7 +725,7 @@ function renderImageFrameOnCanvas(ctx, canvas, item, img, progress) {
     ctx.globalAlpha = alpha;
     ctx.translate(canvas.width / 2, canvas.height / 2);
     ctx.scale(zoom, zoom);
-    ctx.drawImage(img, -drawW / 2 + offsetX, -drawH / 2 + offsetY, drawW, drawH);
+    ctx.drawImage(img, sx, sy, sWidth, sHeight, -canvas.width / 2 + offsetX, -canvas.height / 2 + offsetY, canvas.width, canvas.height);
     ctx.restore();
 
     // Render Text Overlay (Smart Auto Word-Wrap to prevent overflow)
