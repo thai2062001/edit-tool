@@ -10,9 +10,9 @@ Toggle Airplane mode half a dozen times, and a massive "No Service" alert slaps 
 
 Thinking your Wi-Fi router kicked the bucket, you slip on your Crocs and sprint straight out the door.
 
-And then you freeze: Your entire street is packed with bewildered neighbors holding their phones high toward the sky!
+And then you freeze: You step outside and find your neighbors wandering around their front lawns, squinting at their dead screens in utter confusion!
 
-It literally looks like they're performing a sacred ancient ritual praying desperately to the Signal Gods!
+People are tapping their phone backs, rebooting devices, and shouting across fences: "Hey, is your Wi-Fi down too?!".
 
 Congratulations, America! This isn't just a glitch or a shark chewing through underwater fiber-optic cables.
 
