@@ -1147,27 +1147,38 @@ app.post('/api/render', async (req, res) => {
 });
 
 // Helper to build FFmpeg drawtext filter for Text Overlay
-// Helper to auto-wrap long subtitle text to prevent edge overflow
+// Helper to auto-wrap long subtitle text to prevent edge overflow while preserving manual line breaks
 function wrapTextSmart(text, maxChars = 50) {
-    if (!text || text.length <= maxChars) return text;
-    const words = text.split(/\s+/);
-    const lines = [];
-    let currentLine = '';
+    if (!text) return '';
+    const paragraphs = text.split(/\r?\n/);
+    const finalLines = [];
 
-    words.forEach(word => {
-        if (!currentLine) {
-            currentLine = word;
-        } else if ((currentLine + ' ' + word).length <= maxChars) {
-            currentLine += ' ' + word;
-        } else {
-            lines.push(currentLine);
-            currentLine = word;
+    paragraphs.forEach(para => {
+        const trimmed = para.trim();
+        if (!trimmed) return;
+        if (trimmed.length <= maxChars) {
+            finalLines.push(trimmed);
+            return;
+        }
+
+        const words = trimmed.split(/\s+/);
+        let currentLine = '';
+        words.forEach(word => {
+            if (!currentLine) {
+                currentLine = word;
+            } else if ((currentLine + ' ' + word).length <= maxChars) {
+                currentLine += ' ' + word;
+            } else {
+                finalLines.push(currentLine);
+                currentLine = word;
+            }
+        });
+        if (currentLine) {
+            finalLines.push(currentLine);
         }
     });
-    if (currentLine) {
-        lines.push(currentLine);
-    }
-    return lines.join('\n');
+
+    return finalLines.join('\n');
 }
 
 // Helper to build FFmpeg drawtext filter for Text Overlay safely via textfile
@@ -1238,11 +1249,17 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
         const { width, height, fps, crf, preset, reframeMode } = config;
         const args = ['-y'];
 
-        // Ensure fallback 1x1 black image exists for empty placeholder scenes
+        // Ensure fallback 1920x1080 black image exists for empty placeholder scenes
         const defaultPlaceholderPath = path.join(OUTPUTS_DIR, 'default_placeholder.png');
         if (!fs.existsSync(defaultPlaceholderPath)) {
-            const png1x1 = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64');
-            fs.writeFileSync(defaultPlaceholderPath, png1x1);
+            // Write 1920x1080 black placeholder canvas using FFmpeg
+            try {
+                const { execSync } = require('child_process');
+                execSync(`ffmpeg -y -f lavfi -i color=c=black:s=1920x1080:d=1 -vframes 1 "${defaultPlaceholderPath}"`, { stdio: 'ignore' });
+            } catch (e) {
+                const png1x1 = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64');
+                fs.writeFileSync(defaultPlaceholderPath, png1x1);
+            }
         }
 
         chunkItems.forEach((item) => {
@@ -1250,6 +1267,10 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
             if (!fs.existsSync(filePath)) {
                 if (item.path && fs.existsSync(item.path)) {
                     filePath = item.path;
+                } else if (item.filename && fs.existsSync(path.join(__dirname, 'images', item.filename))) {
+                    filePath = path.join(__dirname, 'images', item.filename);
+                } else if (item.filename && fs.existsSync(path.join(__dirname, 'public', 'images', item.filename))) {
+                    filePath = path.join(__dirname, 'public', 'images', item.filename);
                 } else if (item.filename && fs.existsSync(path.join(OUTPUTS_DIR, item.filename))) {
                     filePath = path.join(OUTPUTS_DIR, item.filename);
                 } else {

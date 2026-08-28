@@ -868,11 +868,43 @@ function bindQuickInspectorInputs() {
         }
     });
 
+    const btnApplyTextStyleAll = document.getElementById("btn-apply-text-style-all");
+    if (btnApplyTextStyleAll) {
+        btnApplyTextStyleAll.addEventListener("click", applyTextStyleToAllScenes);
+    }
+
     const btnPlay = document.getElementById("studio-btn-play");
     if (btnPlay) btnPlay.addEventListener("click", playStudioSequence);
 
     const btnPlayScene = document.getElementById("studio-btn-play-scene");
     if (btnPlayScene) btnPlayScene.addEventListener("click", playSingleScene);
+}
+
+function applyTextStyleToAllScenes() {
+    if (mediaItems.length === 0) {
+        alert('Chưa có phân cảnh nào trên Timeline!');
+        return;
+    }
+    const currentPos = document.getElementById('insp-textpos')?.value || 'bottom';
+    const currentStyle = document.getElementById('insp-textstyle')?.value || 'banner';
+    const currentSize = parseInt(document.getElementById('insp-textsize')?.value) || 48;
+
+    mediaItems.forEach(item => {
+        if (!item.settings) item.settings = {};
+        item.settings.textPosition = currentPos;
+        item.settings.textStyle = currentStyle;
+        item.settings.fontSize = currentSize;
+    });
+
+    renderMediaList();
+    if (typeof drawStudioCanvasFrame === 'function') {
+        drawStudioCanvasFrame(activeSegmentIndex, 0);
+    }
+    triggerAutoSave();
+
+    const styleNames = { banner: 'Banner mờ', outline: 'Viền đen', glow: 'Neon sáng', plain: 'Chữ trắng' };
+    const posNames = { bottom: 'Dưới đáy', center: 'Giữa khung', top: 'Trên đỉnh' };
+    alert(`✨ Đã đồng bộ thành công:\n• Kiểu chữ: ${styleNames[currentStyle] || currentStyle}\n• Vị trí: ${posNames[currentPos] || currentPos}\n• Cỡ chữ: ${currentSize}px\n\nCho toàn bộ ${mediaItems.length} phân cảnh trên Timeline!`);
 }
 
 // Bind studio inspector and batch events on DOMContentLoaded
@@ -2027,6 +2059,9 @@ btnApplyAiTimeline.addEventListener('click', () => {
             if (scene.sceneText) {
                 cloned.settings.overlayText = scene.sceneText;
             }
+            cloned.settings.textPosition = cloned.settings.textPosition || 'bottom';
+            cloned.settings.textStyle = cloned.settings.textStyle || 'banner';
+            cloned.settings.fontSize = cloned.settings.fontSize || 48;
             cloned.isPlaceholder = false;
             newTimeline.push(cloned);
         } else {
