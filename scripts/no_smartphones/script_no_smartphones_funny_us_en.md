@@ -18,13 +18,13 @@ Let’s dive into the hilarious chaos, daily struggles, and unexpected comedy of
 
 ---
 
-### ACT 1: THE PHANTOM VIBRATION EPIDEMIC & MORNING PANIC
+### ACT 1: THE MINI HEART-ATTACK POCKET CHECK & MORNING PANIC
 
-The first five minutes of the morning would trigger a nationwide wave of pure psychological confusion.
+The first five minutes of the morning would trigger a worldwide wave of sheer collective panic.
 
-Millions of Americans would frantically slap their thighs in public, convinced their pants just vibrated.
+We have all experienced that terrifying split-second: you pat your front pocket, feel absolutely nothing, and your heart instantly drops straight into your stomach thinking you got pickpocketed!
 
-Doctors would officially diagnose ninety percent of the population with "Phantom Pocket Syndrome."
+Millions of people would frantically tear apart their bedrooms, ripping off bedsheets and diving under sofa cushions in total despair.
 
 You roll over in bed waiting for your gentle, soothing Marimba alarm tone to wake you up.
 
@@ -64,7 +64,21 @@ You don't look like a stylish modern commuter; you look like a tech-hoarder prep
 
 ---
 
-### ACT 3: THE BATHROOM CRISIS – SHAMPOO BOTTLE LITERATURE
+### ACT 3: THE BEAUTY CRISIS – MAKEUP WITHOUT TIKTOK TUTORIALS
+
+For women everywhere, losing smartphones means an instant beauty catastrophe!
+
+Ninety-nine percent of young people learned winged eyeliner, contouring, and skincare from thirty-second TikTok gurus.
+
+Without a phone propped by the mirror to pause step-by-step, one shaky hand twitch sends your eyeliner soaring straight into your forehead!
+
+Contouring without a video leaves your face looking like you lost a fistfight with a chocolate bar.
+
+And the ultimate shockwave? Beauty filters are gone forever—forcing everyone to walk outside with one hundred percent real, unfiltered skin!
+
+---
+
+### ACT 4: THE BATHROOM CRISIS – SHAMPOO BOTTLE LITERATURE
 
 Let’s address the elephant in the room that nobody likes to talk about: the bathroom experience.
 
@@ -86,7 +100,7 @@ Plumbers across the globe will report a seventy percent drop in clogged toilets 
 
 ---
 
-### ACT 4: THE PAPER MAP ORIGAMI NIGHTMARE & ASKING STRANGERS
+### ACT 5: THE PAPER MAP ORIGAMI NIGHTMARE & ASKING STRANGERS
 
 Remember the last time you navigated to a new restaurant without Google Maps or Apple Maps guiding you turn-by-turn? Exactly, you never have.
 
@@ -108,29 +122,23 @@ People will actually have to learn how to read street signs, look at the positio
 
 ---
 
-### ACT 5: THE RETURN OF PAYPHONES & MEMORIZING NUMBERS
+### ACT 6: THE LANDLINE CALLER ROULETTE & MEMORIZING NUMBERS
 
 Quick question: how many phone numbers do you have memorized right now other than your own?
 
-Probably zero, or maybe your mom’s landline number from twenty years ago.
+Probably zero, because our brains have completely outsourced memory storage to contact apps.
 
-Our brains have outsourced all memory storage to contact apps, rendering our natural cognitive memory completely dormant.
+Without smartphones, humanity returns to the chaotic era of corded household landlines.
 
-In a smartphone-free world, your brain has to reboot its biological hard drive.
+And the ultimate terror? No Caller ID! Every ringing phone is a game of Russian roulette where you have zero clue who's on the line.
 
-You will carry a tiny, beat-up black address book everywhere, flipping through dog-eared alphabetical tabs just to find your best friend’s digits.
+Want to call your crush for a private chat? You have to dial their family landline and pray to the gods their strict dad doesn't pick up!
 
-Streets and airport terminals will see the glorious, cinematic comeback of coin-operated public payphones!
-
-Picture sprinting across a crowded subway terminal, digging through your pockets for two shiny quarters, praying the payphone receiver isn't covered in mystery sticky grime.
-
-And if your friend isn't sitting at home next to their landline when you call? You leave a voicemail and wait six hours like a patient 1990s monk.
-
-"Hey bro, it's Mike. It's 2 PM. Call me back when you get home. Or don't. See you whenever!"
+The second a deep voice barks: "Who is this, and why are you calling my daughter?", you break into a cold sweat more terrifying than a job interview!
 
 ---
 
-### ACT 6: TAKING PHOTOS – 36 SHOTS & TWO WEEKS OF SUSPENSE
+### ACT 7: TAKING PHOTOS – 36 SHOTS & TWO WEEKS OF SUSPENSE
 
 Today, humans take an estimated five billion digital photos every single day.
 
@@ -152,7 +160,7 @@ And yet, every single one of those thirty-six photos will feel ten times more pr
 
 ---
 
-### ACT 7: THE TERRIFYING RETURN OF AWKWARD PUBLIC EYE CONTACT
+### ACT 8: THE TERRIFYING RETURN OF AWKWARD PUBLIC EYE CONTACT
 
 Have you ever noticed what happens in an elevator the split second the doors slide shut?
 
@@ -166,7 +174,7 @@ People will be forced to revive the ancient, forgotten craft of casual small tal
 
 "So... crazy weather we're having today, huh Bob?"
 
-"Sure is, Susan. Sure is."
+"Sure is, Susan. Susan."
 
 On subway trains and city buses, people won’t be staring down at glowing screens with hunched necks like robotic zombies.
 
@@ -176,7 +184,7 @@ Spontaneous friendships, creative brainstorming on paper napkins, and real-world
 
 ---
 
-### ACT 8: DINING OUT – THE EXTINCTION OF QR CODE MENUS & YELP KARENS
+### ACT 9: DINING OUT – THE EXTINCTION OF QR CODE MENUS & YELP KARENS
 
 Walk into any restaurant today, and the first thing you see is a tiny, annoying black-and-white QR code glued to the center of your table.
 
@@ -200,7 +208,7 @@ Someone throws down a crisp twenty-dollar bill, someone else covers the tip, and
 
 ---
 
-### ACT 9: ROMANCE & DATING – THE DEATH OF SWIPING RIGHT
+### ACT 10: ROMANCE & DATING – THE DEATH OF SWIPING RIGHT
 
 Online dating apps have transformed modern romance into a giant digital catalog of endless human options.
 
@@ -220,7 +228,7 @@ Rejection happens face-to-face in real time, but so does genuine chemistry, shar
 
 ---
 
-### ACT 10: THE BRAIN REBOOT – ATTENTION SPANS & DEEP FOCUS
+### ACT 11: THE BRAIN REBOOT – ATTENTION SPANS & DEEP FOCUS
 
 Over the past fifteen years, the average human attention span has dropped from twelve seconds down to just eight seconds—officially shorter than a goldfish.
 
@@ -240,7 +248,7 @@ Insomnia rates plummet across the planet because nobody is blasting high-intensi
 
 ---
 
-### ACT 11: WOULD HUMANITY ACTUALLY BE HAPPIER?
+### ACT 12: WOULD HUMANITY ACTUALLY BE HAPPIER?
 
 Of course, living without smartphones wouldn't be all sunshine and romantic nostalgia.
 

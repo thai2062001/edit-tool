@@ -18,13 +18,13 @@ Hãy cùng bước vào thế giới hỗn loạn đầy hài hước, những p
 
 ---
 
-### HỒI 1: CƠN SỐT "RUNG TÚI QUẦN ẢO GIÁC" & NỖI HOẢNG LOẠN BUỔI SÁNG
+### HỒI 1: CƠN ĐAU TIM KINH ĐIỂN MỖI KHI SỜ TÚI QUẦN & NỖI HOẢNG LOẠN BUỔI SÁNG
 
-Năm phút đầu tiên của buổi sáng sẽ châm ngòi cho một làn sóng hoang mang tâm lý trên toàn thế giới.
+Năm phút đầu tiên của buổi sáng sẽ châm ngòi cho một làn sóng hoảng loạn tập thể trên toàn thế giới.
 
-Hàng triệu người sẽ liên tục tự vỗ đùi bôm bốp giữa chốn đông người, đinh ninh rằng túi quần mình vừa mới rung lên.
+Ai trong chúng ta cũng từng trải qua cảm giác này: chỉ cần sờ tay vào túi quần mà thấy trống rỗng là tim lập tức nhảy vọt lên cổ họng, mồ hôi toát ra đầm đìa vì tưởng vừa bị móc túi!
 
-Các bác sĩ sẽ chính thức chẩn đoán chín mươi phần trăm dân số mắc chứng "Hội chứng Rung túi quần ảo giác".
+Hàng triệu người sẽ lật tung mọi ngăn kéo, bới tung đệm giường và chui xuống gầm ghế sofa để tìm kiếm trong tuyệt vọng.
 
 Bạn nằm lăn lộn trên giường, chờ đợi tiếng chuông báo thức Marimba du dương êm ái đánh thức mình dậy.
 
@@ -64,7 +64,21 @@ Trông bạn chẳng giống một nhân viên văn phòng sành điệu chút n
 
 ---
 
-### HỒI 3: KHỦNG HOẢNG NHÀ VỆ SỐNG & VĂN HỌC TRÊN CHAI DẦU GỘI
+### HỒI 3: THẢM HỌA MAKEUP – KHI CHỊ EM MẤT TIKTOK DẠY TRANG ĐIỂM
+
+Với hội chị em, mất smartphone đồng nghĩa với thảm họa nhan sắc toàn cầu!
+
+Chín mươi chín phần trăm thế hệ trẻ học kẻ mắt, đánh khối và dưỡng da từ các video TikTok ba mươi giây.
+
+Không có điện thoại dựng trước gương để bấm tạm dừng từng bước, kẻ mắt nước lỡ run tay một phát là đuôi mắt bay thẳng lên tận trán!
+
+Đánh khối không có video hướng dẫn thì khuôn mặt nhìn lem nhem như vừa đi đánh nhau với một thanh socola.
+
+Và cú sốc lớn nhất? Filter mịn da biến mất hoàn toàn—buộc tất cả phải tự tin bước ra đường với gương mặt mộc một trăm phần trăm!
+
+---
+
+### HỒI 4: KHỦNG HOẢNG NHÀ VỆ SINH & VĂN HỌC TRÊN CHAI DẦU GỘI
 
 Hãy nói về chủ đề nhạy cảm mà chẳng ai muốn thừa nhận: trải nghiệm đi vệ sinh.
 
@@ -86,7 +100,7 @@ Thợ sửa ống nước trên khắp hành tinh ghi nhận số vụ tắc b�
 
 ---
 
-### HỒI 4: ÁC MỘNG GẤP BẢN ĐỒ GIẤY & NỖI SỢ HỎI ĐƯỜNG NGƯỜI LẠ
+### HỒI 5: ÁC MỘNG GẤP BẢN ĐỒ GIẤY & NỖI SỢ HỎI ĐƯỜNG NGƯỜI LẠ
 
 Lần cuối cùng bạn tự lái xe đến một quán ăn mới mà không cần Google Maps chỉ đường từng ngã rẽ là khi nào? Đúng rồi đấy, bạn chưa từng làm vậy bao giờ.
 
@@ -108,29 +122,24 @@ Mọi người sẽ thực sự phải học lại cách đọc biển báo giao
 
 ---
 
-### HỒI 5: SỰ TRỞ LẠI CỦA BỐT ĐIỆN THOẠI CÔNG CỘNG & BỘ NHỚ NÃO BỘ
+### HỒI 6: ÁC MỘNG GỌI ĐIỆN THOẠI BÀN & BỘ NHỚ NÃO BỘ
 
 Hỏi thật nhé: bạn nhớ được bao nhiêu số điện thoại trong đầu lúc này ngoài số của chính mình?
 
-Có lẽ là con số không tròn trĩnh, hoặc may ra là số điện thoại bàn ở quê từ hai mươi năm trước.
+Chắc chắn là con số không tròn trĩnh, vì bộ não chúng ta đã giao phó toàn bộ trí nhớ cho danh bạ máy móc.
 
-Bộ não của chúng ta đã giao phó toàn bộ việc ghi nhớ cho danh bạ điện thoại, khiến trí nhớ tự nhiên rơi vào trạng thái ngủ đông hoàn toàn.
+Không có smartphone, bạn phải quay về thời dùng điện thoại bàn có dây nối loằng ngoằng.
 
-Trong một thế giới không có smartphone, bộ não của bạn buộc phải khởi động lại ổ cứng sinh học.
+Và nỗi kinh hoàng nhất? Không có màn hình hiện tên người gọi, mỗi lần chuông reo là một ván cược sinh tử không biết bên kia là sếp bắt tăng ca hay ai!
 
-Bạn sẽ mang theo một cuốn sổ danh bạ nhỏ bìa đen sờn rách khắp mọi nơi, lật từng trang chữ cái để tìm số của đứa bạn thân.
+Muốn gọi cho crush tâm sự, bạn phải bấm số máy bàn nhà người ta và run rẩy cầu nguyện: "Lạy trời đừng để ông bố khó tính nhấc máy!".
 
-Các góc phố và nhà ga sẽ chứng kiến sự hồi sinh đầy vinh quang của những bốt điện thoại công cộng nhét tiền xu!
+Vừa nghe giọng bác trai gằn giọng: "Ai đấy? Tìm con gái tôi có việc gì?", là mồ hôi toát ra đầm đìa, tim đập thình thịch còn hơn cả đi phỏng vấn xin việc!
 
-Hãy hình dung cảnh bạn chạy thục mạng qua sảnh ga tàu điện ngầm đông đúc, lục tung túi quần tìm hai đồng xu lẻ, và thầm cầu nguyện ống nghe điện thoại không bị dính vết kẹo cao su bí ẩn nào.
-
-Và nếu đứa bạn không ngồi ở nhà cạnh chiếc điện thoại bàn khi bạn gọi? Bạn để lại lời nhắn thoại và kiên nhẫn chờ sáu tiếng đồng hồ hệt như một nhà tu hành thời thập niên 90.
-
-"Alo mày hả, tao Mike nè. Giờ là 2 giờ chiều. Khi nào về nhà thì gọi lại tao nha. Hoặc khỏi cũng được. Gặp sau!"
 
 ---
 
-### HỒI 6: CHỤP ẢNH CUỘN PHIM 36 KIỂU & NĂM NGÀY HỒI HỘP CHỜ RỬA ẢNH
+### HỒI 7: CHỤP ẢNH CUỘN PHIM 36 KIỂU & NĂM NGÀY HỒI HỘP CHỜ RỬA ẢNH
 
 Ngày nay, con người chụp ước tính khoảng năm tỷ bức ảnh kỹ thuật số mỗi ngày.
 
@@ -152,7 +161,7 @@ Thế nhưng, từng bức ảnh trong số ba mươi sáu tấm ấy sẽ quý 
 
 ---
 
-### HỒI 7: NỖI KINH HOÀNG KHI PHẢI CHẠM MẮT NHAU GIỮA NƠI CÔNG CỘNG
+### HỒI 8: NỖI KINH HOÀNG KHI PHẢI CHẠM MẮT NHAU GIỮA NƠI CÔNG CỘNG
 
 Bạn có bao giờ để ý điều gì sẽ xảy ra trong thang máy ngay khoảnh khắc cánh cửa khép lại không?
 
@@ -176,7 +185,7 @@ Những tình bạn bất ngờ, những ý tưởng sáng tạo được vẽ n
 
 ---
 
-### HỒI 8: ĂN UỐNG NGOÀI HÀNG – SỰ TUYỆT CHỦNG CỦA MÃ QR & NHỮNG REVIEW TIÊU CỰC
+### HỒI 9: ĂN UỐNG NGOÀI HÀNG – SỰ TUYỆT CHỦNG CỦA MÃ QR & NHỮNG REVIEW TIÊU CỰC
 
 Bước vào bất kỳ nhà hàng nào ngày nay, thứ đầu tiên đập vào mắt bạn là một chiếc mã QR đen trắng dán chình ình giữa bàn ăn.
 
@@ -200,7 +209,7 @@ Một người rút tờ tiền lớn ra trả, người khác nhận thanh toá
 
 ---
 
-### HỒI 9: TÌNH YÊU & HẸN HÒ – SỰ BIẾN MẤT CỦA NÚT "QUẸT PHẢI"
+### HỒI 10: TÌNH YÊU & HẸN HÒ – SỰ BIẾN MẤT CỦA NÚT "QUẸT PHẢI"
 
 Các ứng dụng hẹn hò trực tuyến đã biến tình yêu hiện đại thành một cuốn danh mục kỹ thuật số khổng lồ với vô số lựa chọn lướt qua như hàng hóa.
 
@@ -220,7 +229,7 @@ Lời từ chối diễn ra trực tiếp trước mắt, nhưng những rung c�
 
 ---
 
-### HỒI 10: NÃO BỘ HỒI SINH – KHẢ NĂNG TẬP TRUNG SÂU & GIẤC NGỦ THỰC SỰ
+### HỒI 11: NÃO BỘ HỒI SINH – KHẢ NĂNG TẬP TRUNG SÂU & GIẤC NGỦ THỰC SỰ
 
 Trong mười lăm năm qua, khoảng thời gian tập trung trung bình của con người đã tụt dốc từ mười hai giây xuống chỉ còn vỏn vẹn tám giây—chính thức ngắn hơn cả một con cá vàng.
 
@@ -240,7 +249,7 @@ Tỷ lệ mất ngủ giảm mạnh trên toàn cầu vì chẳng còn ai chiế
 
 ---
 
-### HỒI 11: LOÀI NGƯỜI CÓ THỰC SỰ HẠNH PHÚC HƠN?
+### HỒI 12: LOÀI NGƯỜI CÓ THỰC SỰ HẠNH PHÚC HƠN?
 
 Dĩ nhiên, cuộc sống không có smartphone không phải lúc nào cũng là bức tranh màu hồng và những hoài niệm lãng mạn.
 
