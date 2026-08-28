@@ -36,7 +36,7 @@ try {
     console.error('Subtitle module load notice:', subErr.message);
 }
 
-// Setup Multer for file uploads
+// Setup Multer for file uploads (allow large videos up to 2GB)
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, UPLOADS_DIR),
     filename: (req, file, cb) => {
@@ -45,7 +45,12 @@ const storage = multer.diskStorage({
         cb(null, `${uniqueSuffix}${ext}`);
     }
 });
-const upload = multer({ storage });
+const upload = multer({
+    storage,
+    limits: {
+        fileSize: 2048 * 1024 * 1024 // 2GB max file size
+    }
+});
 
 // Active jobs tracker
 const activeJobs = new Map();

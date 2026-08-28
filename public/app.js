@@ -186,10 +186,18 @@ async function handleFilesUpload(files) {
             method: 'POST',
             body: formData
         });
-        const data = await res.json();
+        const text = await res.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            throw new Error(`Máy chủ trả về phản hồi không hợp lệ (HTTP ${res.status}): ${text.slice(0, 120)}`);
+        }
         if (data.success && data.files) {
             mediaItems = [...mediaItems, ...data.files];
             renderMediaList();
+        } else {
+            throw new Error(data.error || 'Không thể tải tệp lên');
         }
     } catch (err) {
         alert('Lỗi tải tệp: ' + err.message);
@@ -221,7 +229,13 @@ async function uploadBgmFile(file) {
             method: 'POST',
             body: formData
         });
-        const data = await res.json();
+        const text = await res.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            throw new Error(`Máy chủ trả về phản hồi không hợp lệ (HTTP ${res.status}): ${text.slice(0, 120)}`);
+        }
         if (data.success && data.files && data.files[0]) {
             const bgm = data.files[0];
             bgmTrack = {
@@ -231,6 +245,8 @@ async function uploadBgmFile(file) {
                 volume: parseFloat(bgmVolume.value)
             };
             updateBgmUI();
+        } else {
+            throw new Error(data.error || 'Không thể tải nhạc nền');
         }
     } catch (err) {
         alert('Lỗi tải nhạc nền: ' + err.message);
@@ -264,6 +280,7 @@ let activeSegmentIndex = 0;
 let studioAnimFrame = null;
 let isStudioPlayingAll = false;
 const studioLoadedImages = new Map();
+const studioLoadedVideos = new Map();
 
 function getMotionShortName(motion) {
     switch (motion) {
@@ -635,15 +652,65 @@ function drawStudioCanvasFrame(index, progress = 0) {
             renderImageFrameOnCanvas(ctx, canvas, item, img, progress);
         }
     } else {
-        ctx.fillStyle = '#050811';
+        // Render real video clip frame onto Canvas
+        let vid = studioLoadedVideos.get(item.url);
+        if (!vid) {
+            vid = document.createElement('video');
+            vid.crossOrigin = 'anonymous';
+            vid.src = item.url;
+            vid.preload = 'auto';
+            vid.muted = true;
+            vid.playsInline = true;
+            studioLoadedVideos.set(item.url, vid);
+        }
+
+        const trimStart = parseFloat(item.settings?.trimStart || 0);
+        const targetVideoTime = trimStart + (progress * dur);
+
+        // Keep video frame synchronized with canvas progress
+        if (Math.abs(vid.currentTime - targetVideoTime) > 0.3 && !vid.seeking) {
+            vid.currentTime = targetVideoTime;
+        }
+
+        ctx.fillStyle = '#000';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#6366F1';
-        ctx.font = 'bold 36px Outfit, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(`🎬 Video: ${item.originalName}`, canvas.width / 2, canvas.height / 2 - 20);
-        ctx.fillStyle = 'rgba(255,255,255,0.7)';
-        ctx.font = '24px Outfit, sans-serif';
-        ctx.fillText(`Thời lượng: ${dur.toFixed(1)}s`, canvas.width / 2, canvas.height / 2 + 30);
+
+        if (vid.readyState >= 2) {
+            const vidW = vid.videoWidth || canvas.width;
+            const vidH = vid.videoHeight || canvas.height;
+            const vidRatio = vidW / vidH;
+            const canvasRatio = canvas.width / canvas.height;
+
+            let sx = 0, sy = 0, sWidth = vidW, sHeight = vidH;
+            if (vidRatio > canvasRatio) {
+                sWidth = vidH * canvasRatio;
+                sx = (vidW - sWidth) / 2;
+            } else {
+                sHeight = vidW / canvasRatio;
+                sy = (vidH - sHeight) / 2;
+            }
+
+            ctx.drawImage(vid, sx, sy, sWidth, sHeight, 0, 0, canvas.width, canvas.height);
+        } else {
+            ctx.fillStyle = '#050811';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#6366F1';
+            ctx.font = 'bold 36px Outfit, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(`🎬 Video: ${item.originalName}`, canvas.width / 2, canvas.height / 2 - 20);
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.font = '24px Outfit, sans-serif';
+            ctx.fillText(`Thời lượng: ${dur.toFixed(1)}s`, canvas.width / 2, canvas.height / 2 + 30);
+        }
+
+        // Render Text Overlay if available
+        const overlayText = item.settings?.overlayText?.trim();
+        if (overlayText) {
+            const textPos = item.settings?.textPosition || 'bottom';
+            const textStyle = item.settings?.textStyle || 'banner';
+            const fontSize = Number(item.settings?.fontSize || 48);
+            renderCanvasTextOverlay(ctx, canvas, overlayText, textPos, textStyle, fontSize);
+        }
     }
 }
 
@@ -740,93 +807,98 @@ function renderImageFrameOnCanvas(ctx, canvas, item, img, progress) {
         const textPos = item.settings?.textPosition || 'bottom';
         const textStyle = item.settings?.textStyle || 'banner';
         const fontSize = Number(item.settings?.fontSize) || 48;
-        const lineHeight = fontSize * 1.35;
-        const maxTextWidth = canvas.width * 0.85; // Leave 7.5% safe margin on each side
+        renderCanvasTextOverlay(ctx, canvas, overlayText, textPos, textStyle, fontSize);
+    }
+}
 
-        ctx.save();
-        ctx.font = `bold ${fontSize}px Outfit, -apple-system, sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
+function renderCanvasTextOverlay(ctx, canvas, overlayText, textPos, textStyle, fontSize) {
+    if (!overlayText) return;
+    const lineHeight = fontSize * 1.35;
+    const maxTextWidth = canvas.width * 0.85; // Leave 7.5% safe margin on each side
 
-        // Word wrap into lines
-        const words = overlayText.split(/\s+/);
-        const lines = [];
-        let currentLine = '';
+    ctx.save();
+    ctx.font = `bold ${fontSize}px Outfit, -apple-system, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
 
-        words.forEach(word => {
-            const testLine = currentLine ? `${currentLine} ${word}` : word;
-            const testWidth = ctx.measureText(testLine).width;
-            if (testWidth > maxTextWidth && currentLine) {
-                lines.push(currentLine);
-                currentLine = word;
-            } else {
-                currentLine = testLine;
-            }
-        });
-        if (currentLine) lines.push(currentLine);
+    // Word wrap into lines
+    const words = overlayText.split(/\s+/);
+    const lines = [];
+    let currentLine = '';
 
-        const totalTextHeight = lines.length * lineHeight;
-        const textX = canvas.width / 2;
-
-        let startY = canvas.height - 120 - (totalTextHeight / 2);
-        if (textPos === 'top') {
-            startY = 100;
-        } else if (textPos === 'center') {
-            startY = (canvas.height - totalTextHeight) / 2;
+    words.forEach(word => {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+        const testWidth = ctx.measureText(testLine).width;
+        if (testWidth > maxTextWidth && currentLine) {
+            lines.push(currentLine);
+            currentLine = word;
         } else {
-            startY = canvas.height - 90 - totalTextHeight;
+            currentLine = testLine;
         }
+    });
+    if (currentLine) lines.push(currentLine);
 
-        if (textStyle === 'banner') {
-            // Find max width among lines
-            let maxLineWidth = 0;
-            lines.forEach(l => {
-                const w = ctx.measureText(l).width;
-                if (w > maxLineWidth) maxLineWidth = w;
-            });
+    const totalTextHeight = lines.length * lineHeight;
+    const textX = canvas.width / 2;
 
-            const boxWidth = Math.min(canvas.width * 0.94, maxLineWidth + 56);
-            const boxHeight = totalTextHeight + 24;
-            const rx = textX - boxWidth / 2;
-            const ry = startY - 12;
-            const r = 12;
+    let startY = canvas.height - 120 - (totalTextHeight / 2);
+    if (textPos === 'top') {
+        startY = 100;
+    } else if (textPos === 'center') {
+        startY = (canvas.height - totalTextHeight) / 2;
+    } else {
+        startY = canvas.height - 90 - totalTextHeight;
+    }
 
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.78)';
-            ctx.beginPath();
-            ctx.moveTo(rx + r, ry);
-            ctx.lineTo(rx + boxWidth - r, ry);
-            ctx.quadraticCurveTo(rx + boxWidth, ry, rx + boxWidth, ry + r);
-            ctx.lineTo(rx + boxWidth, ry + boxHeight - r);
-            ctx.quadraticCurveTo(rx + boxWidth, ry + boxHeight, rx + boxWidth - r, ry + boxHeight);
-            ctx.lineTo(rx + r, ry + boxHeight);
-            ctx.quadraticCurveTo(rx, ry + boxHeight, rx, ry + boxHeight - r);
-            ctx.lineTo(rx, ry + r);
-            ctx.quadraticCurveTo(rx, ry, rx + r, ry);
-            ctx.closePath();
-            ctx.fill();
-        }
+    if (textStyle === 'banner') {
+        // Find max width among lines
+        let maxLineWidth = 0;
+        lines.forEach(l => {
+            const w = ctx.measureText(l).width;
+            if (w > maxLineWidth) maxLineWidth = w;
+        });
 
-        lines.forEach((line, lIdx) => {
-            const lineY = startY + (lIdx * lineHeight) + (lineHeight / 2);
+        const boxWidth = Math.min(canvas.width * 0.94, maxLineWidth + 56);
+        const boxHeight = totalTextHeight + 24;
+        const rx = textX - boxWidth / 2;
+        const ry = startY - 12;
+        const r = 12;
 
-            if (textStyle === 'outline') {
-                ctx.strokeStyle = '#000000';
-                ctx.lineWidth = Math.max(4, fontSize * 0.12);
-                ctx.strokeText(line, textX, lineY);
-            } else if (textStyle === 'glow') {
-                ctx.shadowColor = '#06B6D4';
-                ctx.shadowBlur = 18;
-                ctx.fillStyle = '#FFFFFF';
-                ctx.fillText(line, textX, lineY);
-                ctx.shadowBlur = 0;
-            }
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.78)';
+        ctx.beginPath();
+        ctx.moveTo(rx + r, ry);
+        ctx.lineTo(rx + boxWidth - r, ry);
+        ctx.quadraticCurveTo(rx + boxWidth, ry, rx + boxWidth, ry + r);
+        ctx.lineTo(rx + boxWidth, ry + boxHeight - r);
+        ctx.quadraticCurveTo(rx + boxWidth, ry + boxHeight, rx + boxWidth - r, ry + boxHeight);
+        ctx.lineTo(rx + r, ry + boxHeight);
+        ctx.quadraticCurveTo(rx, ry + boxHeight, rx, ry + boxHeight - r);
+        ctx.lineTo(rx, ry + r);
+        ctx.quadraticCurveTo(rx, ry, rx + r, ry);
+        ctx.closePath();
+        ctx.fill();
+    }
 
+    lines.forEach((line, lIdx) => {
+        const lineY = startY + (lIdx * lineHeight) + (lineHeight / 2);
+
+        if (textStyle === 'outline') {
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = Math.max(4, fontSize * 0.12);
+            ctx.strokeText(line, textX, lineY);
+        } else if (textStyle === 'glow') {
+            ctx.shadowColor = '#06B6D4';
+            ctx.shadowBlur = 18;
             ctx.fillStyle = '#FFFFFF';
             ctx.fillText(line, textX, lineY);
-        });
+            ctx.shadowBlur = 0;
+        }
 
-        ctx.restore();
-    }
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillText(line, textX, lineY);
+    });
+
+    ctx.restore();
 }
 
 const studioAudio = new Audio();
