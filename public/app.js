@@ -463,7 +463,13 @@ function selectSegment(index, shouldScroll = true) {
     cards.forEach((c, idx) => {
         if (idx === index) {
             c.classList.add('active');
-            if (shouldScroll) c.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            if (shouldScroll && mediaList) {
+                // Smoothly scroll only within the horizontal ribbon container, never the page window
+                const ribbonRect = mediaList.getBoundingClientRect();
+                const cardRect = c.getBoundingClientRect();
+                const scrollLeftTarget = mediaList.scrollLeft + (cardRect.left - ribbonRect.left) - (ribbonRect.width / 2) + (cardRect.width / 2);
+                mediaList.scrollTo({ left: scrollLeftTarget, behavior: 'smooth' });
+            }
         } else {
             c.classList.remove('active');
         }
@@ -889,6 +895,32 @@ function playStudioSequence() {
 
         drawStudioCanvasFrame(currentItemIdx, progress);
 
+        // Update timeline global scrubber & time text in real-time
+        let totalTimelineDur = 0;
+        let elapsedSoFar = 0;
+        mediaItems.forEach((it, idx) => {
+            const d = it.type === 'image' ? (it.settings?.duration || 5.0) : Math.max(0.5, (it.settings?.trimEnd || it.duration || 5) - (it.settings?.trimStart || 0));
+            totalTimelineDur += d;
+            if (idx < currentItemIdx) {
+                elapsedSoFar += d;
+            }
+        });
+        const currentDur = currentItem.type === 'image' ? (currentItem.settings?.duration || 5.0) : Math.max(0.5, (currentItem.settings?.trimEnd || currentItem.duration || 5) - (currentItem.settings?.trimStart || 0));
+        const currentPlaySec = elapsedSoFar + (progress * currentDur);
+
+        const scrubberTime = document.getElementById('studio-scrubber-time');
+        const studioScrubber = document.getElementById('studio-scrubber');
+        if (scrubberTime && totalTimelineDur > 0) {
+            const curMin = Math.floor(currentPlaySec / 60);
+            const curSec = Math.floor(currentPlaySec % 60);
+            const totMin = Math.floor(totalTimelineDur / 60);
+            const totSec = Math.floor(totalTimelineDur % 60);
+            scrubberTime.innerText = `${curMin}:${curSec.toString().padStart(2, '0')} / ${totMin}:${totSec.toString().padStart(2, '0')}`;
+        }
+        if (studioScrubber && totalTimelineDur > 0) {
+            studioScrubber.value = ((currentPlaySec / totalTimelineDur) * 100).toFixed(1);
+        }
+
         if (progress >= 1.0) {
             currentItemIdx = (currentItemIdx + 1) % mediaItems.length;
             selectSegment(currentItemIdx, true);
@@ -966,6 +998,33 @@ function playSingleScene() {
 
         const progress = Math.min(1.0, Math.max(0, elapsed / itemDur));
         drawStudioCanvasFrame(activeSegmentIndex, progress);
+
+        // Update scrubber & time during single scene playback
+        let totalTimelineDur = 0;
+        let elapsedSoFar = 0;
+        mediaItems.forEach((it, idx) => {
+            const d = it.type === 'image' ? (it.settings?.duration || 5.0) : Math.max(0.5, (it.settings?.trimEnd || it.duration || 5) - (it.settings?.trimStart || 0));
+            totalTimelineDur += d;
+            if (idx < activeSegmentIndex) {
+                elapsedSoFar += d;
+            }
+        });
+        const currentDur = item.type === 'image' ? (item.settings?.duration || 5.0) : Math.max(0.5, (item.settings?.trimEnd || item.duration || 5) - (item.settings?.trimStart || 0));
+        const currentPlaySec = elapsedSoFar + (progress * currentDur);
+
+        const scrubberTime = document.getElementById('studio-scrubber-time');
+        const studioScrubber = document.getElementById('studio-scrubber');
+        if (scrubberTime && totalTimelineDur > 0) {
+            const curMin = Math.floor(currentPlaySec / 60);
+            const curSec = Math.floor(currentPlaySec % 60);
+            const totMin = Math.floor(totalTimelineDur / 60);
+            const totSec = Math.floor(totalTimelineDur % 60);
+            scrubberTime.innerText = `${curMin}:${curSec.toString().padStart(2, '0')} / ${totMin}:${totSec.toString().padStart(2, '0')}`;
+        }
+        if (studioScrubber && totalTimelineDur > 0) {
+            studioScrubber.value = ((currentPlaySec / totalTimelineDur) * 100).toFixed(1);
+        }
+
         studioAnimFrame = requestAnimationFrame(step);
     }
 
