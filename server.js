@@ -673,7 +673,7 @@ YÊU CẦU:
         let response = null;
         try {
             response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
+                model: 'gemini-3.6-flash',
                 contents: contents,
                 config: { responseMimeType: 'application/json' }
             });
@@ -1772,7 +1772,7 @@ async function executeFFmpegRender(job, items, bgm, config) {
                 const bgmFadeOut = Math.max(0, job.totalDuration - 2);
                 finalArgs.push(
                     '-i', bgmPath,
-                    '-filter_complex', `[1:a]aloop=loop=-1:size=2e+09,atrim=0:${job.totalDuration},asetpts=PTS-STARTPTS,volume=${bgmVol},afade=t=out:st=${bgmFadeOut}:d=2,aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo[bgm_proc]; [0:a][bgm_proc]amix=inputs=2:duration=first:dropout_transition=2[a_mixed]`,
+                    '-filter_complex', `[1:a]aloop=loop=-1:size=2e+09,atrim=0:${job.totalDuration},asetpts=PTS-STARTPTS,volume=${bgmVol},afade=t=in:ss=0:d=0.15,afade=t=out:st=${bgmFadeOut}:d=2,aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo[bgm_proc]; [0:a][bgm_proc]amix=inputs=2:duration=first:dropout_transition=2[a_mixed]`,
                     '-map', '0:v',
                     '-map', '[a_mixed]',
                     '-c:v', 'copy',
