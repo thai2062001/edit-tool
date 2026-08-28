@@ -319,6 +319,7 @@
             subOutlineColor: document.getElementById('sub-style-outline-color'),
             subPosition: document.getElementById('sub-style-position'),
             subAnimationType: document.getElementById('sub-style-animation'),
+            subBtnApplyStyleAll: document.getElementById('sub-btn-apply-style-all'),
 
             // Export & Burn
             subBtnExportAss: document.getElementById('sub-btn-export-ass'),
@@ -570,6 +571,7 @@
         if (dom.subOutlineColor) dom.subOutlineColor.addEventListener('input', updateStyleFromControls);
         if (dom.subPosition) dom.subPosition.addEventListener('change', updateStyleFromControls);
         if (dom.subAnimationType) dom.subAnimationType.addEventListener('change', updateStyleFromControls);
+        if (dom.subBtnApplyStyleAll) dom.subBtnApplyStyleAll.addEventListener('click', applyStyleToAllCuesAndTimeline);
 
         // Export events
         if (dom.subBtnExportAss) dom.subBtnExportAss.addEventListener('click', () => exportSubtitlesFile('ass'));
@@ -1785,6 +1787,39 @@
         dom.subCaptionBox.style.paintOrder = 'stroke fill';
         dom.subCaptionBox.style.webkitTextStroke = `${SubState.style.outlineWidth * 0.45}px ${SubState.style.outlineColor}`;
         dom.subCaptionBox.style.textShadow = `0 2px 4px rgba(0,0,0,0.8), 0 0 ${SubState.style.outlineWidth}px ${SubState.style.outlineColor}`;
+    }
+
+    // Apply Current Typography & Animation Style To All Cues & Timeline Tab 1
+    function applyStyleToAllCuesAndTimeline() {
+        updateStyleFromControls();
+
+        const currentStyle = SubState.style;
+        let mappedTextStyle = 'banner';
+        if (currentStyle.boxBg === 'transparent') {
+            mappedTextStyle = currentStyle.animationType === 'glow' ? 'glow' : 'outline';
+        }
+        const mappedTextPos = currentStyle.position || 'bottom';
+        const mappedFontSize = Math.min(64, Math.max(36, currentStyle.fontSize || 48));
+
+        let timelineUpdated = 0;
+        if (window.mediaItems && window.mediaItems.length > 0) {
+            window.mediaItems.forEach(item => {
+                if (!item.settings) item.settings = {};
+                item.settings.textPosition = mappedTextPos;
+                item.settings.textStyle = mappedTextStyle;
+                item.settings.fontSize = mappedFontSize;
+                timelineUpdated++;
+            });
+            if (typeof window.renderMediaList === 'function') {
+                window.renderMediaList();
+            }
+        }
+
+        applyStyleToOverlay();
+        renderCuesList();
+
+        const fontName = currentStyle.fontFamily || 'Arial';
+        showToast(`✨ Đã áp dụng phong cách (${fontName}, ${currentStyle.fontSize}px, Vị trí: ${mappedTextPos}) cho toàn bộ ${SubState.segments.length} câu phụ đề & ${timelineUpdated} phân cảnh Timeline!`);
     }
 
     // Export Subtitles Files (.ASS, .SRT)
