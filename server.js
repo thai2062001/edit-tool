@@ -692,19 +692,34 @@ YÊU CẦU:
             }
         }
 
-        // Smart Heuristic Fallback: Split script or distribute duration evenly across scenes
+        // Smart Heuristic Fallback: Proportional Word-Weight Natural Speech Pacing
         if (!sentences || sentences.length === 0) {
             if (scriptText) {
-                const rawSentences = scriptText.split(/(?<=[.!?\n])\s+/).filter(s => s.trim().length > 0);
-                const count = Math.max(1, rawSentences.length);
-                const avgDur = parseFloat((totalAudioDuration / count).toFixed(2));
-                sentences = rawSentences.map((text, i) => ({
-                    id: i + 1,
-                    start: parseFloat((i * avgDur).toFixed(2)),
-                    end: parseFloat(Math.min(totalAudioDuration, (i + 1) * avgDur).toFixed(2)),
-                    duration: avgDur,
-                    text: text.trim()
-                }));
+                const rawSentences = scriptText.split(/(?<=[.!?\n])\s+/).map(s => s.trim()).filter(s => s.length > 0);
+                // Calculate natural weights based on word count + punctuation pauses
+                const sentenceWeights = rawSentences.map(text => {
+                    const words = text.split(/\s+/).filter(Boolean).length;
+                    const commas = (text.match(/[,;:]/g) || []).length;
+                    return Math.max(3, words + (commas * 1.5));
+                });
+                const totalWeight = sentenceWeights.reduce((a, b) => a + b, 0) || 1;
+
+                let accumulatedTime = 0;
+                sentences = rawSentences.map((text, i) => {
+                    const weight = sentenceWeights[i];
+                    let dur = parseFloat(((weight / totalWeight) * totalAudioDuration).toFixed(2));
+                    dur = Math.max(2.5, dur);
+                    const start = parseFloat(accumulatedTime.toFixed(2));
+                    const end = parseFloat(Math.min(totalAudioDuration, (start + dur)).toFixed(2));
+                    accumulatedTime = end;
+                    return {
+                        id: i + 1,
+                        start: start,
+                        end: end,
+                        duration: parseFloat(Math.max(2.0, end - start).toFixed(2)),
+                        text: text
+                    };
+                });
             } else {
                 const count = Math.max(1, items.length || 3);
                 const avgDur = parseFloat((totalAudioDuration / count).toFixed(2));
