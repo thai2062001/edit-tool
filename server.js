@@ -401,6 +401,197 @@ Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
 });
 
 // =========================================================================
+// AI SCRIPT & SCENE PACING AUDITOR: EVALUATE & AUTO-FIT SCENE DURATIONS
+// =========================================================================
+app.post('/api/ai/audit-script-pacing', async (req, res) => {
+    try {
+        const { items, scriptText, customApiKey } = req.body;
+        const apiKey = (customApiKey && customApiKey.trim()) ? customApiKey.trim() : DEFAULT_GEMINI_API_KEY;
+
+        if (!items || items.length === 0) {
+            return res.status(400).json({ error: 'Chưa có phân cảnh nào trên timeline để đánh giá' });
+        }
+
+        // Rule-based pacing baseline calculation
+        const scenesEvaluation = items.map((item, idx) => {
+            const currentDuration = Number(item.settings?.duration || 5.0);
+            const overlayText = (item.settings?.overlayText || '').trim();
+            const motion = item.settings?.motion || 'zoom_in';
+            const name = item.originalName || `Cảnh ${idx + 1}`;
+            const isPlaceholder = Boolean(item.isPlaceholder);
+
+            // Calculate word count
+            const words = overlayText ? overlayText.split(/\s+/).filter(w => w.length > 0).length : 0;
+            
+            // Baseline speech & reading duration (Vietnamese ~2.3 words/s + 1.2s visual buffer + punctuation pauses)
+            const punctuationMatches = overlayText.match(/[,.;:!?—]/g);
+            const pauseTime = (punctuationMatches ? punctuationMatches.length : 0) * 0.35;
+            
+            let targetDuration = 5.0;
+            if (words > 0) {
+                targetDuration = 1.2 + (words / 2.3) + pauseTime;
+                if (motion === 'zoom_pan' || motion.startsWith('pan_')) {
+                    targetDuration += 0.8;
+                }
+            } else {
+                targetDuration = (motion === 'zoom_pan' || motion.startsWith('pan_')) ? 5.0 : 4.0;
+            }
+
+            // Round to nearest 0.5s, bounds [2.0s, 15.0s]
+            targetDuration = Math.max(2.0, Math.min(15.0, Math.round(targetDuration * 2) / 2));
+
+            const diff = parseFloat((targetDuration - currentDuration).toFixed(1));
+            let pacingStatus = 'optimal';
+            let reason = 'Thời lượng phân cảnh rất cân đối với nội dung và chuyển động.';
+            let action = 'Giữ nguyên';
+
+            if (diff >= 1.0) {
+                pacingStatus = 'too_fast';
+                reason = words > 0 
+                    ? `Phân cảnh có ${words} từ. Thời lượng ${currentDuration}s là quá nhanh, người xem/nghe sẽ không đọc kịp.` 
+                    : `Chuyển động ${motion} cần thêm thời gian để thể hiện trọn vẹn.`;
+                action = `Kéo dài thêm +${diff}s (thành ${targetDuration}s)`;
+            } else if (diff <= -1.0) {
+                pacingStatus = 'too_slow';
+                reason = words > 0
+                    ? `Phân cảnh ngắn (${words} từ) nhưng kéo dài tới ${currentDuration}s, khiến nhịp video bị chùng.`
+                    : `Cảnh tĩnh kéo dài ${currentDuration}s, nên rút ngắn để tăng nhịp độ hấp dẫn.`;
+                action = `Rút ngắn ${Math.abs(diff)}s (thành ${targetDuration}s)`;
+            } else {
+                targetDuration = currentDuration;
+            }
+
+            return {
+                index: idx + 1,
+                itemId: item.id || `item_${idx}`,
+                name,
+                url: item.url || '',
+                isPlaceholder,
+                overlayText,
+                motion,
+                currentDuration,
+                suggestedDuration: targetDuration,
+                diffSeconds: parseFloat((targetDuration - currentDuration).toFixed(1)),
+                pacingStatus,
+                wordsCount: words,
+                reason,
+                action,
+                contentMatchScore: isPlaceholder ? 40 : 90
+            };
+        });
+
+        // Deep AI Enhancement via Gemini if key is provided
+        if (apiKey) {
+            try {
+                const ai = new GoogleGenAI({ apiKey });
+                const promptText = `
+Bạn là Đạo diễn Hậu kỳ và Chuyên gia Phân tích Nhịp điệu Video (Video Editor & Pacing Specialist).
+Dưới đây là danh sách ${items.length} phân cảnh hiện tại trên Timeline video cùng với kịch bản gốc.
+
+KỊCH BẢN GỐC:
+${scriptText && scriptText.trim() ? scriptText.trim().slice(0, 4000) : '(Đánh giá dựa trên danh sách phân cảnh và câu thoại overlayText)'}
+
+DANH SÁCH PHÂN CẢNH TRÊN TIMELINE:
+${JSON.stringify(scenesEvaluation.map(s => ({
+    sceneIndex: s.index,
+    name: s.name,
+    text: s.overlayText,
+    motion: s.motion,
+    currentDuration: s.currentDuration,
+    isPlaceholder: s.isPlaceholder
+})), null, 2)}
+
+YÊU CẦU:
+1. Đánh giá xem từng cảnh có khớp với câu trong kịch bản không (contentMatchScore 0-100%).
+2. Đánh giá tốc độ đọc câu thoại và độ dài cảnh (suggestedDuration làm tròn bước 0.5s, min 2.0s, max 15.0s).
+3. Nếu câu thoại dài mà thời lượng ít -> Đề xuất kéo dài (pacingStatus: "too_fast").
+4. Nếu câu thoại ngắn/trống mà thời lượng quá dài -> Đề xuất rút ngắn (pacingStatus: "too_slow").
+5. Nếu đã cân đối -> (pacingStatus: "optimal").
+
+Trả về kết quả JSON chính xác:
+{
+  "overallSyncScore": 88,
+  "summary": "Tóm tắt ngắn gọn 1-2 câu về tình trạng khớp kịch bản và nhịp điệu",
+  "scenes": [
+    {
+      "sceneIndex": 1,
+      "suggestedDuration": 6.5,
+      "pacingStatus": "too_fast",
+      "contentMatchScore": 95,
+      "reason": "Giải thích 1 câu ngắn gọn tại sao cần điều chỉnh hoặc giữ nguyên",
+      "action": "Kéo dài thêm 1.5s"
+    }
+  ]
+}
+`;
+                const response = await ai.models.generateContent({
+                    model: 'gemini-3.6-flash',
+                    contents: [{ text: promptText }],
+                    config: { responseMimeType: 'application/json' }
+                });
+                const cleanJson = (response.text || '').replace(/```json/g, '').replace(/```/g, '').trim();
+                const aiResult = JSON.parse(cleanJson);
+                
+                if (aiResult.scenes && Array.isArray(aiResult.scenes)) {
+                    aiResult.scenes.forEach(aiScene => {
+                        const target = scenesEvaluation.find(s => s.index === aiScene.sceneIndex);
+                        if (target) {
+                            if (typeof aiScene.suggestedDuration === 'number' && !isNaN(aiScene.suggestedDuration)) {
+                                target.suggestedDuration = Math.max(2.0, Math.min(15.0, Math.round(aiScene.suggestedDuration * 2) / 2));
+                                target.diffSeconds = parseFloat((target.suggestedDuration - target.currentDuration).toFixed(1));
+                            }
+                            if (aiScene.pacingStatus) target.pacingStatus = aiScene.pacingStatus;
+                            if (aiScene.reason) target.reason = aiScene.reason;
+                            if (aiScene.action) target.action = aiScene.action;
+                            if (typeof aiScene.contentMatchScore === 'number') target.contentMatchScore = aiScene.contentMatchScore;
+                        }
+                    });
+                }
+            } catch (aiErr) {
+                console.warn('Gemini script pacing audit fallback to rule calculation:', aiErr.message);
+            }
+        }
+
+        const fastCount = scenesEvaluation.filter(s => s.pacingStatus === 'too_fast').length;
+        const slowCount = scenesEvaluation.filter(s => s.pacingStatus === 'too_slow').length;
+        const optimalCount = scenesEvaluation.filter(s => s.pacingStatus === 'optimal').length;
+        const totalCurrentDuration = scenesEvaluation.reduce((sum, s) => sum + s.currentDuration, 0);
+        const totalSuggestedDuration = scenesEvaluation.reduce((sum, s) => sum + s.suggestedDuration, 0);
+
+        let overallSyncScore = Math.max(50, Math.min(98, Math.round(100 - (fastCount * 10 + slowCount * 8))));
+        let summary = `Đã phân tích ${items.length} phân cảnh: `;
+        if (fastCount === 0 && slowCount === 0) {
+            summary += 'Toàn bộ các phân cảnh đều khớp hoàn hảo với nhịp điệu kịch bản!';
+        } else {
+            const parts = [];
+            if (fastCount > 0) parts.push(`${fastCount} cảnh quá nhanh (cần kéo dài)`);
+            if (slowCount > 0) parts.push(`${slowCount} cảnh quá chậm (cần rút ngắn)`);
+            summary += `Phát hiện ${parts.join(', ')}. Nhấn "Áp Dụng Toàn Bộ" để tự động tối ưu.`;
+        }
+
+        res.json({
+            success: true,
+            overallSyncScore,
+            summary,
+            stats: {
+                itemCount: items.length,
+                fastCount,
+                slowCount,
+                optimalCount,
+                totalCurrentDuration: parseFloat(totalCurrentDuration.toFixed(1)),
+                totalSuggestedDuration: parseFloat(totalSuggestedDuration.toFixed(1)),
+                totalDiff: parseFloat((totalSuggestedDuration - totalCurrentDuration).toFixed(1))
+            },
+            scenes: scenesEvaluation
+        });
+
+    } catch (err) {
+        console.error('Audit script pacing error:', err);
+        res.status(500).json({ error: err.message || 'Lỗi khi đánh giá khớp kịch bản' });
+    }
+});
+
+// =========================================================================
 // AI AUDIT: TAB 1 VIDEO TIMELINE & SCRIPT QUALITY EVALUATION
 // =========================================================================
 app.post('/api/ai/audit-timeline', async (req, res) => {

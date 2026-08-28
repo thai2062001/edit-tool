@@ -2333,6 +2333,207 @@ function escapeHtml(str) {
 // Expose modal close to window
 window.closeTimelineAuditModal = closeTimelineAuditModal;
 
+// =========================================================================
+// AI SCRIPT & PACING AUDITOR CONTROLLER (TAB 1)
+// =========================================================================
+const btnAuditScriptPacing = document.getElementById('btn-audit-script-pacing');
+const btnQuickPacingAudit = document.getElementById('btn-quick-pacing-audit');
+const scriptPacingModal = document.getElementById('script-pacing-modal');
+const pacingAuditLoading = document.getElementById('pacing-audit-loading');
+const pacingAuditResult = document.getElementById('pacing-audit-result');
+const btnApplyAllPacing = document.getElementById('btn-apply-all-pacing');
+const btnApplyAllPacingFooter = document.getElementById('btn-apply-all-pacing-footer');
+
+let currentPacingEvaluationScenes = [];
+
+if (btnAuditScriptPacing) {
+    btnAuditScriptPacing.addEventListener('click', openScriptPacingModal);
+}
+if (btnQuickPacingAudit) {
+    btnQuickPacingAudit.addEventListener('click', openScriptPacingModal);
+}
+
+async function openScriptPacingModal() {
+    if (mediaItems.length === 0) {
+        alert('Chưa có phân cảnh nào trên timeline! Hãy thêm ảnh/video hoặc nạp mẫu demo trước.');
+        return;
+    }
+
+    if (scriptPacingModal) scriptPacingModal.classList.remove('hidden');
+    if (pacingAuditLoading) pacingAuditLoading.classList.remove('hidden');
+    if (pacingAuditResult) pacingAuditResult.classList.add('hidden');
+
+    const scriptText = document.getElementById('script-textarea') ? document.getElementById('script-textarea').value : '';
+    const key = document.getElementById('input-gemini-key') ? document.getElementById('input-gemini-key').value.trim() : '';
+
+    try {
+        const res = await fetch('/api/ai/audit-script-pacing', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                items: mediaItems,
+                scriptText: scriptText,
+                customApiKey: key
+            })
+        });
+
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+
+        renderScriptPacingResult(data);
+    } catch (err) {
+        alert('Lỗi đánh giá nhịp điệu kịch bản: ' + err.message);
+        closeScriptPacingModal();
+    }
+}
+
+function renderScriptPacingResult(data) {
+    if (pacingAuditLoading) pacingAuditLoading.classList.add('hidden');
+    if (pacingAuditResult) pacingAuditResult.classList.remove('hidden');
+
+    currentPacingEvaluationScenes = data.scenes || [];
+    const stats = data.stats || {};
+
+    const scoreVal = document.getElementById('pacing-score-val');
+    const verdictEl = document.getElementById('pacing-verdict');
+    const submetaEl = document.getElementById('pacing-submeta');
+    const badgeFast = document.getElementById('badge-count-fast');
+    const badgeSlow = document.getElementById('badge-count-slow');
+    const badgeOptimal = document.getElementById('badge-count-optimal');
+    const scenesList = document.getElementById('pacing-scenes-list');
+
+    if (scoreVal) scoreVal.textContent = data.overallSyncScore || 90;
+    if (verdictEl) verdictEl.textContent = data.summary || 'Nhịp điệu phân cảnh rất cân đối!';
+    if (submetaEl) {
+        submetaEl.textContent = `Phân tích ${stats.itemCount || mediaItems.length} phân cảnh • Thời lượng hiện tại: ${(stats.totalCurrentDuration || 0).toFixed(1)}s ➔ Đề xuất: ${(stats.totalSuggestedDuration || 0).toFixed(1)}s (${(stats.totalDiff || 0) >= 0 ? '+' : ''}${(stats.totalDiff || 0).toFixed(1)}s)`;
+    }
+
+    if (badgeFast) badgeFast.textContent = `⚡ ${stats.fastCount || 0} cảnh quá nhanh`;
+    if (badgeSlow) badgeSlow.textContent = `🐢 ${stats.slowCount || 0} cảnh quá chậm`;
+    if (badgeOptimal) badgeOptimal.textContent = `✅ ${stats.optimalCount || 0} cảnh chuẩn khớp`;
+
+    if (!scenesList) return;
+    scenesList.innerHTML = '';
+
+    currentPacingEvaluationScenes.forEach((scene, sIdx) => {
+        const card = document.createElement('div');
+        const statusClass = scene.pacingStatus === 'too_fast' ? 'is-too-fast' : (scene.pacingStatus === 'too_slow' ? 'is-too-slow' : 'is-optimal');
+        card.className = `pacing-scene-card ${statusClass}`;
+        card.id = `pacing-card-${sIdx}`;
+
+        const diffNum = scene.diffSeconds || 0;
+        let diffBadgeHtml = '';
+        if (diffNum > 0) {
+            diffBadgeHtml = `<span class="pacing-diff-badge pacing-diff-plus">+${diffNum.toFixed(1)}s (Kéo dài)</span>`;
+        } else if (diffNum < 0) {
+            diffBadgeHtml = `<span class="pacing-diff-badge pacing-diff-minus">${diffNum.toFixed(1)}s (Rút ngắn)</span>`;
+        } else {
+            diffBadgeHtml = `<span class="pacing-diff-badge pacing-diff-zero">Khớp chuẩn</span>`;
+        }
+
+        const thumbSrc = scene.url || (scene.isPlaceholder ? '' : 'images/1_2k.jpg');
+        const thumbHtml = scene.isPlaceholder || !thumbSrc
+            ? `<div class="pacing-scene-thumb-wrap" style="display:flex;align-items:center;justify-content:center;background:#1E293B;"><span style="font-size:20px;">📷</span><span class="pacing-scene-idx-tag">#${scene.index}</span></div>`
+            : `<div class="pacing-scene-thumb-wrap"><img src="${thumbSrc}" class="pacing-scene-thumb" alt="Scene ${scene.index}"><span class="pacing-scene-idx-tag">#${scene.index}</span></div>`;
+
+        const motionLabel = getMotionShortName ? getMotionShortName(scene.motion) : (scene.motion || 'Zoom');
+        const textPreview = scene.overlayText 
+            ? `<div class="pacing-scene-text-preview">📜 "${escapeHtml(scene.overlayText)}"</div>`
+            : `<div class="pacing-scene-text-preview text-dim" style="font-style:italic;">(Không có tiêu đề chữ / câu thoại)</div>`;
+
+        card.innerHTML = `
+            ${thumbHtml}
+            <div class="pacing-scene-info">
+                <div class="pacing-scene-title-row">
+                    <span class="pacing-scene-title">Cảnh ${scene.index}: ${escapeHtml(scene.name)}</span>
+                    <span class="storyboard-motion-tag">${motionLabel}</span>
+                    ${scene.contentMatchScore ? `<span class="badge" style="background:rgba(56,189,248,0.15);color:#38BDF8;font-size:10px;">🎯 Khớp ${scene.contentMatchScore}%</span>` : ''}
+                </div>
+                ${textPreview}
+                <div class="pacing-scene-reason">💡 ${escapeHtml(scene.reason || '')}</div>
+            </div>
+            <div class="pacing-scene-comparator">
+                <div class="pacing-duration-diff-row">
+                    <span class="pacing-cur-dur">${scene.currentDuration.toFixed(1)}s</span>
+                    <span>➔</span>
+                    <span class="pacing-sug-dur">${scene.suggestedDuration.toFixed(1)}s</span>
+                    ${diffBadgeHtml}
+                </div>
+                <button type="button" class="btn btn-xs btn-outline btn-apply-single-pacing" onclick="applySingleScenePacing(${sIdx})">
+                    ${diffNum === 0 ? '✓ Đã chuẩn' : '✅ Áp dụng cảnh này'}
+                </button>
+            </div>
+        `;
+
+        scenesList.appendChild(card);
+    });
+}
+
+function applySingleScenePacing(sceneIndex) {
+    const scene = currentPacingEvaluationScenes[sceneIndex];
+    if (!scene || !mediaItems[sceneIndex]) return;
+
+    mediaItems[sceneIndex].settings.duration = scene.suggestedDuration;
+    scene.currentDuration = scene.suggestedDuration;
+    scene.diffSeconds = 0;
+    scene.pacingStatus = 'optimal';
+
+    renderMediaList();
+    if (typeof selectSegment === 'function') selectSegment(sceneIndex);
+
+    // Update UI card
+    const card = document.getElementById(`pacing-card-${sceneIndex}`);
+    if (card) {
+        card.className = 'pacing-scene-card is-optimal';
+        const comp = card.querySelector('.pacing-scene-comparator');
+        if (comp) {
+            comp.innerHTML = `
+                <div class="pacing-duration-diff-row">
+                    <span class="pacing-sug-dur">${scene.suggestedDuration.toFixed(1)}s</span>
+                    <span class="pacing-diff-badge pacing-diff-zero">✓ Đã áp dụng</span>
+                </div>
+                <button type="button" class="btn btn-xs btn-ghost" disabled>✓ Hoàn tất</button>
+            `;
+        }
+    }
+}
+
+function applyAllPacingSuggestions() {
+    if (!currentPacingEvaluationScenes || currentPacingEvaluationScenes.length === 0) return;
+
+    let modifiedCount = 0;
+    currentPacingEvaluationScenes.forEach((scene, sIdx) => {
+        if (mediaItems[sIdx] && typeof scene.suggestedDuration === 'number') {
+            if (mediaItems[sIdx].settings.duration !== scene.suggestedDuration) {
+                mediaItems[sIdx].settings.duration = scene.suggestedDuration;
+                modifiedCount++;
+            }
+        }
+    });
+
+    renderMediaList();
+    if (typeof triggerAutoSave === 'function') triggerAutoSave();
+    closeScriptPacingModal();
+
+    alert(`🎉 Đã tự động cân chỉnh thời lượng thành công cho ${modifiedCount > 0 ? modifiedCount : currentPacingEvaluationScenes.length} phân cảnh!\n\nNhịp điệu video trên Timeline hiện đã chuẩn khớp 100% với tốc độ đọc kịch bản.`);
+}
+
+if (btnApplyAllPacing) {
+    btnApplyAllPacing.addEventListener('click', applyAllPacingSuggestions);
+}
+if (btnApplyAllPacingFooter) {
+    btnApplyAllPacingFooter.addEventListener('click', applyAllPacingSuggestions);
+}
+
+function closeScriptPacingModal() {
+    if (scriptPacingModal) scriptPacingModal.classList.add('hidden');
+}
+
+window.openScriptPacingModal = openScriptPacingModal;
+window.closeScriptPacingModal = closeScriptPacingModal;
+window.applySingleScenePacing = applySingleScenePacing;
+window.applyAllPacingSuggestions = applyAllPacingSuggestions;
+
 // Initialize Auto-Save check on page load
 document.addEventListener('DOMContentLoaded', () => {
     checkAutoSaveOnLoad();

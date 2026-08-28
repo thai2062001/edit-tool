@@ -40,7 +40,10 @@
                     <button id="btn-open-ai-modal" class="btn btn-ai btn-small" title="Tự động phân tích kịch bản và khớp các phân cảnh">
                         <span class="icon">🤖</span> Khớp Kịch Bản (AI)
                     </button>
-                    <button id="btn-audit-timeline" class="btn btn-ai btn-small" title="AI Đánh giá kịch bản, phân cảnh, nhịp điệu và âm thanh">
+                    <button id="btn-audit-script-pacing" class="btn btn-ai btn-small" title="AI Đánh giá xem ảnh & thời lượng đã khớp kịch bản chưa, tự động cân chỉnh nhanh/chậm">
+                        <span class="icon">⚖️</span> Khớp Script & Nhịp Điệu (AI)
+                    </button>
+                    <button id="btn-audit-timeline" class="btn btn-ai btn-small" title="AI Đánh giá tổng quan kịch bản, phân cảnh, nhịp điệu và âm thanh">
                         <span class="icon">🧐</span> Đánh Giá Video (AI)
                     </button>
                 </div>
@@ -435,6 +438,9 @@
                             <span class="badge-total-duration">⏱️ Tổng thời lượng: <strong id="total-est-duration">0.0s</strong></span>
                         </div>
                         <div class="timeline-quick-actions">
+                            <button type="button" id="btn-quick-pacing-audit" class="btn btn-xs btn-ai" title="AI Đánh giá xem ảnh đã khớp script chưa và tự động cân chỉnh thời lượng nhanh/chậm">
+                                ⚖️ Khớp Script & Nhịp Điệu
+                            </button>
                             <button type="button" class="btn btn-xs btn-outline" onclick="document.getElementById('file-input').click()">
                                 ➕ Thêm Ảnh/Video
                             </button>
@@ -1612,6 +1618,72 @@
                         </button>
                         <button type="button" class="btn btn-primary btn-small" onclick="closeTimelineAuditModal()">
                             Đã Hiểu & Tiếp Tục
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 1: AI Script & Pacing Alignment Auditor Modal -->
+    <div id="script-pacing-modal" class="modal hidden">
+        <div class="modal-backdrop" onclick="closeScriptPacingModal()"></div>
+        <div class="modal-dialog audit-dialog modal-pacing-dialog">
+            <div class="modal-header">
+                <div class="modal-header-title">
+                    <span class="ai-badge">⚖️ Script & Pacing AI Director</span>
+                    <h3>Đánh Giá Khớp Kịch Bản & Cân Chỉnh Nhịp Điệu</h3>
+                </div>
+                <button class="btn-close" onclick="closeScriptPacingModal()">✕</button>
+            </div>
+            <div class="modal-body audit-body">
+                <!-- State: Loading / Auditing -->
+                <div id="pacing-audit-loading" class="audit-loading-state">
+                    <div class="spinner-neon"></div>
+                    <h4 class="mt-3 text-cyan">🤖 Đang phân tích số từ, lời thoại & tốc độ đọc từng phân cảnh...</h4>
+                    <p class="text-xs text-dim mt-1">Đang so khớp hình ảnh với kịch bản và đề xuất điều chỉnh thời lượng tối ưu</p>
+                </div>
+
+                <!-- State: Results -->
+                <div id="pacing-audit-result" class="pacing-audit-result hidden">
+                    <!-- Overview Header Card -->
+                    <div class="audit-score-card">
+                        <div class="audit-score-circle" id="pacing-score-circle">
+                            <span id="pacing-score-val" class="score-number">92</span>
+                            <span class="score-label">ĐIỂM KHỚP</span>
+                        </div>
+                        <div class="audit-verdict-wrap">
+                            <h4 id="pacing-verdict" class="audit-verdict-text">Nhịp điệu video ổn định!</h4>
+                            <p class="text-xs text-dim mt-1" id="pacing-submeta">Phân tích 12 phân cảnh • Thời lượng hiện tại: 54.0s ➔ Đề xuất: 60.5s (+6.5s)</p>
+                            
+                            <div class="pacing-quick-stats-row mt-2">
+                                <span class="badge-pacing badge-too-fast" id="badge-count-fast">⚡ 0 cảnh quá nhanh</span>
+                                <span class="badge-pacing badge-too-slow" id="badge-count-slow">🐢 0 cảnh quá chậm</span>
+                                <span class="badge-pacing badge-optimal" id="badge-count-optimal">✅ 0 cảnh chuẩn khớp</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Scene by Scene List Header -->
+                    <div class="pacing-scenes-header mt-3 flex-between">
+                        <h5 style="margin: 0;">📋 Chi Tiết Phân Tích & Đề Xuất Từng Phân Cảnh:</h5>
+                        <button type="button" id="btn-apply-all-pacing" class="btn btn-primary btn-small">
+                            ⚡ Tự Động Sửa & Áp Dụng Tất Cả
+                        </button>
+                    </div>
+
+                    <!-- Scene by Scene Cards List -->
+                    <div id="pacing-scenes-list" class="pacing-scenes-list custom-scrollbar mt-2">
+                        <!-- Dynamic scenes injected here -->
+                    </div>
+
+                    <!-- Footer Action Buttons -->
+                    <div class="audit-footer mt-3 flex-between">
+                        <button type="button" class="btn btn-secondary btn-small" onclick="closeScriptPacingModal()">
+                            Đóng
+                        </button>
+                        <button type="button" id="btn-apply-all-pacing-footer" class="btn btn-primary btn-small">
+                            ⚡ Áp Dụng Toàn Bộ Đề Xuất Thời Lượng Vào Timeline
                         </button>
                     </div>
                 </div>
