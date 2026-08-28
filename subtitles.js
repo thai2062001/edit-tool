@@ -607,6 +607,11 @@ Trả về DUY NHẤT một JSON hợp lệ có cấu trúc:
                 job.error = `FFmpeg exit code ${code}: ${stderrLog.slice(-200)}`;
                 notifySubJobClients(job);
             }
+
+            // Auto-cleanup job metadata from memory after 10 minutes
+            setTimeout(() => {
+                activeSubJobs.delete(job.id);
+            }, 10 * 60 * 1000);
         });
 
         proc.on('error', (err) => {
@@ -614,6 +619,10 @@ Trả về DUY NHẤT một JSON hợp lệ có cấu trúc:
             job.status = 'failed';
             job.error = err.message;
             notifySubJobClients(job);
+
+            setTimeout(() => {
+                activeSubJobs.delete(job.id);
+            }, 10 * 60 * 1000);
         });
     }
 
