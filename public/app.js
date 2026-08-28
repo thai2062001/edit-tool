@@ -449,6 +449,12 @@ function selectSegment(index, shouldScroll = true) {
     if (index < 0 || index >= mediaItems.length) return;
     if (index !== activeSegmentIndex) {
         commitCurrentInspectorSettings();
+        if (typeof isStudioPlayingSingle !== 'undefined' && isStudioPlayingSingle) {
+            isStudioPlayingSingle = false;
+            const btnScene = document.getElementById('studio-btn-play-scene');
+            if (btnScene) btnScene.innerHTML = '🔁 Xem Cảnh Này';
+            if (typeof studioAudio !== 'undefined') studioAudio.pause();
+        }
     }
     activeSegmentIndex = index;
 
@@ -788,10 +794,39 @@ function renderImageFrameOnCanvas(ctx, canvas, item, img, progress) {
     }
 }
 
+const studioAudio = new Audio();
+window.studioAudio = studioAudio;
+let isStudioPlayingSingle = false;
+
+function getSceneAudioRange(index) {
+    if (index < 0 || index >= mediaItems.length) return { startTime: 0, endTime: 0, duration: 0 };
+    let startTime = 0;
+    for (let i = 0; i < index; i++) {
+        const it = mediaItems[i];
+        const d = it.type === 'image' 
+            ? Number(it.settings?.duration || 5.0) 
+            : Math.max(0.5, Number(it.settings?.trimEnd || it.duration || 5) - Number(it.settings?.trimStart || 0));
+        startTime += d;
+    }
+    const currentItem = mediaItems[index];
+    const currentDur = currentItem.type === 'image' 
+        ? Number(currentItem.settings?.duration || 5.0) 
+        : Math.max(0.5, Number(currentItem.settings?.trimEnd || currentItem.duration || 5) - Number(currentItem.settings?.trimStart || 0));
+    const endTime = startTime + currentDur;
+    return { startTime: parseFloat(startTime.toFixed(2)), endTime: parseFloat(endTime.toFixed(2)), duration: parseFloat(currentDur.toFixed(2)) };
+}
+
 function playStudioSequence() {
+    if (isStudioPlayingSingle) {
+        isStudioPlayingSingle = false;
+        const btnScene = document.getElementById('studio-btn-play-scene');
+        if (btnScene) btnScene.innerHTML = '🔁 Xem Cảnh Này';
+    }
+
     if (isStudioPlayingAll) {
         isStudioPlayingAll = false;
         if (studioAnimFrame) cancelAnimationFrame(studioAnimFrame);
+        studioAudio.pause();
         const btn = document.getElementById('studio-btn-play');
         if (btn) btn.innerHTML = '▶ Phát Toàn Bộ Video';
         return;
@@ -806,7 +841,17 @@ function playStudioSequence() {
     let currentItemIdx = activeSegmentIndex;
     let itemStartTime = performance.now();
     let currentItem = mediaItems[currentItemIdx];
-    let itemDur = (currentItem.type === 'image' ? (currentItem.settings.duration || 5.0) : (currentItem.duration || 5.0)) * 1000;
+    let itemDur = (currentItem.type === 'image' ? (currentItem.settings?.duration || 5.0) : (currentItem.duration || 5.0)) * 1000;
+
+    const { startTime: audioStart } = getSceneAudioRange(currentItemIdx);
+    if (bgmTrack && bgmTrack.url) {
+        try {
+            studioAudio.src = bgmTrack.url;
+            studioAudio.currentTime = audioStart;
+            studioAudio.volume = bgmTrack.volume ?? 1.0;
+            studioAudio.play().catch(() => {});
+        } catch (e) {}
+    }
 
     function step(now) {
         if (!isStudioPlayingAll) return;
@@ -819,8 +864,15 @@ function playStudioSequence() {
             currentItemIdx = (currentItemIdx + 1) % mediaItems.length;
             selectSegment(currentItemIdx, true);
             currentItem = mediaItems[currentItemIdx];
-            itemDur = (currentItem.type === 'image' ? (currentItem.settings.duration || 5.0) : (currentItem.duration || 5.0)) * 1000;
+            itemDur = (currentItem.type === 'image' ? (currentItem.settings?.duration || 5.0) : (currentItem.duration || 5.0)) * 1000;
             itemStartTime = performance.now();
+
+            if (currentItemIdx === 0 && bgmTrack && bgmTrack.url) {
+                try {
+                    studioAudio.currentTime = 0;
+                    studioAudio.play().catch(() => {});
+                } catch (e) {}
+            }
         }
 
         studioAnimFrame = requestAnimationFrame(step);
@@ -833,20 +885,57 @@ function playSingleScene() {
     if (isStudioPlayingAll) {
         isStudioPlayingAll = false;
         if (studioAnimFrame) cancelAnimationFrame(studioAnimFrame);
-        const btn = document.getElementById('studio-btn-play');
-        if (btn) btn.innerHTML = '▶ Phát Toàn Bộ Video';
+        const btnAll = document.getElementById('studio-btn-play');
+        if (btnAll) btnAll.innerHTML = '▶ Phát Toàn Bộ Video';
+    }
+
+    const btnScene = document.getElementById('studio-btn-play-scene');
+    if (isStudioPlayingSingle) {
+        isStudioPlayingSingle = false;
+        if (studioAnimFrame) cancelAnimationFrame(studioAnimFrame);
+        studioAudio.pause();
+        if (btnScene) btnScene.innerHTML = '🔁 Xem Cảnh Này';
+        return;
     }
 
     if (!mediaItems[activeSegmentIndex]) return;
 
     if (studioAnimFrame) cancelAnimationFrame(studioAnimFrame);
+    isStudioPlayingSingle = true;
+    if (btnScene) btnScene.innerHTML = '⏸️ Tạm Dừng Cảnh';
+
     const item = mediaItems[activeSegmentIndex];
-    const itemDur = (item.type === 'image' ? (item.settings.duration || 5.0) : (item.duration || 5.0)) * 1000;
-    const startTime = performance.now();
+    const itemDur = (item.type === 'image' ? (item.settings?.duration || 5.0) : (item.duration || 5.0)) * 1000;
+    const { startTime: audioStart } = getSceneAudioRange(activeSegmentIndex);
+
+    // Play per-scene audio slice
+    if (bgmTrack && bgmTrack.url) {
+        try {
+            studioAudio.src = bgmTrack.url;
+            studioAudio.currentTime = audioStart;
+            studioAudio.volume = bgmTrack.volume ?? 1.0;
+            studioAudio.play().catch(() => {});
+        } catch (e) {}
+    }
+
+    let cycleStartTime = performance.now();
 
     function step(now) {
-        const elapsed = now - startTime;
-        const progress = Math.min(1.0, (elapsed % itemDur) / itemDur);
+        if (!isStudioPlayingSingle) return;
+        const elapsed = now - cycleStartTime;
+
+        if (elapsed >= itemDur) {
+            // Loop restart for single scene preview
+            cycleStartTime = performance.now();
+            if (bgmTrack && bgmTrack.url) {
+                try {
+                    studioAudio.currentTime = audioStart;
+                    studioAudio.play().catch(() => {});
+                } catch (e) {}
+            }
+        }
+
+        const progress = Math.min(1.0, Math.max(0, elapsed / itemDur));
         drawStudioCanvasFrame(activeSegmentIndex, progress);
         studioAnimFrame = requestAnimationFrame(step);
     }
@@ -1426,6 +1515,17 @@ function startPreviewAnimation() {
     const zoomIntensity = previewItemData.settings.zoomIntensity || 1.25;
     const delta = zoomIntensity - 1.0;
 
+    // Per-Scene Audio Preview synchronization
+    if (bgmTrack && bgmTrack.url && previewCurrentIndex >= 0) {
+        const { startTime: audioStart } = getSceneAudioRange(previewCurrentIndex);
+        try {
+            studioAudio.src = bgmTrack.url;
+            studioAudio.currentTime = audioStart;
+            studioAudio.volume = bgmTrack.volume ?? 1.0;
+            studioAudio.play().catch(() => {});
+        } catch (e) {}
+    }
+
     const startTime = performance.now();
     const totalMs = dur * 1000;
 
@@ -1596,6 +1696,7 @@ document.getElementById('btn-play-preview').addEventListener('click', () => {
 
 function closePreviewModal() {
     if (previewAnimFrame) cancelAnimationFrame(previewAnimFrame);
+    if (typeof studioAudio !== 'undefined') studioAudio.pause();
     previewModal.classList.add('hidden');
 }
 
