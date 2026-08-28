@@ -12,9 +12,9 @@ Thinking your Wi-Fi router kicked the bucket, you slip on your Crocs and sprint 
 
 And then you freeze: You step outside and find your neighbors wandering around their front lawns, squinting at their dead screens in utter confusion!
 
-People are tapping their phone backs, rebooting devices, and shouting across fences: "Hey, is your Wi-Fi down too?!".
+Everyone is frantically checking their routers, asking each other what’s happening, and nobody can get online!
 
-Congratulations, America! This isn't just a glitch or a shark chewing through underwater fiber-optic cables.
+And the brutal reality slowly sets in: This isn't just a minor technical hiccup or a local power outage.
 
 The global Internet has officially... vanished into thin air. Gone forever without a single warning trace!
 

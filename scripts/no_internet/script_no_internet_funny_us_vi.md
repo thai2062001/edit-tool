@@ -12,9 +12,9 @@ Nghĩ rằng cục phát Wi-Fi nhà mình đã "chầu trời", bạn vội xỏ
 
 Và rồi bạn đứng hình: Vừa bước ra sân, bạn thấy mấy người hàng xóm cũng đang đi lại lăng xăng, nheo mắt nhìn chằm chằm vào màn hình điện thoại tối om với vẻ mặt hoang mang tột độ!
 
-Người thì vỗ vỗ lưng máy, người thì khởi động lại liên tục rồi í ới hỏi với qua hàng rào: "Ê ông ơi, nhà ông có bị mất mạng không?!".
+Ai nấy đều cuống cuồng kiểm tra cục mạng, xôn xao hỏi nhau xem chuyện gì đang xảy ra nhưng tuyệt nhiên không ai vào mạng được!
 
-Xin chúc mừng nước Mỹ! Đây không chỉ là một lỗi kỹ thuật hay do cá mập cắn cáp quang biển đâu.
+Và rồi một sự thật phũ phàng bắt đầu ập đến: Đây không đơn giản là sự cố mạng tạm thời hay mất điện cục bộ đâu.
 
 Mạng Internet toàn cầu chính thức... bốc hơi vào không khí rồi. Biến mất vĩnh viễn không một dấu vết cảnh báo!
 
