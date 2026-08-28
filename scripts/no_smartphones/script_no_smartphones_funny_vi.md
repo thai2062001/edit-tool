@@ -100,29 +100,7 @@ Thợ sửa ống nước trên khắp hành tinh ghi nhận số vụ tắc b�
 
 ---
 
-### HỒI 5: ÁC MỘNG GẤP BẢN ĐỒ GIẤY & NỖI SỢ HỎI ĐƯỜNG NGƯỜI LẠ
-
-Lần cuối cùng bạn tự lái xe đến một quán ăn mới mà không cần Google Maps chỉ đường từng ngã rẽ là khi nào? Đúng rồi đấy, bạn chưa từng làm vậy bao giờ.
-
-Không có định vị GPS trong túi, việc lái xe xuyên thành phố trở thành một môn thể thao sinh tồn cảm giác mạnh.
-
-Cốp xe của mọi tài xế sẽ lại chứa đầy những tấm bản đồ giao thông bằng giấy khổng lồ và cồng kềnh.
-
-Hãy tưởng tượng cảnh bạn vừa phải lái xe sáu mươi cây số một giờ trên cao tốc, vừa cố mở một tấm bản đồ rộng hai mét trong khi gió điều hòa thổi phần phật thẳng vào mặt!
-
-Và việc gấp tấm bản đồ đó lại như hình dáng ban đầu ư? Hãy quên đi—đó là một nghệ thuật gấp giấy origami cổ xưa mà chỉ những cụ ông sinh trước năm 1970 mới nắm giữ bí thuật.
-
-Nếu bạn lỡ đi quá lối rẽ trên cao tốc, sẽ không còn giọng nói AI êm dịu vang lên: "Đang tính toán lại lộ trình".
-
-Bạn đơn giản là bị lạc giữa màn đêm tăm tối cho đến khi nuốt trọn lòng tự ái và tấp vào một cây xăng vắng vẻ.
-
-Bạn rụt rè hạ kính xe xuống và hỏi một anh chàng lái xe bán tải cơ bắp: "Anh ơi làm ơn cho em hỏi, đường này có đi ra siêu thị Costco và Target không ạ?"
-
-Mọi người sẽ thực sự phải học lại cách đọc biển báo giao thông, nhìn hướng mặt trời mọc và ghi nhớ các mốc địa danh trên đường phố!
-
----
-
-### HỒI 6: ÁC MỘNG GỌI ĐIỆN THOẠI BÀN & BỘ NHỚ NÃO BỘ
+### HỒI 5: ÁC MỘNG GỌI ĐIỆN THOẠI BÀN & BỘ NHỚ NÃO BỘ
 
 Hỏi thật nhé: bạn nhớ được bao nhiêu số điện thoại trong đầu lúc này ngoài số của chính mình?
 
@@ -136,10 +114,9 @@ Muốn gọi cho crush tâm sự, bạn phải bấm số máy bàn nhà ngườ
 
 Vừa nghe giọng bác trai gằn giọng: "Ai đấy? Tìm con gái tôi có việc gì?", là mồ hôi toát ra đầm đìa, tim đập thình thịch còn hơn cả đi phỏng vấn xin việc!
 
-
 ---
 
-### HỒI 7: CHỤP ẢNH CUỘN PHIM 36 KIỂU & NĂM NGÀY HỒI HỘP CHỜ RỬA ẢNH
+### HỒI 6: CHỤP ẢNH CUỘN PHIM 36 KIỂU & NĂM NGÀY HỒI HỘP CHỜ RỬA ẢNH
 
 Ngày nay, con người chụp ước tính khoảng năm tỷ bức ảnh kỹ thuật số mỗi ngày.
 
@@ -161,7 +138,7 @@ Thế nhưng, từng bức ảnh trong số ba mươi sáu tấm ấy sẽ quý 
 
 ---
 
-### HỒI 8: NỖI KINH HOÀNG KHI PHẢI CHẠM MẮT NHAU GIỮA NƠI CÔNG CỘNG
+### HỒI 7: NỖI KINH HOÀNG KHI PHẢI CHẠM MẮT NHAU GIỮA NƠI CÔNG CỘNG
 
 Bạn có bao giờ để ý điều gì sẽ xảy ra trong thang máy ngay khoảnh khắc cánh cửa khép lại không?
 
@@ -185,7 +162,7 @@ Những tình bạn bất ngờ, những ý tưởng sáng tạo được vẽ n
 
 ---
 
-### HỒI 9: ĂN UỐNG NGOÀI HÀNG – SỰ TUYỆT CHỦNG CỦA MÃ QR & NHỮNG REVIEW TIÊU CỰC
+### HỒI 8: ĂN UỐNG NGOÀI HÀNG – SỰ TUYỆT CHỦNG CỦA MÃ QR & NHỮNG REVIEW TIÊU CỰC
 
 Bước vào bất kỳ nhà hàng nào ngày nay, thứ đầu tiên đập vào mắt bạn là một chiếc mã QR đen trắng dán chình ình giữa bàn ăn.
 
@@ -209,7 +186,7 @@ Một người rút tờ tiền lớn ra trả, người khác nhận thanh toá
 
 ---
 
-### HỒI 10: TÌNH YÊU & HẸN HÒ – SỰ BIẾN MẤT CỦA NÚT "QUẸT PHẢI"
+### HỒI 9: TÌNH YÊU & HẸN HÒ – SỰ BIẾN MẤT CỦA NÚT "QUẸT PHẢI"
 
 Các ứng dụng hẹn hò trực tuyến đã biến tình yêu hiện đại thành một cuốn danh mục kỹ thuật số khổng lồ với vô số lựa chọn lướt qua như hàng hóa.
 
@@ -229,7 +206,7 @@ Lời từ chối diễn ra trực tiếp trước mắt, nhưng những rung c�
 
 ---
 
-### HỒI 11: NÃO BỘ HỒI SINH – KHẢ NĂNG TẬP TRUNG SÂU & GIẤC NGỦ THỰC SỰ
+### HỒI 10: NÃO BỘ HỒI SINH – KHẢ NĂNG TẬP TRUNG SÂU & GIẤC NGỦ THỰC SỰ
 
 Trong mười lăm năm qua, khoảng thời gian tập trung trung bình của con người đã tụt dốc từ mười hai giây xuống chỉ còn vỏn vẹn tám giây—chính thức ngắn hơn cả một con cá vàng.
 
@@ -249,7 +226,7 @@ Tỷ lệ mất ngủ giảm mạnh trên toàn cầu vì chẳng còn ai chiế
 
 ---
 
-### HỒI 12: LOÀI NGƯỜI CÓ THỰC SỰ HẠNH PHÚC HƠN?
+### HỒI 11: LOÀI NGƯỜI CÓ THỰC SỰ HẠNH PHÚC HƠN?
 
 Dĩ nhiên, cuộc sống không có smartphone không phải lúc nào cũng là bức tranh màu hồng và những hoài niệm lãng mạn.
 
