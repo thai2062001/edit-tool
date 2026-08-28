@@ -176,25 +176,27 @@ Spontaneous friendships, creative brainstorming on paper napkins, and real-world
 
 ---
 
-### ACT 8: DINING OUT – EATING WARM FOOD INSTEAD OF FEEDING SOCIAL MEDIA
+### ACT 8: DINING OUT – THE EXTINCTION OF QR CODE MENUS & YELP KARENS
 
-Walk into any trendy brunch cafe today, and you’ll witness a bizarre modern ritual.
+Walk into any restaurant today, and the first thing you see is a tiny, annoying black-and-white QR code glued to the center of your table.
 
-Four friends sit at a table in total silence, holding their phones directly above their avocado toast like forensic investigators inspecting a crime scene.
+You spend the first ten minutes trying to get your camera to scan it, waiting for a fifty-megabyte PDF menu to load over sluggish Wi-Fi.
 
-Nobody is allowed to take a single bite until the optimal overhead lighting angle is captured for Instagram Stories.
+In a smartphone-free world, that entire digital nightmare instantly evaporates into thin air!
 
-In a smartphone-free world, restaurants transform back into vibrant hubs of authentic human connection and laughter.
+Waiters actually walk up with a smile, handing you giant, glorious, laminated physical menus you can hold in your actual hands.
 
-When hot food arrives at the table, people immediately pick up their forks and eat it while it is actually piping hot!
+You can’t read four thousand conflicting one-star Yelp reviews written by angry Karens complaining about the room temperature.
 
-Nobody is checking Yelp reviews of the waiter while he is standing right there taking the order.
+Instead, you have to look the waiter in the eyes and ask a classic human question: "So, what's actually good here tonight?".
 
-Nobody is Shazam-ing the background jazz music; you just enjoy the melody and ask the bartender for the artist's name.
+Tables transform back into vibrant hubs of loud laughter, animated storytelling, and genuine camaraderie.
 
-And when the check arrives? Nobody is pulling out Venmo or CashApp to split eighty-four cents for extra ranch dressing.
+Nobody is ignoring their friends to scroll through random drama or arguing in comment sections under the table.
 
-Someone throws down a crisp twenty-dollar bill, someone else covers the tip, and everyone agrees to settle it next time.
+And when the check arrives, nobody is pulling out an app to calculate eighty-four cents for extra sauce.
+
+Someone throws down a crisp twenty-dollar bill, someone else covers the tip, and everyone agrees to catch the next round!
 
 ---
 

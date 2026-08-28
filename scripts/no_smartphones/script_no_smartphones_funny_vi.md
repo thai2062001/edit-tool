@@ -78,7 +78,7 @@ Chỉ trong vòng bốn mươi tám giờ, mọi người trên Trái Đất s�
 
 "À vâng, Methylchloroisothiazolinone và Sodium Laureth Sulfate... quả là những áng văn chương tuyệt mỹ!"
 
-Các gia đình sẽ bắt đầu đặt lại những giá đựng tạp chí trong nhà tắm, tự hào trưng bày những cuốn National Geographic và Thế Giới Mới bụi bặm từ chục năm trước.
+Các gia đình sẽ bắt đầu đặt lại những giá đựng tạp chí trong nhà tắm, tự hào trưng bày những cuốn National Geographic và Reader's Digest bụi bặm từ chục năm trước.
 
 Thời gian ghé thăm nhà vệ sinh sẽ bất ngờ tụt dốc không phanh từ ba mươi lăm phút hoàng gia xuống còn vỏn vẹn chín mươi giây thần tốc!
 
@@ -102,7 +102,7 @@ Nếu bạn lỡ đi quá lối rẽ trên cao tốc, sẽ không còn giọng n
 
 Bạn đơn giản là bị lạc giữa màn đêm tăm tối cho đến khi nuốt trọn lòng tự ái và tấp vào một cây xăng vắng vẻ.
 
-Bạn rụt rè hạ kính xe xuống và hỏi một anh chàng xăm trổ: "Anh ơi làm ơn cho em hỏi, đường này có đi ra siêu thị Big C không ạ?"
+Bạn rụt rè hạ kính xe xuống và hỏi một anh chàng lái xe bán tải cơ bắp: "Anh ơi làm ơn cho em hỏi, đường này có đi ra siêu thị Costco và Target không ạ?"
 
 Mọi người sẽ thực sự phải học lại cách đọc biển báo giao thông, nhìn hướng mặt trời mọc và ghi nhớ các mốc địa danh trên đường phố!
 
@@ -126,7 +126,7 @@ Hãy hình dung cảnh bạn chạy thục mạng qua sảnh ga tàu điện ng�
 
 Và nếu đứa bạn không ngồi ở nhà cạnh chiếc điện thoại bàn khi bạn gọi? Bạn để lại lời nhắn thoại và kiên nhẫn chờ sáu tiếng đồng hồ hệt như một nhà tu hành thời thập niên 90.
 
-"Alo mày hả, tao Nam nè. Giờ là 2 giờ chiều. Khi nào về nhà thì gọi lại tao nha. Hoặc khỏi cũng được. Gặp sau!"
+"Alo mày hả, tao Mike nè. Giờ là 2 giờ chiều. Khi nào về nhà thì gọi lại tao nha. Hoặc khỏi cũng được. Gặp sau!"
 
 ---
 
@@ -176,25 +176,27 @@ Những tình bạn bất ngờ, những ý tưởng sáng tạo được vẽ n
 
 ---
 
-### HỒI 8: ĂN UỐNG NGOÀI HÀNG – ĂN ĐỒ NÓNG HỔI THAY VÌ "CÚNG" MẠNG XÃ HỘI
+### HỒI 8: ĂN UỐNG NGOÀI HÀNG – SỰ TUYỆT CHỦNG CỦA MÃ QR & NHỮNG REVIEW TIÊU CỰC
 
-Bước vào bất kỳ quán cà phê sang chảnh nào ngày nay, bạn sẽ chứng kiến một nghi thức hiện đại vô cùng kỳ quặc.
+Bước vào bất kỳ nhà hàng nào ngày nay, thứ đầu tiên đập vào mắt bạn là một chiếc mã QR đen trắng dán chình ình giữa bàn ăn.
 
-Bốn người bạn ngồi quanh bàn trong im lặng, giơ điện thoại thẳng đứng phía trên đĩa bánh mì bơ hệt như các chuyên gia pháp y đang khám nghiệm hiện trường vụ án.
+Bạn phải mất mười phút loay hoay quét mã bằng camera, chờ một tệp menu PDF nặng năm mươi megabyte tải mãi không xong qua mạng Wi-Fi rùa bò.
 
-Chẳng ai được phép đụng đũa cho đến khi góc chụp từ trên cao hoàn hảo nhất được ghi lại để đăng lên Instagram Story.
+Trong một thế giới không có smartphone, toàn bộ cơn ác mộng công nghệ phiền toái đó lập tức tan biến vào hư vô!
 
-Trong một thế giới không có smartphone, các nhà hàng biến trở lại thành những trung tâm sôi động của tiếng cười và sự kết nối chân thành.
+Các bạn nhân viên phục vụ sẽ tươi cười tiến lại, trao tận tay bạn những cuốn thực đơn giấy dày cộp, to đùng và rực rỡ sắc màu để bạn cầm nắm bằng da bằng thịt.
 
-Khi đĩa thức ăn nóng hổi được bưng ra bàn, mọi người lập tức cầm nĩa lên và thưởng thức ngay khi món ăn còn đang bốc khói nghi ngút!
+Bạn chẳng thể ngồi đọc bốn nghìn đánh giá 1 sao mâu thuẫn trên mạng của những khách hàng khó tính phàn nàn về nhiệt độ điều hòa trong phòng.
 
-Chẳng ai kiểm tra đánh giá trên mạng về người phục vụ trong khi anh ấy đang đứng ngay trước mặt ghi món.
+Thay vào đó, bạn phải nhìn thẳng vào mắt bạn nhân viên và hỏi một câu hỏi mộc mạc đậm chất con người: "Em ơi, hôm nay quán mình có món gì ngon nhất?".
 
-Chẳng ai bật ứng dụng Shazam để tìm tên bài nhạc jazz đang phát; bạn chỉ việc đung đưa theo giai điệu và hỏi thẳng anh chàng pha chế tên của bài hát.
+Bàn ăn biến trở lại thành không gian rộn rã tiếng cười, những câu chuyện rôm rả và sự gắn kết bạn bè đích thực.
 
-Và khi hóa đơn được mang ra? Không ai phải mở ví điện tử để chia lẻ từng vài nghìn đồng tiền sốt chấm.
+Chẳng ai bỏ bê bạn bè để cắm mặt lướt mạng xã hội hay ngồi tranh cãi dưới phần bình luận của người lạ dưới gầm bàn.
 
-Một người rút tờ tiền lớn ra trả, người khác nhận thanh toán tiền nước, và tất cả vui vẻ hẹn nhau lần tới sẽ chia lại.
+Và khi hóa đơn được mang ra, không ai phải mở app chia tiền lẻ từng vài nghìn đồng tiền nước chấm.
+
+Một người rút tờ tiền lớn ra trả, người khác nhận thanh toán tiền nước, và tất cả vui vẻ hẹn nhau lần tới sẽ khao lại!
 
 ---
 
