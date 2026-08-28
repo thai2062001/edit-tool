@@ -1462,7 +1462,8 @@ function buildDrawtextFilter(settings, width, height, tempFiles = []) {
     }
 
     const safeTextFilePath = textTmpFile.replace(/\\/g, '/').replace(/:/g, '\\:');
-    return `drawtext=fontfile='C\\:/Windows/Fonts/arial.ttf':expansion=none:textfile='${safeTextFilePath}':fontsize=${scaledFontSize}:x=${x}:y=${y}${styleParams}${animParams}`;
+    const fontPath = fs.existsSync('C:/Windows/Fonts/arialbd.ttf') ? 'C\\:/Windows/Fonts/arialbd.ttf' : 'C\\:/Windows/Fonts/arial.ttf';
+    return `drawtext=fontfile='${fontPath}':expansion=none:textfile='${safeTextFilePath}':fontsize=${scaledFontSize}:x=${x}:y=${y}${styleParams}${animParams}`;
 }
 
 // Function to render a single batch/chunk of items
@@ -1513,11 +1514,14 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
             const aTag = `a_${idx}`;
             const dur = Number(item.settings?.duration || 5.0);
             const frames = Math.round(dur * fps);
+            const maxFrames = Math.max(1, frames - 1);
             const fadeIn = Number(item.settings?.fadeIn || 0);
             const fadeOut = Number(item.settings?.fadeOut || 0);
             const motion = item.settings?.motion || 'zoom_in';
             const zoomIntensity = Math.max(1.05, Math.min(2.0, Number(item.settings?.zoomIntensity || 1.25)));
             const delta = zoomIntensity - 1.0;
+            const deltaStr = delta.toFixed(5);
+            const zoomIntensityStr = zoomIntensity.toFixed(5);
 
             if (item.type === 'image') {
                 chunkDuration += dur;
@@ -1525,51 +1529,48 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
                 let xExpr = '(iw-iw/zoom)/2';
                 let yExpr = '(ih-ih/zoom)/2';
 
-                const step = frames > 0 ? (delta / frames) : 0.001;
-                const stepStr = step.toFixed(6);
-                const maxZStr = zoomIntensity.toFixed(3);
-
+                // Pure frame-calculated linear formulas to guarantee 100% smooth subpixel interpolation without any floating-point accumulation jitter
                 if (motion === 'zoom_in') {
-                    zExpr = `min(zoom+${stepStr},${maxZStr})`;
-                    xExpr = 'iw/2-(iw/zoom/2)';
-                    yExpr = 'ih/2-(ih/zoom/2)';
+                    zExpr = `1.0+(${deltaStr}*(on/${maxFrames}))`;
+                    xExpr = '(iw-iw/zoom)/2';
+                    yExpr = '(ih-ih/zoom)/2';
                 } else if (motion === 'zoom_out') {
-                    zExpr = `if(eq(on,0),${maxZStr},max(1.0,zoom-${stepStr}))`;
-                    xExpr = 'iw/2-(iw/zoom/2)';
-                    yExpr = 'ih/2-(ih/zoom/2)';
+                    zExpr = `${zoomIntensityStr}-(${deltaStr}*(on/${maxFrames}))`;
+                    xExpr = '(iw-iw/zoom)/2';
+                    yExpr = '(ih-ih/zoom)/2';
                 } else if (motion === 'pan_left') {
-                    zExpr = `${maxZStr}`;
-                    xExpr = `(iw-iw/zoom)*(1-(on/${frames}))`;
-                    yExpr = 'ih/2-(ih/zoom/2)';
+                    zExpr = `${zoomIntensityStr}`;
+                    xExpr = `(iw-iw/zoom)*(1-(on/${maxFrames}))`;
+                    yExpr = '(ih-ih/zoom)/2';
                 } else if (motion === 'pan_right') {
-                    zExpr = `${maxZStr}`;
-                    xExpr = `(iw-iw/zoom)*(on/${frames})`;
-                    yExpr = 'ih/2-(ih/zoom/2)';
+                    zExpr = `${zoomIntensityStr}`;
+                    xExpr = `(iw-iw/zoom)*(on/${maxFrames})`;
+                    yExpr = '(ih-ih/zoom)/2';
                 } else if (motion === 'pan_up') {
-                    zExpr = `${maxZStr}`;
-                    xExpr = 'iw/2-(iw/zoom/2)';
-                    yExpr = `(ih-ih/zoom)*(1-(on/${frames}))`;
+                    zExpr = `${zoomIntensityStr}`;
+                    xExpr = '(iw-iw/zoom)/2';
+                    yExpr = `(ih-ih/zoom)*(1-(on/${maxFrames}))`;
                 } else if (motion === 'pan_down') {
-                    zExpr = `${maxZStr}`;
-                    xExpr = 'iw/2-(iw/zoom/2)';
-                    yExpr = `(ih-ih/zoom)*(on/${frames})`;
+                    zExpr = `${zoomIntensityStr}`;
+                    xExpr = '(iw-iw/zoom)/2';
+                    yExpr = `(ih-ih/zoom)*(on/${maxFrames})`;
                 } else if (motion === 'zoom_in_left') {
-                    zExpr = `min(zoom+${stepStr},${maxZStr})`;
+                    zExpr = `1.0+(${deltaStr}*(on/${maxFrames}))`;
                     xExpr = '0';
                     yExpr = '0';
                 } else if (motion === 'zoom_in_right') {
-                    zExpr = `min(zoom+${stepStr},${maxZStr})`;
+                    zExpr = `1.0+(${deltaStr}*(on/${maxFrames}))`;
                     xExpr = 'iw-iw/zoom';
                     yExpr = '0';
                 } else if (motion === 'zoom_pan') {
-                    zExpr = `min(zoom+${stepStr},${maxZStr})`;
-                    xExpr = `(iw-iw/zoom)*(on/${frames})`;
-                    yExpr = `(ih-ih/zoom)*(on/${frames})`;
+                    zExpr = `1.0+(${deltaStr}*(on/${maxFrames}))`;
+                    xExpr = `(iw-iw/zoom)*(on/${maxFrames})`;
+                    yExpr = `(ih-ih/zoom)*(on/${maxFrames})`;
                 } else {
-                    // none or fallback static
+                    // none or static
                     zExpr = '1.0';
-                    xExpr = 'iw/2-(iw/zoom/2)';
-                    yExpr = 'ih/2-(ih/zoom/2)';
+                    xExpr = '(iw-iw/zoom)/2';
+                    yExpr = '(ih-ih/zoom)/2';
                 }
 
                 // Ultra high-resolution intermediate canvas (8000px max) to eliminate subpixel rounding jitter across all resolutions

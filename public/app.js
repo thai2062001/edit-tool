@@ -644,13 +644,33 @@ function drawStudioCanvasFrame(index, progress = 0) {
 
 function renderImageFrameOnCanvas(ctx, canvas, item, img, progress) {
     const motion = item.settings.motion || 'zoom_in';
-    const zoomIntensity = item.settings.zoomIntensity || 1.25;
+    const zoomIntensity = Math.max(1.05, Math.min(2.0, Number(item.settings.zoomIntensity || 1.25)));
     const delta = zoomIntensity - 1.0;
+    const dur = Number(item.settings.duration || 5.0);
+    const fadeIn = Number(item.settings.fadeIn || 0);
+    const fadeOut = Number(item.settings.fadeOut || 0);
 
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Calculate smart aspect-ratio cover dimensions matching FFmpeg
+    const imgW = img.naturalWidth || img.width || canvas.width;
+    const imgH = img.naturalHeight || img.height || canvas.height;
+    const imgRatio = imgW / imgH;
+    const canvasRatio = canvas.width / canvas.height;
+
+    let drawW = canvas.width;
+    let drawH = canvas.height;
+
+    if (imgRatio > canvasRatio) {
+        drawH = canvas.height;
+        drawW = canvas.height * imgRatio;
+    } else {
+        drawW = canvas.width;
+        drawH = canvas.width / imgRatio;
+    }
 
     let zoom = 1.0;
     let offsetX = 0;
@@ -693,10 +713,21 @@ function renderImageFrameOnCanvas(ctx, canvas, item, img, progress) {
         offsetY = 0;
     }
 
+    // Apply Fade In / Fade Out smoothly on canvas
+    const currentTime = progress * dur;
+    let alpha = 1.0;
+    if (fadeIn > 0 && currentTime < fadeIn) {
+        alpha = Math.min(alpha, Math.max(0, currentTime / fadeIn));
+    }
+    if (fadeOut > 0 && currentTime > dur - fadeOut) {
+        alpha = Math.min(alpha, Math.max(0, (dur - currentTime) / fadeOut));
+    }
+
     ctx.save();
+    ctx.globalAlpha = alpha;
     ctx.translate(canvas.width / 2, canvas.height / 2);
     ctx.scale(zoom, zoom);
-    ctx.drawImage(img, -canvas.width / 2 + offsetX, -canvas.height / 2 + offsetY, canvas.width, canvas.height);
+    ctx.drawImage(img, -drawW / 2 + offsetX, -drawH / 2 + offsetY, drawW, drawH);
     ctx.restore();
 
     // Render Text Overlay (Smart Auto Word-Wrap to prevent overflow)
