@@ -44,7 +44,7 @@ Medium perspective shot at the drive-thru window, exactly two characters in scen
 
 Interior car perspective shot looking at the passenger seat with the dashboard and windshield in the background, only one single character in the car (royal blue t-shirt) frantically dumping out a backpack with a panicked crying expression as a single tiny coin drops out, bold clean black outlines, flat color shading, 2D comic art, 16:9 widescreen composition, no text.
 
-Wide perspective shot outside a modern glass-front coffee shop on a city street, a crowd of diverse background civilian customers (wearing assorted red, yellow, orange, and grey coats, diverse different colored clothing, none wearing blue t-shirts or lime green clogs) clinging dramatically to the glass doors with exaggerated weeping sad faces, sidewalk and street in the background, bold clean black outlines, flat color shading, 2D animation, 16:9 widescreen composition, no text.
+Wide perspective shot outside a closed coffee shop on a city street, only one single desperate civilian stick-figure wearing a brown winter trench coat and black shoes standing with head in hands looking at a locked coffee shop door, empty sidewalk with city trees in the background, bold clean black outlines, flat color shading, 2D animation, 16:9 widescreen composition, no text.
 
 Wide perspective shot outside a commercial bank building on a sunny sidewalk, a long queue of diverse background bank customers (wearing different colored office shirts, suits, brown and beige jackets, none wearing blue t-shirts) with gloomy sad expressions waiting in front of an ATM machine with a blank dark screen, city street trees in the background, bold clean black outlines, flat color shading, 2D vector art, 16:9 widescreen composition, no text.
 
@@ -76,7 +76,7 @@ Cozy indoor lounge perspective shot inside a modern office with colorful beanbag
 
 Heroic low-angle perspective shot inside a sunlit auto repair shop with tool racks and car parts in the background, only one single blue-collar mechanic stick-figure in blue denim overalls and grey undershirt holding a wrench with a proud smiling expression, single lone character in garage, bold clean black outlines, flat color shading, 2D cartoon style, 16:9 widescreen composition, no text.
 
-Wide outdoor perspective shot in front of a rustic garage with trees and a sunny driveway, a friendly mechanic stick-figure in denim overalls leaning over a car engine with a wrench, smiling at gathered neighbor spectators (wearing varied orange, brown, and yellow casual jackets) who watch with admiring happy faces, bold clean black outlines, flat color shading, 2D animation, 16:9 widescreen composition, no text.
+Wide outdoor perspective shot in a sunlit town square, showing three heroic blue-collar stick-figures (a car mechanic with a wrench, a reliable plumber with pipe tools, and a Midwest farmer in overalls with a straw hat) standing proudly while diverse neighbors look on with admiring happy faces, bold clean black outlines, flat color shading, 2D animation, 16:9 widescreen composition, no text.
 
 Charming tabletop perspective shot with warm sunlight streaming through a window in the background, displaying a vintage FM radio with antenna, a mechanical typewriter with paper, and a rotary landline phone, still life with no characters, bold clean black outlines, flat color shading, clean nostalgic 2D illustration, 16:9 widescreen composition, no text.
 
