@@ -836,9 +836,63 @@
             if (dom.paneSubtitles) dom.paneSubtitles.classList.add('active');
 
             updateTimelineImageCount();
+            syncTimelineToSubtitles();
             if (!SubState.currentMedia) {
                 grabEditorVideo(true);
             }
+        }
+    }
+
+    // Two-Way Sync: Sync Tab 1 MediaItems & Text Overlays into Subtitles Module
+    function syncTimelineToSubtitles() {
+        if (!window.mediaItems || window.mediaItems.length === 0) return;
+
+        const hasTimelineTexts = window.mediaItems.some(item => item.settings?.overlayText && item.settings.overlayText.trim());
+        if (!hasTimelineTexts && SubState.segments.length > 0) {
+            return; // Keep existing SubState if Tab 1 has no text yet
+        }
+
+        let accumulatedTime = 0;
+        const syncedSegments = [];
+
+        window.mediaItems.forEach((item, idx) => {
+            const isImage = item.type === 'image';
+            const dur = isImage 
+                ? Number(item.settings?.duration || 5.0) 
+                : Math.max(0.5, Number(item.settings?.trimEnd || item.duration || 5) - Number(item.settings?.trimStart || 0));
+
+            const startTime = parseFloat(accumulatedTime.toFixed(2));
+            const endTime = parseFloat((accumulatedTime + dur).toFixed(2));
+            accumulatedTime += dur;
+
+            const text = item.settings?.overlayText?.trim() || '';
+            const words = text ? text.split(/\s+/).filter(Boolean) : [];
+            const wordDur = words.length > 0 ? (dur / words.length) : dur;
+            const wordObjects = words.map((w, wIdx) => ({
+                word: w,
+                start: parseFloat((startTime + wIdx * wordDur).toFixed(2)),
+                end: parseFloat((startTime + (wIdx + 1) * wordDur).toFixed(2))
+            }));
+
+            syncedSegments.push({
+                id: idx + 1,
+                start: startTime,
+                end: endTime,
+                duration: dur,
+                text: text,
+                imageIndex: idx,
+                imageFilename: item.filename,
+                imageOriginalName: item.originalName,
+                imageUrl: item.url,
+                matchScore: 95,
+                matchReason: 'Đồng bộ từ Timeline Tab 1',
+                words: wordObjects
+            });
+        });
+
+        if (syncedSegments.length > 0) {
+            SubState.segments = syncedSegments;
+            renderCuesList();
         }
     }
 

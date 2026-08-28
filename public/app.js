@@ -402,8 +402,54 @@ function renderMediaList() {
 }
 
 
+let isUpdatingInspector = false;
+
+function commitCurrentInspectorSettings() {
+    if (activeSegmentIndex < 0 || activeSegmentIndex >= mediaItems.length) return;
+    const item = mediaItems[activeSegmentIndex];
+    if (!item) return;
+    if (!item.settings) item.settings = {};
+
+    const inspMotion = document.getElementById('insp-motion');
+    const inspDuration = document.getElementById('insp-duration');
+    const inspLoopCount = document.getElementById('insp-loopcount');
+    const inspLoopCountVideo = document.getElementById('insp-loopcount-video');
+    const inspIntensity = document.getElementById('insp-intensity');
+    const inspFadeIn = document.getElementById('insp-fadein');
+    const inspFadeOut = document.getElementById('insp-fadeout');
+    const inspTrimStart = document.getElementById('insp-trimstart');
+    const inspTrimEnd = document.getElementById('insp-trimend');
+    const inspVideoVolume = document.getElementById('insp-videovolume');
+    const inspText = document.getElementById('insp-text');
+    const inspTextPos = document.getElementById('insp-textpos');
+    const inspTextStyle = document.getElementById('insp-textstyle');
+    const inspTextSize = document.getElementById('insp-textsize');
+
+    if (item.type === 'image') {
+        if (inspMotion) item.settings.motion = inspMotion.value;
+        if (inspDuration) item.settings.duration = parseFloat(inspDuration.value) || 5.0;
+        if (inspLoopCount) item.settings.loopCount = parseInt(inspLoopCount.value) || 1;
+        if (inspIntensity) item.settings.zoomIntensity = parseFloat(inspIntensity.value) || 1.25;
+        if (inspFadeIn) item.settings.fadeIn = parseFloat(inspFadeIn.value) || 0;
+        if (inspFadeOut) item.settings.fadeOut = parseFloat(inspFadeOut.value) || 0;
+    } else {
+        if (inspTrimStart) item.settings.trimStart = parseFloat(inspTrimStart.value) || 0;
+        if (inspTrimEnd) item.settings.trimEnd = parseFloat(inspTrimEnd.value) || item.duration || 5;
+        if (inspLoopCountVideo) item.settings.loopCount = parseInt(inspLoopCountVideo.value) || 1;
+        if (inspVideoVolume) item.settings.videoVolume = parseFloat(inspVideoVolume.value) || 1.0;
+    }
+
+    if (inspText) item.settings.overlayText = inspText.value;
+    if (inspTextPos) item.settings.textPosition = inspTextPos.value;
+    if (inspTextStyle) item.settings.textStyle = inspTextStyle.value;
+    if (inspTextSize) item.settings.fontSize = parseInt(inspTextSize.value) || 48;
+}
+
 function selectSegment(index, shouldScroll = true) {
     if (index < 0 || index >= mediaItems.length) return;
+    if (index !== activeSegmentIndex) {
+        commitCurrentInspectorSettings();
+    }
     activeSegmentIndex = index;
 
     // Highlight card
@@ -429,6 +475,9 @@ function updateQuickInspector(index) {
         return;
     }
     if (quickInspector) quickInspector.classList.remove('hidden');
+
+    isUpdatingInspector = true;
+    try {
 
     const inspNum = document.getElementById('inspector-segment-num');
     const inspFilename = document.getElementById('inspector-filename');
@@ -514,6 +563,9 @@ function updateQuickInspector(index) {
     }
     if (btnInspDelete) {
         btnInspDelete.onclick = () => { removeItem(index); };
+    }
+    } finally {
+        isUpdatingInspector = false;
     }
 }
 
@@ -819,6 +871,7 @@ function bindQuickInspectorInputs() {
     const inspTextSize = document.getElementById('insp-textsize');
 
     function onInspectorChange() {
+        if (isUpdatingInspector) return;
         const item = mediaItems[activeSegmentIndex];
         if (!item) return;
 
@@ -1341,6 +1394,12 @@ function previewItemMotion(index) {
             previewItemData.settings.textStyle = modalPreviewTextStyle ? modalPreviewTextStyle.value : 'banner';
             previewItemData.settings.fontSize = modalPreviewTextSize ? parseInt(modalPreviewTextSize.value) : 48;
             previewEffectName.innerText = previewItemData.settings.motion.replace('_', ' ').toUpperCase();
+            
+            // Live-sync to mediaItems so changes are never lost when modal is closed
+            if (previewCurrentIndex >= 0 && mediaItems[previewCurrentIndex]) {
+                mediaItems[previewCurrentIndex].settings = JSON.parse(JSON.stringify(previewItemData.settings));
+                triggerAutoSave();
+            }
             startPreviewAnimation();
         });
     }
