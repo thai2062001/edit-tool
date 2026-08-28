@@ -589,6 +589,8 @@ function renderImageFrameOnCanvas(ctx, canvas, item, img, progress) {
     const zoomIntensity = item.settings.zoomIntensity || 1.25;
     const delta = zoomIntensity - 1.0;
 
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -1343,6 +1345,8 @@ function startPreviewAnimation() {
         previewTimeDisplay.innerText = `${currentSec}s / ${dur}s`;
 
         // Clear canvas
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
         ctx.fillStyle = '#000';
         ctx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
 

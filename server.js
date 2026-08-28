@@ -916,51 +916,55 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
                 let xExpr = '(iw-iw/zoom)/2';
                 let yExpr = '(ih-ih/zoom)/2';
 
+                const step = frames > 0 ? (delta / frames) : 0.001;
+                const stepStr = step.toFixed(6);
+                const maxZStr = zoomIntensity.toFixed(3);
+
                 if (motion === 'zoom_in') {
-                    zExpr = `1.0+(${delta}*(on/${frames}))`;
-                    xExpr = '(iw-iw/zoom)/2';
-                    yExpr = '(ih-ih/zoom)/2';
+                    zExpr = `min(zoom+${stepStr},${maxZStr})`;
+                    xExpr = 'iw/2-(iw/zoom/2)';
+                    yExpr = 'ih/2-(ih/zoom/2)';
                 } else if (motion === 'zoom_out') {
-                    zExpr = `${zoomIntensity}-(${delta}*(on/${frames}))`;
-                    xExpr = '(iw-iw/zoom)/2';
-                    yExpr = '(ih-ih/zoom)/2';
+                    zExpr = `if(eq(on,0),${maxZStr},max(1.0,zoom-${stepStr}))`;
+                    xExpr = 'iw/2-(iw/zoom/2)';
+                    yExpr = 'ih/2-(ih/zoom/2)';
                 } else if (motion === 'pan_left') {
-                    zExpr = `${zoomIntensity}`;
+                    zExpr = `${maxZStr}`;
                     xExpr = `(iw-iw/zoom)*(1-(on/${frames}))`;
-                    yExpr = '(ih-ih/zoom)/2';
+                    yExpr = 'ih/2-(ih/zoom/2)';
                 } else if (motion === 'pan_right') {
-                    zExpr = `${zoomIntensity}`;
+                    zExpr = `${maxZStr}`;
                     xExpr = `(iw-iw/zoom)*(on/${frames})`;
-                    yExpr = '(ih-ih/zoom)/2';
+                    yExpr = 'ih/2-(ih/zoom/2)';
                 } else if (motion === 'pan_up') {
-                    zExpr = `${zoomIntensity}`;
-                    xExpr = '(iw-iw/zoom)/2';
+                    zExpr = `${maxZStr}`;
+                    xExpr = 'iw/2-(iw/zoom/2)';
                     yExpr = `(ih-ih/zoom)*(1-(on/${frames}))`;
                 } else if (motion === 'pan_down') {
-                    zExpr = `${zoomIntensity}`;
-                    xExpr = '(iw-iw/zoom)/2';
+                    zExpr = `${maxZStr}`;
+                    xExpr = 'iw/2-(iw/zoom/2)';
                     yExpr = `(ih-ih/zoom)*(on/${frames})`;
                 } else if (motion === 'zoom_in_left') {
-                    zExpr = `1.0+(${delta}*(on/${frames}))`;
+                    zExpr = `min(zoom+${stepStr},${maxZStr})`;
                     xExpr = '0';
                     yExpr = '0';
                 } else if (motion === 'zoom_in_right') {
-                    zExpr = `1.0+(${delta}*(on/${frames}))`;
+                    zExpr = `min(zoom+${stepStr},${maxZStr})`;
                     xExpr = 'iw-iw/zoom';
                     yExpr = '0';
                 } else if (motion === 'zoom_pan') {
-                    zExpr = `1.0+(${delta}*(on/${frames}))`;
+                    zExpr = `min(zoom+${stepStr},${maxZStr})`;
                     xExpr = `(iw-iw/zoom)*(on/${frames})`;
                     yExpr = `(ih-ih/zoom)*(on/${frames})`;
                 } else {
                     // none or fallback static
                     zExpr = '1.0';
-                    xExpr = '(iw-iw/zoom)/2';
-                    yExpr = '(ih-ih/zoom)/2';
+                    xExpr = 'iw/2-(iw/zoom/2)';
+                    yExpr = 'ih/2-(ih/zoom/2)';
                 }
 
-                // High-resolution canvas to eliminate subpixel rounding jitter across all resolutions (720p, 1080p, 16:9, 9:16, 1:1)
-                const scaleFactor = Math.max(2, Math.ceil(3840 / Math.max(width, height)));
+                // Ultra high-resolution intermediate canvas (8000px max) to eliminate subpixel rounding jitter across all resolutions
+                const scaleFactor = Math.max(4, Math.ceil(7680 / Math.max(width, height)));
                 const highW = width * scaleFactor;
                 const highH = height * scaleFactor;
 
@@ -973,7 +977,7 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
                     preScaleFilter = `scale=w=${highW}:h=${highH}:force_original_aspect_ratio=increase,crop=${highW}:${highH}`;
                 }
 
-                let vFilters = `${preScaleFilter},zoompan=z='${zExpr}':x='${xExpr}':y='${yExpr}':d=${frames}:s=${width}x${height}:fps=${fps},setsar=1,format=yuv420p`;
+                let vFilters = `${preScaleFilter},zoompan=z='${zExpr}':x='${xExpr}':y='${yExpr}':d=${frames}:s=${width}x${height}:fps=${fps},setpts=PTS-STARTPTS,fps=fps=${fps}:round=near,setsar=1,format=yuv420p`;
 
                 if (fadeIn > 0) {
                     vFilters += `,fade=t=in:st=0:d=${fadeIn}`;
@@ -1008,7 +1012,7 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
                     reframeFilter = `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:black`;
                 }
 
-                let vFilters = `trim=start=${trimStart}:end=${trimEnd},setpts=PTS-STARTPTS,${reframeFilter},setsar=1,fps=${fps},format=yuv420p`;
+                let vFilters = `trim=start=${trimStart}:end=${trimEnd},setpts=PTS-STARTPTS,${reframeFilter},setsar=1,fps=fps=${fps}:round=near,setpts=PTS-STARTPTS,format=yuv420p`;
 
                 if (fadeIn > 0) {
                     vFilters += `,fade=t=in:st=0:d=${fadeIn}`;
@@ -1044,7 +1048,7 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
         args.push('-filter_complex', filterComplex.join('; '));
         args.push('-map', '[v_concat]');
         args.push('-map', '[a_concat]');
-        args.push('-c:v', 'libx264', '-preset', preset || 'fast', '-crf', crf || '20', '-pix_fmt', 'yuv420p');
+        args.push('-c:v', 'libx264', '-preset', preset || 'fast', '-crf', crf || '20', '-pix_fmt', 'yuv420p', '-r', `${fps}`);
         args.push('-c:a', 'aac', '-b:a', '192k', '-ar', '44100', '-ac', '2', '-movflags', '+faststart');
         args.push(chunkOutputPath);
 
