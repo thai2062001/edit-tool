@@ -3325,3 +3325,160 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
+// =========================================================================
+// ONE-CLICK AI AUDIO & VOICEOVER DIRECTOR (TAB 1 INTEGRATION)
+// =========================================================================
+let currentVoiceoverSyncData = null;
+
+const btnAutoSyncVoiceover = document.getElementById('btn-auto-sync-voiceover');
+const btnBgmVoiceoverSync = document.getElementById('btn-bgm-voiceover-sync');
+const inputVoiceoverFile = document.getElementById('input-voiceover-file');
+const voiceoverSyncModal = document.getElementById('voiceover-sync-modal');
+const voiceoverSyncLoading = document.getElementById('voiceover-sync-loading');
+const voiceoverSyncResult = document.getElementById('voiceover-sync-result');
+const voiceoverStatSentences = document.getElementById('voiceover-stat-sentences');
+const voiceoverStatTitle = document.getElementById('voiceover-stat-title');
+const voiceoverStatDesc = document.getElementById('voiceover-stat-desc');
+const voiceoverSentencesList = document.getElementById('voiceover-sentences-list');
+const btnConfirmVoiceoverSync = document.getElementById('btn-confirm-voiceover-sync');
+const btnCloseVoiceoverModal = document.getElementById('btn-close-voiceover-modal');
+const btnCancelVoiceoverModal = document.getElementById('btn-cancel-voiceover-modal');
+
+if (btnAutoSyncVoiceover && inputVoiceoverFile) {
+    btnAutoSyncVoiceover.addEventListener('click', () => {
+        inputVoiceoverFile.click();
+    });
+}
+
+if (btnBgmVoiceoverSync && inputVoiceoverFile) {
+    btnBgmVoiceoverSync.addEventListener('click', () => {
+        inputVoiceoverFile.click();
+    });
+}
+
+if (inputVoiceoverFile) {
+    inputVoiceoverFile.addEventListener('change', async (e) => {
+        if (!e.target.files || !e.target.files[0]) return;
+        const file = e.target.files[0];
+        await executeVoiceoverSync(file);
+        inputVoiceoverFile.value = '';
+    });
+}
+
+async function executeVoiceoverSync(file) {
+    if (!voiceoverSyncModal) return;
+
+    voiceoverSyncModal.classList.remove('hidden');
+    if (voiceoverSyncLoading) voiceoverSyncLoading.classList.remove('hidden');
+    if (voiceoverSyncResult) voiceoverSyncResult.classList.add('hidden');
+    if (btnConfirmVoiceoverSync) btnConfirmVoiceoverSync.disabled = true;
+
+    const formData = new FormData();
+    formData.append('audioFile', file);
+    formData.append('items', JSON.stringify(mediaItems || []));
+
+    // Check if there is script text available in AI modal or somewhere
+    const scriptInput = document.getElementById('ai-script-input') || document.getElementById('sub-script-textarea');
+    if (scriptInput && scriptInput.value) {
+        formData.append('scriptText', scriptInput.value);
+    }
+
+    try {
+        const res = await fetch('/api/ai/auto-sync-voiceover', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+            throw new Error(data.error || 'Lỗi xử lý file giọng đọc từ AI');
+        }
+
+        currentVoiceoverSyncData = data;
+        renderVoiceoverSyncResults(data, file.name);
+
+    } catch (err) {
+        alert('❌ Lỗi đồng bộ giọng đọc: ' + err.message);
+        voiceoverSyncModal.classList.add('hidden');
+    }
+}
+
+function renderVoiceoverSyncResults(data, originalFileName) {
+    if (voiceoverSyncLoading) voiceoverSyncLoading.classList.add('hidden');
+    if (voiceoverSyncResult) voiceoverSyncResult.classList.remove('hidden');
+    if (btnConfirmVoiceoverSync) btnConfirmVoiceoverSync.disabled = false;
+
+    if (voiceoverStatSentences) voiceoverStatSentences.innerText = data.totalSentences || 0;
+    if (voiceoverStatTitle) voiceoverStatTitle.innerText = `Đã phân tích thành công: ${originalFileName}`;
+    if (voiceoverStatDesc) {
+        voiceoverStatDesc.innerText = `Tổng thời lượng: ${data.totalDuration}s | Khớp chính xác ${data.totalSentences} câu thoại với từng phân cảnh.`;
+    }
+
+    if (voiceoverSentencesList) {
+        let html = '';
+        const sentences = data.sentences || [];
+        const items = data.updatedItems || [];
+
+        sentences.forEach((sent, idx) => {
+            const item = items[idx];
+            const dur = sent.duration || (sent.end - sent.start);
+            const thumbUrl = item?.url ? item.url : '';
+
+            html += `
+                <div class="alignment-scene-card is-perfect mb-2" style="padding: 12px; border-radius: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);">
+                    <div class="flex-row align-center gap-md flex-wrap">
+                        <div style="width: 80px; height: 50px; border-radius: 6px; overflow: hidden; background: #000; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            ${thumbUrl ? `<img src="${thumbUrl}" style="width: 100%; height: 100%; object-fit: cover;">` : `<span style="font-size: 1.5rem;">🖼️</span>`}
+                        </div>
+                        <div style="flex: 1; min-width: 200px;">
+                            <div class="flex-row align-center gap-xs">
+                                <span class="badge" style="background: var(--accent-cyan); color: #000; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 4px;">Cảnh #${idx + 1}</span>
+                                <span class="text-xs text-dim">⏱️ ${sent.start.toFixed(1)}s ➔ ${sent.end.toFixed(1)}s (${dur.toFixed(1)}s)</span>
+                            </div>
+                            <div class="mt-1" style="font-size: 14px; font-weight: 500; color: #fff;">
+                                ✍️ "${escapeHtml(sent.text)}"
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        voiceoverSentencesList.innerHTML = html;
+    }
+}
+
+if (btnConfirmVoiceoverSync) {
+    btnConfirmVoiceoverSync.addEventListener('click', () => {
+        if (!currentVoiceoverSyncData) return;
+
+        if (currentVoiceoverSyncData.updatedItems) {
+            mediaItems = currentVoiceoverSyncData.updatedItems;
+            window.mediaItems = mediaItems;
+        }
+
+        if (currentVoiceoverSyncData.bgmTrack) {
+            bgmTrack = currentVoiceoverSyncData.bgmTrack;
+            window.bgmTrack = bgmTrack;
+            updateBgmUI();
+        }
+
+        renderMediaList();
+        triggerAutoSave();
+
+        if (voiceoverSyncModal) voiceoverSyncModal.classList.add('hidden');
+        alert(`🎉 Đã đồng bộ thành công ${currentVoiceoverSyncData.totalSentences} câu thoại từ Audio vào toàn bộ Timeline!`);
+    });
+}
+
+if (btnCloseVoiceoverModal) {
+    btnCloseVoiceoverModal.addEventListener('click', () => {
+        if (voiceoverSyncModal) voiceoverSyncModal.classList.add('hidden');
+    });
+}
+
+if (btnCancelVoiceoverModal) {
+    btnCancelVoiceoverModal.addEventListener('click', () => {
+        if (voiceoverSyncModal) voiceoverSyncModal.classList.add('hidden');
+    });
+}

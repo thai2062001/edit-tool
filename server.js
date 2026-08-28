@@ -575,6 +575,213 @@ Trả về JSON chính xác theo cấu trúc:
     }
 });
 
+// Helper: Extract lightweight MP3 for fast AI processing
+function extractLightweightAudio(inputPath, outputPath) {
+    return new Promise((resolve, reject) => {
+        const ff = spawn('ffmpeg', [
+            '-y',
+            '-i', inputPath,
+            '-vn',
+            '-ac', '1',
+            '-ar', '16000',
+            '-b:a', '48k',
+            outputPath
+        ]);
+        ff.on('close', (code) => {
+            if (code === 0) resolve();
+            else reject(new Error(`FFmpeg audio extract failed with code ${code}`));
+        });
+        ff.on('error', reject);
+    });
+}
+
+// =========================================================================
+// ONE-CLICK AI AUDIO & VOICEOVER DIRECTOR: TRANSCRIBE, SLICE & AUTO-SYNC TIMELINE
+// =========================================================================
+app.post('/api/ai/auto-sync-voiceover', upload.single('audioFile'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'Vui lòng tải lên tệp âm thanh (MP3, WAV, M4A)' });
+        }
+
+        const audioPath = req.file.path;
+        let items = [];
+        try {
+            items = req.body.items ? JSON.parse(req.body.items) : [];
+        } catch (e) {
+            items = [];
+        }
+
+        const scriptText = (req.body.scriptText || '').trim();
+        const apiKey = (req.body.customApiKey && req.body.customApiKey.trim()) ? req.body.customApiKey.trim() : DEFAULT_GEMINI_API_KEY;
+
+        const totalAudioDuration = await getMediaDuration(audioPath);
+
+        // Extract lightweight audio buffer for Gemini
+        let audioBase64 = null;
+        const tempAudio = path.join(UPLOADS_DIR, `temp_vo_${Date.now()}.mp3`);
+        try {
+            await extractLightweightAudio(audioPath, tempAudio);
+            if (fs.existsSync(tempAudio)) {
+                const buf = fs.readFileSync(tempAudio);
+                if (buf.length <= 25 * 1024 * 1024) {
+                    audioBase64 = buf.toString('base64');
+                }
+                try { fs.unlinkSync(tempAudio); } catch (e) {}
+            }
+        } catch (e) {
+            console.warn('Voiceover lightweight extract warning:', e.message);
+        }
+
+        const ai = new GoogleGenAI({ apiKey });
+        const contents = [];
+
+        if (audioBase64) {
+            contents.push({
+                inlineData: {
+                    mimeType: 'audio/mp3',
+                    data: audioBase64
+                }
+            });
+        }
+
+        let promptText = `
+Bạn là Đạo diễn kiêm Kỹ sư âm thanh & Dựng phim AI chuyên nghiệp.
+Nhiệm vụ: Hãy lắng nghe file âm thanh giọng đọc đính kèm (tổng thời lượng: ${totalAudioDuration.toFixed(2)} giây).
+${scriptText ? `Kịch bản tham khảo nếu có: """${scriptText.slice(0, 4000)}"""` : 'Hãy tự động chép lời (transcribe) chính xác từng câu từ giọng nói.'}
+
+YÊU CẦU:
+1. Bóc tách giọng đọc thành các câu thoại hoàn chỉnh, tự nhiên theo từng phân cảnh (mỗi câu khoảng 4 - 8 từ, ngắt câu theo nhịp thở hoặc dấu chấm/phẩy).
+2. Xác định chính xác thời điểm bắt đầu (start tính bằng giây) và kết thúc (end tính bằng giây) của từng câu.
+3. Tính toán thời lượng duration = end - start (tối thiểu 1.5 giây cho mỗi cảnh để người xem kịp nhìn hình).
+4. Phân bổ phủ kín toàn bộ thời lượng âm thanh ${totalAudioDuration.toFixed(2)} giây, không để bị đứt đoạn.
+5. Trả về DUY NHẤT một JSON hợp lệ:
+{
+  "sentences": [
+    {
+      "id": 1,
+      "start": 0.0,
+      "end": 4.2,
+      "duration": 4.2,
+      "text": "Chào mừng các bạn đến với bản tin ngày hôm nay"
+    }
+  ]
+}
+`;
+        contents.push({ text: promptText });
+
+        let response = null;
+        try {
+            response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: contents,
+                config: { responseMimeType: 'application/json' }
+            });
+        } catch (modelErr) {
+            console.warn('Gemini generateContent notice:', modelErr.message);
+        }
+
+        let sentences = [];
+        if (response && response.text) {
+            try {
+                const cleanJson = response.text.replace(/```json/g, '').replace(/```/g, '').trim();
+                const parsed = JSON.parse(cleanJson);
+                sentences = parsed.sentences || (Array.isArray(parsed) ? parsed : []);
+            } catch (e) {
+                console.warn('JSON parse warning on voiceover response:', e.message);
+            }
+        }
+
+        // Smart Heuristic Fallback: Split script or distribute duration evenly across scenes
+        if (!sentences || sentences.length === 0) {
+            if (scriptText) {
+                const rawSentences = scriptText.split(/(?<=[.!?\n])\s+/).filter(s => s.trim().length > 0);
+                const count = Math.max(1, rawSentences.length);
+                const avgDur = parseFloat((totalAudioDuration / count).toFixed(2));
+                sentences = rawSentences.map((text, i) => ({
+                    id: i + 1,
+                    start: parseFloat((i * avgDur).toFixed(2)),
+                    end: parseFloat(Math.min(totalAudioDuration, (i + 1) * avgDur).toFixed(2)),
+                    duration: avgDur,
+                    text: text.trim()
+                }));
+            } else {
+                const count = Math.max(1, items.length || 3);
+                const avgDur = parseFloat((totalAudioDuration / count).toFixed(2));
+                sentences = Array.from({ length: count }, (_, i) => ({
+                    id: i + 1,
+                    start: parseFloat((i * avgDur).toFixed(2)),
+                    end: parseFloat(Math.min(totalAudioDuration, (i + 1) * avgDur).toFixed(2)),
+                    duration: avgDur,
+                    text: `Phân cảnh giọng đọc #${i + 1}`
+                }));
+            }
+        }
+
+        // Map sentences to timeline items
+        const updatedItems = [...items];
+        
+        sentences.forEach((sent, idx) => {
+            const sentenceDuration = Math.max(1.5, parseFloat((sent.duration || (sent.end - sent.start) || 4.0).toFixed(2)));
+            const sentenceText = (sent.text || '').trim();
+
+            if (idx < updatedItems.length) {
+                // Update existing item
+                if (!updatedItems[idx].settings) updatedItems[idx].settings = {};
+                updatedItems[idx].settings.duration = sentenceDuration;
+                updatedItems[idx].settings.overlayText = sentenceText;
+                updatedItems[idx].settings.textPosition = updatedItems[idx].settings.textPosition || 'bottom';
+                updatedItems[idx].settings.textStyle = updatedItems[idx].settings.textStyle || 'banner';
+                updatedItems[idx].settings.fontSize = updatedItems[idx].settings.fontSize || 48;
+            } else {
+                // If more sentences than images, duplicate last image or create placeholder
+                const baseItem = updatedItems.length > 0 ? updatedItems[updatedItems.length - 1] : null;
+                const newItem = {
+                    id: `sync_${Date.now()}_${idx}`,
+                    filename: baseItem ? baseItem.filename : `placeholder_${idx + 1}.jpg`,
+                    originalName: baseItem ? baseItem.originalName : `Phân cảnh ${idx + 1}`,
+                    type: 'image',
+                    isPlaceholder: !baseItem,
+                    url: baseItem ? baseItem.url : '',
+                    settings: {
+                        duration: sentenceDuration,
+                        motion: 'zoom_in',
+                        zoomIntensity: 1.25,
+                        fadeIn: 0.5,
+                        fadeOut: 0.5,
+                        overlayText: sentenceText,
+                        textPosition: 'bottom',
+                        textStyle: 'banner',
+                        fontSize: 48
+                    }
+                };
+                updatedItems.push(newItem);
+            }
+        });
+
+        const bgmTrack = {
+            filename: req.file.filename,
+            originalName: req.file.originalname,
+            duration: totalAudioDuration,
+            volume: 1.0,
+            url: `/uploads/${req.file.filename}`
+        };
+
+        res.json({
+            success: true,
+            totalDuration: parseFloat(totalAudioDuration.toFixed(2)),
+            totalSentences: sentences.length,
+            sentences: sentences,
+            updatedItems: updatedItems,
+            bgmTrack: bgmTrack
+        });
+
+    } catch (err) {
+        console.error('Auto voiceover sync error:', err);
+        res.status(500).json({ error: err.message || 'Lỗi khi đồng bộ giọng đọc tự động' });
+    }
+});
+
 // =========================================================================
 // AI SCRIPT & SCENE PACING AUDITOR: EVALUATE & AUTO-FIT SCENE DURATIONS
 // =========================================================================

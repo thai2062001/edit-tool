@@ -40,6 +40,9 @@
                     <button id="btn-open-ai-modal" class="btn btn-ai btn-small" title="Tự động phân tích kịch bản và khớp các phân cảnh">
                         <span class="icon">🤖</span> Khớp Kịch Bản (AI)
                     </button>
+                    <button id="btn-auto-sync-voiceover" class="btn btn-ai btn-small" title="Tải file Audio giọng đọc lên để AI tự động cắt câu, gán phụ đề và cân chỉnh thời lượng Timeline 1 chạm">
+                        <span class="icon">🎙️</span> Khớp Giọng Đọc (AI)
+                    </button>
                     <button id="btn-audit-image-alignment" class="btn btn-ai btn-small" title="AI Đánh giá xem hình ảnh đã khớp nội dung câu kịch bản chưa, gợi ý đổi ảnh chuẩn hơn từ kho ảnh">
                         <span class="icon">🖼️</span> Khớp Hình Ảnh (AI)
                     </button>
@@ -203,6 +206,9 @@
                                     </div>
                                     <button id="btn-remove-bgm" class="btn btn-icon btn-ghost" title="Xóa nhạc">✕</button>
                                 </div>
+                                <button type="button" id="btn-bgm-voiceover-sync" class="btn btn-xs btn-ai w-100 mt-2" title="AI tự động phân tích giọng nói từ Audio này và cân chỉnh khớp toàn bộ Timeline">
+                                    🎙️ Khớp Giọng Đọc ➔ Timeline (AI)
+                                </button>
                                 <div class="slider-group mt-2">
                                     <div class="slider-label">
                                         <span>Âm lượng BGM</span>
@@ -1884,6 +1890,61 @@
                         </button>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden input for one-click voiceover sync -->
+    <input type="file" id="input-voiceover-file" accept="audio/*,video/*" hidden>
+
+    <!-- Modal: AI One-Click Voiceover & Audio Sync -->
+    <div id="voiceover-sync-modal" class="modal-backdrop hidden">
+        <div class="modal-dialog modal-alignment-dialog">
+            <div class="modal-header">
+                <div class="flex-row align-center gap-xs">
+                    <span style="font-size: 1.5rem;">🎙️</span>
+                    <div>
+                        <h3 class="modal-title">AI Đồng Bộ Giọng Đọc & Tự Động Khớp Timeline (1 Chạm)</h3>
+                        <p class="modal-subtitle">Lắng nghe giọng nói trong Audio ➔ Bóc tách câu ➔ Cân chỉnh thời lượng ảnh & gán Phụ đề</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close-modal" id="btn-close-voiceover-modal">✕</button>
+            </div>
+
+            <div class="modal-body">
+                <!-- Loading State -->
+                <div id="voiceover-sync-loading" class="audit-loading-state hidden">
+                    <div class="audit-spinner"></div>
+                    <h4 class="mt-2">🤖 Gemini AI đang lắng nghe và bóc tách từng câu thoại...</h4>
+                    <p class="text-xs text-dim mt-1">Hệ thống đang trích xuất giọng đọc, nhận diện từng câu và tính toán số giây chính xác cho từng bức ảnh.</p>
+                </div>
+
+                <!-- Result Content -->
+                <div id="voiceover-sync-result" class="hidden">
+                    <div class="alignment-overview-banner">
+                        <div class="flex-row align-center gap-md flex-wrap">
+                            <div class="alignment-score-pill score-perfect">
+                                <span class="score-num" id="voiceover-stat-sentences">0</span>
+                                <span class="score-label">Câu Thoại</span>
+                            </div>
+                            <div class="alignment-summary-text">
+                                <h4 id="voiceover-stat-title">Đã bóc tách và khớp câu thành công!</h4>
+                                <p id="voiceover-stat-desc" class="text-xs text-dim">Tổng thời lượng audio: 0.0s | Đã cân chỉnh cho các phân cảnh.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alignment-scenes-container mt-3 custom-scrollbar" id="voiceover-sentences-list" style="max-height: 420px; overflow-y: auto;">
+                        <!-- Rendered sentence cards -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer flex-between">
+                <button type="button" class="btn btn-secondary btn-small" id="btn-cancel-voiceover-modal">Đóng</button>
+                <button type="button" class="btn btn-primary btn-small" id="btn-confirm-voiceover-sync">
+                    ⚡ Áp Dụng Toàn Bộ Vào Timeline & Dựng Video
+                </button>
             </div>
         </div>
     </div>
