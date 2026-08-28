@@ -3595,6 +3595,11 @@ async function executeVoiceoverSync(file, existingBgm = null) {
         formData.append('scriptText', scriptInput.value);
     }
 
+    const keyInput = document.getElementById('input-gemini-key') || document.getElementById('sub-input-api-key');
+    if (keyInput && keyInput.value) {
+        formData.append('customApiKey', keyInput.value.trim());
+    }
+
     try {
         const res = await fetch('/api/ai/auto-sync-voiceover', {
             method: 'POST',

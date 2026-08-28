@@ -604,11 +604,11 @@ app.post('/api/ai/auto-sync-voiceover', upload.single('audioFile'), async (req, 
         let audioFileName = '';
         let originalName = '';
 
-        if (req.file) {
+        if (req.file && fs.existsSync(req.file.path)) {
             audioPath = req.file.path;
             audioFileName = req.file.filename;
             originalName = req.file.originalname;
-        } else if (req.body.bgmFilename) {
+        } else if (req.body && req.body.bgmFilename) {
             const safeName = path.basename(req.body.bgmFilename);
             const candidatePath = path.join(UPLOADS_DIR, safeName);
             if (fs.existsSync(candidatePath)) {
@@ -618,8 +618,23 @@ app.post('/api/ai/auto-sync-voiceover', upload.single('audioFile'), async (req, 
             }
         }
 
+        // Fallback: Check if there is any uploaded audio in UPLOADS_DIR
         if (!audioPath || !fs.existsSync(audioPath)) {
-            return res.status(400).json({ error: 'Vui lòng tải lên tệp âm thanh (MP3, WAV, M4A) hoặc nạp BGM trước' });
+            try {
+                const files = fs.readdirSync(UPLOADS_DIR);
+                const audioFiles = files.filter(f => /\.(mp3|wav|m4a|aac|ogg|flac)$/i.test(f))
+                    .map(f => ({ name: f, time: fs.statSync(path.join(UPLOADS_DIR, f)).mtimeMs }))
+                    .sort((a, b) => b.time - a.time);
+                if (audioFiles.length > 0) {
+                    audioFileName = audioFiles[0].name;
+                    audioPath = path.join(UPLOADS_DIR, audioFileName);
+                    originalName = audioFileName;
+                }
+            } catch (e) {}
+        }
+
+        if (!audioPath || !fs.existsSync(audioPath)) {
+            return res.status(400).json({ error: 'Chưa tìm thấy tệp âm thanh. Vui lòng chọn tệp MP3/WAV hoặc nạp BGM trước.' });
         }
 
         let items = [];
