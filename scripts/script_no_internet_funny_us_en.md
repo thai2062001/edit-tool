@@ -1,8 +1,8 @@
 Imagine waking up at 8 AM on a gorgeous Saturday morning in New York or Los Angeles.
 
-You stretch, yawn, and reach for your phone to check for DMs from your crush... oh wait, you're still hopelessly single!
+You stretch, yawn, and habitually reach for your nightstand to grab your phone before your eyes are even fully open.
 
-You shrug it off and open TikTok to scroll through some juicy celebrity drama to wake yourself up.
+You unlock the screen, ready to doomscroll through TikTok, check overnight messages, and catch up on juicy drama.
 
 But wait... the loading circle is just spinning indefinitely. Turn on 5G? Still spinning like crazy.
 
