@@ -1,3 +1,11 @@
+# MASTER PROMPT: CHARACTER & EXPRESSION (NHÂN VẬT & BIỂU CẢM)
+`Character: Animated 2D stick-figure (Porch Guy). Perfectly spherical smooth white head, expressive dot eyes and clean mouth line, pure black stick limbs, wearing a vibrant royal blue t-shirt and lime green clogs. The ONLY protagonist with this blue shirt and green clogs outfit in the entire story (all other background characters must wear distinct different colored clothing). Expressions: Highly expressive matching the 9-mood model sheet (Happy, Sad, Angry, Surprised, Thinking, Laughing, Confused, Exasperated, Mischievous). Style: Bold clean black outlines, flat color shading, 2D vector animation comic art.`
+
+# MASTER PROMPT: ENVIRONMENT & PERSPECTIVE (BỐI CẢNH & PHỐI CẢNH)
+`Environment & Composition: 16:9 widescreen cinematic composition with clear spatial perspective (foreground, midground, background). Setting reflects authentic modern Americana (New York skyline bedrooms, sunny suburban front yards with picket fences, drive-thru coffee lanes, massive highway interchanges, vintage diners, outdoor drive-in theaters, golden hour porches). Lighting: Vibrant natural daylight, warm golden hour sunbeams, cozy nighttime lamps, or soft blue moonlight. Clean vector art, no random text, speech bubbles only where specified.`
+
+---
+
 Wide-angle shot of a sunlit modern apartment bedroom with a large glass window showing the iconic New York skyline in golden morning light, only the solitary unique main stick-figure character (white round head, vibrant royal blue t-shirt, lime green clogs) sleeping peacefully under a messy duvet on a wooden bed, single lone character in the entire scene, cozy bedroom furniture and posters in the background, bold clean black outlines, flat color shading, 2D vector animation style, 16:9 widescreen composition, no text.
 
 Close-up shot inside the bedroom, only one solitary stick-figure character (white spherical head, black stick arms, signature royal blue t-shirt) showing a sleepy face with half-closed eyes and an open yawning mouth, single character in scene, blindly reaching his hand toward a wooden nightstand with a lamp and alarm clock in the background, bold clean black outlines, flat color shading, 2D comic art, 16:9 widescreen composition, no text.
