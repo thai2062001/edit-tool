@@ -18,7 +18,7 @@ Và rồi một sự thật phũ phàng bắt đầu ập đến: Đây không �
 
 Mạng Internet toàn cầu chính thức... bốc hơi vào không khí rồi. Biến mất vĩnh viễn không một dấu vết cảnh báo!
 
-Hết khoe xe Tesla trên Instagram, hết drama nhà Kardashian, và cũng tạm biệt luôn những đêm cày phim Netflix tới 2 giờ sáng.
+Hết khoe xe Tesla trên Instagram, hết quẹt Tinder tìm người yêu, và cũng tạm biệt luôn những đêm cày phim Netflix tới 2 giờ sáng.
 
 Điều gì sẽ thực sự xảy ra khi một siêu cường sống bằng Wi-Fi, Apple Pay và cà phê đá bị ngắt phích cắm vĩnh viễn?
 
@@ -30,9 +30,9 @@ Bạn bước vào bếp và cất giọng: "Alexa, bật đèn lên và phát c
 
 Nhưng chiếc cầu phát sáng chỉ nhấp nháy một vòng tròn đỏ ma mị, thì thầm: "Xin lỗi, tôi đang gặp sự cố kết nối Internet".
 
-Khóa thông minh không chịu mở, rèm cửa thông minh đóng chặt trong bóng tối mịt mù, còn robot hút bụi thì xoay vòng bất lực.
+Khóa thông minh không chịu mở, chuông cửa camera Ring thì tối om tắt ngúm, còn bộ điều nhiệt Nest thì ngắt kết nối khiến căn phòng lạnh ngắt.
 
-Robot Roomba đâm sầm đầu vào chân bàn, trong khi người Mỹ bàng hoàng phát hiện ra công tắc đèn bằng nhựa và chiếc chổi quét nhà bằng gỗ thực sự tồn tại!
+Người Mỹ bàng hoàng phát hiện ra công tắc đèn cơ bằng nhựa trên tường và thói quen gõ cửa bằng tay thực sự tồn tại!
 
 Sau khi chật vật thoát được ra ngoài, thảm họa giáng thẳng vào ví tiền của bạn: Apple Pay và thẻ nhựa chính thức biến thành đống rác vô dụng!
 
@@ -74,15 +74,11 @@ Thị trường việc làm ở Thung lũng Silicon trải qua một cuộc than
 
 Những kỹ sư phần mềm lương 350 nghìn đô cùng các idol TikTok triệu view thấy mình đang ngồi trong các phòng nghỉ công ty trống vắng để chơi cờ vua giết thời gian.
 
-Trong khi đó, bảng xếp hạng những hình mẫu độc thân sáng giá nhất xã hội lại đảo chiều 180 độ thành một thời kỳ hoàng kim rực rỡ của dân lao động chân tay!
-
-Anh thợ máy địa phương biết chỉnh động cơ V8 bằng cờ lê, chú thợ sửa ống nước đáng tin cậy trong khu phố, và bác nông dân miền Trung Tây bỗng trở thành những "món hời" được săn đón nhất.
-
-Các thiết bị analog cổ điển có màn lội ngược dòng ngoạn mục: đài phát thanh FM, máy đánh chữ cơ học, điện thoại bàn dây xoắn và máy fax cục mịch lại được chuộng hết nấc!
+Không còn họp Zoom hay trốn sau tin nhắn Slack, dân công sở buộc phải đi bộ sang tận bàn đồng nghiệp để nói chuyện trực tiếp; và khi không còn Google hay ChatGPT để tra cứu, ai nấy đều bàng hoàng nhận ra mình phải thực sự dùng đến... não bộ để tự nhớ lại kiến thức!
 
 Chuyện hẹn hò và tình yêu của Gen Z bước vào một kỷ nguyên hoàn toàn mới lạ lẫm, mộc mạc và chân thực không qua bộ lọc.
 
-Quên ngay cái chuyện quẹt phải trên Tinder hay thả icon ngọn lửa vào story Instagram cùng những filter máy ảnh Facetune lừa tình đi nhé!
+Quên ngay cái chuyện quẹt phải trên Tinder hay thả icon ngọn lửa vào story Instagram cùng những filter làm đẹp ảo diệu trên TikTok và Snapchat đi nhé!
 
 Bạn buộc phải đối mặt với sự thật trần trụi với một gương mặt mộc tự nhiên 100% giữa thanh thiên bạch nhật.
 
@@ -92,9 +88,9 @@ Họ cùng nhau đến một quán ăn Diner hoài cổ để chia sẻ ly sữa
 
 Để bày tỏ tình cảm, bạn nắn nót viết một bức thư chân thành bằng tay, dán con tem bưu điện USPS và gạt chiếc cờ đỏ trên hòm thư lên!
 
-Và nếu chẳng may chạm mặt kẻ thù thời trung học ở hành lang, sẽ chẳng có nút "Chặn" hay "Hủy theo dõi" thần kỳ nào để bấm đâu!
+Chấm dứt hoàn toàn văn hóa "bốc hơi" (Ghosting) hay "Seen" không trả lời; muốn tỏ tình hay chia tay, bạn buộc phải nhìn thẳng vào mắt đối phương để nói chuyện!
 
-Lối thoát duy nhất của bạn là hung hãn giả vờ cúi xuống tìm chìa khóa rơi hoặc né vội sau chiếc máy bán hàng tự động gần nhất!
+Cảm giác hồi hộp ngóng chờ cả tuần lễ bên hòm thư chỉ để nhận một lá thư tay hồi đáp bỗng khiến tình yêu trở nên lãng mạn lạ kỳ.
 
 Đời sống giải trí của nước Mỹ trải qua một cuộc phục hưng kỳ diệu khi mọi người đào lại những đĩa than cổ điển và băng cassette Walkman bám bụi.
 
