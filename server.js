@@ -201,8 +201,8 @@ function getThumbnailBase64(filePath) {
     });
 }
 
-// AI Script & Audio Matching API (Ultra-Fast Optimized with Strict Non-Duplicate Image Policy & Audio Speech Pacing)
-app.post('/api/ai/match-script', upload.single('audioFile'), async (req, res) => {
+// AI Script & Audio Matching API (Ultra-Fast Optimized with Strict Non-Duplicate Image Policy, Audio Speech Pacing & Multi-Audio Batch Support)
+app.post('/api/ai/match-script', upload.fields([{ name: 'audioFile', maxCount: 1 }, { name: 'audioFiles', maxCount: 150 }]), async (req, res) => {
     try {
         let scriptText = req.body.scriptText || '';
         let items = [];
@@ -223,12 +223,36 @@ app.post('/api/ai/match-script', upload.single('audioFile'), async (req, res) =>
             return res.status(400).json({ error: 'Vui lòng tải lên ít nhất một ảnh để khớp kịch bản' });
         }
 
-        // Check if an audio file was uploaded or referenced from BGM
+        // Check if multiple audio files were uploaded (Multi-Scene Audio Batch Mode)
+        let batchAudioFiles = [];
+        if (req.files && req.files['audioFiles'] && req.files['audioFiles'].length > 0) {
+            // Natural sort batch audio files by originalname (e.g., 01.mp3, 2.mp3, voice_1.mp3)
+            const sorted = [...req.files['audioFiles']].sort((a, b) => {
+                return a.originalname.localeCompare(b.originalname, undefined, { numeric: true, sensitivity: 'base' });
+            });
+            for (const f of sorted) {
+                const dur = await getMediaDuration(f.path);
+                batchAudioFiles.push({
+                    filename: f.filename,
+                    originalName: f.originalname,
+                    path: f.path,
+                    url: `/uploads/${f.filename}`,
+                    duration: dur
+                });
+            }
+        }
+
+        // Check if a single audio file was uploaded or referenced from BGM (Single Full Audio Mode)
         let audioPath = null;
         let audioFilename = '';
         let audioOriginalName = '';
 
-        if (req.file && fs.existsSync(req.file.path)) {
+        if (req.files && req.files['audioFile'] && req.files['audioFile'][0] && fs.existsSync(req.files['audioFile'][0].path)) {
+            const singleF = req.files['audioFile'][0];
+            audioPath = singleF.path;
+            audioFilename = singleF.filename;
+            audioOriginalName = singleF.originalname;
+        } else if (req.file && fs.existsSync(req.file.path)) {
             audioPath = req.file.path;
             audioFilename = req.file.filename;
             audioOriginalName = req.file.originalname;
@@ -245,7 +269,9 @@ app.post('/api/ai/match-script', upload.single('audioFile'), async (req, res) =>
         let audioDuration = 0;
         let audioBase64 = null;
 
-        if (audioPath && fs.existsSync(audioPath)) {
+        if (batchAudioFiles.length > 0) {
+            audioDuration = batchAudioFiles.reduce((sum, a) => sum + a.duration + pauseInterval, 0);
+        } else if (audioPath && fs.existsSync(audioPath)) {
             try {
                 audioDuration = await getMediaDuration(audioPath);
                 // Extract lightweight audio buffer for Gemini
@@ -464,9 +490,20 @@ Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
             const sceneText = Array.isArray(s) ? (s[1] || `Phân cảnh ${idx + 1}`) : (s.sceneText || s.t || `Phân cảnh ${idx + 1}`);
             const motion = Array.isArray(s) ? cleanMotion(s[2]) : cleanMotion(s.suggestedMotion || s.motion || s.m);
             
-            // Priority: computed Audio duration with pause -> AI returned duration -> default
+            // Priority: batch audio per-scene -> computed Audio duration with pause -> AI returned duration -> default
             let finalDuration = 5.0;
-            if (computedAudioDurations && typeof computedAudioDurations[idx] === 'number') {
+            let sceneVoiceAudio = null;
+
+            if (batchAudioFiles.length > 0 && batchAudioFiles[idx]) {
+                const bAudio = batchAudioFiles[idx];
+                finalDuration = parseFloat((bAudio.duration + pauseInterval).toFixed(2));
+                sceneVoiceAudio = {
+                    filename: bAudio.filename,
+                    originalName: bAudio.originalName,
+                    url: bAudio.url,
+                    duration: bAudio.duration
+                };
+            } else if (computedAudioDurations && typeof computedAudioDurations[idx] === 'number') {
                 finalDuration = computedAudioDurations[idx];
             } else {
                 const durFromAi = Array.isArray(s) ? parseFloat(s[3] || 5.0) : parseFloat(s.suggestedDuration || s.duration || s.d || 5.0);
@@ -485,6 +522,7 @@ Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
                 suggestedDuration: Math.max(1.0, Math.min(60.0, finalDuration)),
                 fadeIn: Math.max(0, Math.min(3.0, isNaN(fadeIn) ? defaultTransitionDur : fadeIn)),
                 fadeOut: Math.max(0, Math.min(3.0, isNaN(fadeOut) ? defaultTransitionDur : fadeOut)),
+                voiceAudio: sceneVoiceAudio,
                 reason: finalImageIndex === -1 
                     ? (reason || 'Để trống để tránh lặp ảnh cũ / cần bổ sung ảnh mới cho câu này') 
                     : reason
@@ -494,10 +532,12 @@ Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
         const matchedCount = usedImageIndices.size;
         const emptyCount = scenes.filter(s => s.imageIndex === -1).length;
 
-        console.log(`[AI Script Match] Completed: ${scenes.length} scenes, ${matchedCount} matched unique images, ${emptyCount} empty slots (no duplicate images).`);
+        console.log(`[AI Script Match] Completed: ${scenes.length} scenes, ${matchedCount} matched unique images, ${emptyCount} empty slots (no duplicate images), ${batchAudioFiles.length} batch voice audio attached.`);
 
         res.json({ 
             success: true, 
+            isBatchAudio: batchAudioFiles.length > 0,
+            batchAudioCount: batchAudioFiles.length,
             audioTrack: audioFilename ? {
                 filename: audioFilename,
                 originalName: audioOriginalName,
@@ -1789,6 +1829,7 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
             }
         }
 
+        let currentInputIdx = 0;
         chunkItems.forEach((item) => {
             let filePath = path.join(UPLOADS_DIR, item.filename || 'empty.png');
             if (!fs.existsSync(filePath)) {
@@ -1804,7 +1845,19 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
                     filePath = defaultPlaceholderPath;
                 }
             }
+            item._videoInputIndex = currentInputIdx++;
             args.push('-i', filePath);
+
+            // Per-scene voice audio input file if present
+            const vAudio = item.settings?.voiceAudio || item.voiceAudio;
+            item._voiceInputIndex = undefined;
+            if (vAudio && vAudio.filename) {
+                let aPath = path.join(UPLOADS_DIR, vAudio.filename);
+                if (fs.existsSync(aPath)) {
+                    item._voiceInputIndex = currentInputIdx++;
+                    args.push('-i', aPath);
+                }
+            }
         });
 
         const filterComplex = [];
@@ -1816,6 +1869,7 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
         chunkItems.forEach((item, idx) => {
             const vTag = `v_${idx}`;
             const aTag = `a_${idx}`;
+            const vidInIdx = item._videoInputIndex ?? idx;
             const dur = Number(item.settings?.duration || 5.0);
             const frames = Math.round(dur * fps);
             const maxFrames = Math.max(1, frames - 1);
@@ -1826,6 +1880,9 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
             const delta = zoomIntensity - 1.0;
             const deltaStr = delta.toFixed(5);
             const zoomIntensityStr = zoomIntensity.toFixed(5);
+
+            // Determine if scene has its own discrete voice audio track
+            const voiceInputIdx = item._voiceInputIndex;
 
             if (item.type === 'image') {
                 chunkDuration += dur;
@@ -1920,9 +1977,15 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
                     vFilters += `,${drawtextFilter}`;
                 }
 
-                filterComplex.push(`[${idx}:v]${vFilters}[${vTag}]`);
+                filterComplex.push(`[${vidInIdx}:v]${vFilters}[${vTag}]`);
                 videoStreamTags.push(`[${vTag}]`);
-                filterComplex.push(`anullsrc=r=44100:cl=stereo:d=${dur},aresample=async=1000[${aTag}]`);
+
+                if (typeof voiceInputIdx === 'number') {
+                    // Discrete voice audio for this scene
+                    filterComplex.push(`[${voiceInputIdx}:a]atrim=0:${dur},asetpts=PTS-STARTPTS,apad=whole_dur=${dur},aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo,aresample=async=1000[${aTag}]`);
+                } else {
+                    filterComplex.push(`anullsrc=r=44100:cl=stereo:d=${dur},aresample=async=1000[${aTag}]`);
+                }
                 audioStreamTags.push(`[${aTag}]`);
             } else {
                 const trimStart = Number(item.settings?.trimStart || 0);
@@ -1961,11 +2024,13 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
                     vFilters += `,${drawtextFilter}`;
                 }
 
-                filterComplex.push(`[${idx}:v]${vFilters}[${vTag}]`);
+                filterComplex.push(`[${vidInIdx}:v]${vFilters}[${vTag}]`);
                 videoStreamTags.push(`[${vTag}]`);
 
-                if (vol > 0) {
-                    filterComplex.push(`[${idx}:a]atrim=start=${trimStart}:end=${trimEnd},asetpts=PTS-STARTPTS,volume=${vol},aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo,aresample=async=1000[${aTag}]`);
+                if (typeof voiceInputIdx === 'number') {
+                    filterComplex.push(`[${voiceInputIdx}:a]atrim=0:${videoDur},asetpts=PTS-STARTPTS,apad=whole_dur=${videoDur},aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo,aresample=async=1000[${aTag}]`);
+                } else if (vol > 0) {
+                    filterComplex.push(`[${vidInIdx}:a]atrim=start=${trimStart}:end=${trimEnd},asetpts=PTS-STARTPTS,volume=${vol},aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo,aresample=async=1000[${aTag}]`);
                 } else {
                     filterComplex.push(`anullsrc=r=44100:cl=stereo:d=${videoDur},aresample=async=1000[${aTag}]`);
                 }

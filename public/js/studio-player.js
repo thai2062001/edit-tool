@@ -414,14 +414,8 @@ function seekToTimelinePosition(targetSec, shouldAutoScroll = true) {
     // Draw canvas at exact progress
     drawStudioCanvasFrame(sceneIndex, progress);
 
-    // Sync Audio BGM
-    if (bgmTrack && bgmTrack.url) {
-        try {
-            if (Math.abs(studioAudio.currentTime - currentSec) > 0.25) {
-                studioAudio.currentTime = currentSec;
-            }
-        } catch (e) {}
-    }
+    // Sync Audio (voice per-scene or global BGM)
+    syncStudioAudioForScene(sceneIndex, progress);
 
     // Update scrubber UI
     const studioScrubber = document.getElementById('studio-scrubber');
@@ -444,6 +438,64 @@ function seekToTimelinePosition(targetSec, shouldAutoScroll = true) {
     }
 }
 
+// Helper to calculate audio start time & duration for a specific scene
+function getSceneAudioRange(targetIndex) {
+    if (mediaItems.length === 0 || targetIndex < 0 || targetIndex >= mediaItems.length) {
+        return { startTime: 0, duration: 5.0 };
+    }
+    let startTime = 0;
+    for (let i = 0; i < targetIndex; i++) {
+        const it = mediaItems[i];
+        const d = it.type === 'image' 
+            ? Number(it.settings?.duration || 5.0) 
+            : Math.max(0.5, Number(it.settings?.trimEnd || it.duration || 5) - Number(it.settings?.trimStart || 0));
+        startTime += d;
+    }
+    const currentIt = mediaItems[targetIndex];
+    const dur = currentIt.type === 'image'
+        ? Number(currentIt.settings?.duration || 5.0)
+        : Math.max(0.5, Number(currentIt.settings?.trimEnd || currentIt.duration || 5) - Number(currentIt.settings?.trimStart || 0));
+    return { startTime, duration: dur };
+}
+
+// Track currently active audio source url to avoid unnecessary reloading
+let currentStudioAudioSrc = '';
+
+function syncStudioAudioForScene(sceneIndex, progress = 0, isSingle = false) {
+    const item = mediaItems[sceneIndex];
+    if (!item) return;
+
+    const voice = item.settings?.voiceAudio || item.voiceAudio;
+    const dur = (item.type === 'image' ? (item.settings?.duration || 5.0) : (item.duration || 5.0));
+
+    if (voice && voice.url) {
+        // Play discrete voice audio of this scene
+        const targetTime = Math.max(0, Math.min(voice.duration || dur, progress * dur));
+        if (currentStudioAudioSrc !== voice.url) {
+            currentStudioAudioSrc = voice.url;
+            studioAudio.src = voice.url;
+            studioAudio.currentTime = targetTime;
+            studioAudio.volume = 1.0;
+            studioAudio.play().catch(() => {});
+        } else if (Math.abs(studioAudio.currentTime - targetTime) > 0.3) {
+            try { studioAudio.currentTime = targetTime; } catch (e) {}
+        }
+    } else if (bgmTrack && bgmTrack.url) {
+        // Fallback to Global BGM track
+        const { startTime } = getSceneAudioRange(sceneIndex);
+        const targetTime = startTime + (progress * dur);
+        if (currentStudioAudioSrc !== bgmTrack.url) {
+            currentStudioAudioSrc = bgmTrack.url;
+            studioAudio.src = bgmTrack.url;
+            studioAudio.currentTime = targetTime;
+            studioAudio.volume = bgmTrack.volume ?? 1.0;
+            studioAudio.play().catch(() => {});
+        } else if (Math.abs(studioAudio.currentTime - targetTime) > 0.3) {
+            try { studioAudio.currentTime = targetTime; } catch (e) {}
+        }
+    }
+}
+
 function playStudioSequence() {
     if (isStudioPlayingSingle) {
         isStudioPlayingSingle = false;
@@ -455,6 +507,7 @@ function playStudioSequence() {
         isStudioPlayingAll = false;
         if (studioAnimFrame) cancelAnimationFrame(studioAnimFrame);
         studioAudio.pause();
+        currentStudioAudioSrc = '';
         const btn = document.getElementById('studio-btn-play');
         if (btn) btn.innerHTML = '▶ Phát Toàn Bộ';
         return;
@@ -475,15 +528,10 @@ function playStudioSequence() {
     if (btn) btn.innerHTML = '⏸️ Tạm Dừng';
 
     lastStudioPlayTick = performance.now();
+    currentStudioAudioSrc = '';
 
-    if (bgmTrack && bgmTrack.url) {
-        try {
-            studioAudio.src = bgmTrack.url;
-            studioAudio.currentTime = currentStudioTimelineTimeMs / 1000;
-            studioAudio.volume = bgmTrack.volume ?? 1.0;
-            studioAudio.play().catch(() => {});
-        } catch (e) {}
-    }
+    const { sceneIndex: initialScene, progress: initialProgress } = getSceneAtTimelineSec(currentStudioTimelineTimeMs / 1000);
+    syncStudioAudioForScene(initialScene, initialProgress);
 
     function step(now) {
         if (!isStudioPlayingAll) return;
@@ -496,12 +544,7 @@ function playStudioSequence() {
         if (currentStudioTimelineTimeMs >= totalMs) {
             // Loop video playback from start smoothly
             currentStudioTimelineTimeMs = 0;
-            if (bgmTrack && bgmTrack.url) {
-                try {
-                    studioAudio.currentTime = 0;
-                    studioAudio.play().catch(() => {});
-                } catch (e) {}
-            }
+            currentStudioAudioSrc = '';
         }
 
         const curSec = currentStudioTimelineTimeMs / 1000;
@@ -511,6 +554,9 @@ function playStudioSequence() {
             selectSegment(sceneIndex, true);
         }
         drawStudioCanvasFrame(sceneIndex, progress);
+
+        // Sync Audio dynamically (voice per-scene or global BGM)
+        syncStudioAudioForScene(sceneIndex, progress);
 
         // Update scrubber UI
         const studioScrubber = document.getElementById('studio-scrubber');
@@ -550,6 +596,7 @@ function playSingleScene() {
         isStudioPlayingSingle = false;
         if (studioAnimFrame) cancelAnimationFrame(studioAnimFrame);
         studioAudio.pause();
+        currentStudioAudioSrc = '';
         if (btnScene) btnScene.innerHTML = '🔁 Xem Cảnh Này';
         return;
     }
@@ -562,17 +609,9 @@ function playSingleScene() {
 
     const item = mediaItems[activeSegmentIndex];
     const itemDur = (item.type === 'image' ? (item.settings?.duration || 5.0) : (item.duration || 5.0)) * 1000;
-    const { startTime: audioStart } = getSceneAudioRange(activeSegmentIndex);
-
-    // Play per-scene audio slice
-    if (bgmTrack && bgmTrack.url) {
-        try {
-            studioAudio.src = bgmTrack.url;
-            studioAudio.currentTime = audioStart;
-            studioAudio.volume = bgmTrack.volume ?? 1.0;
-            studioAudio.play().catch(() => {});
-        } catch (e) {}
-    }
+    
+    currentStudioAudioSrc = '';
+    syncStudioAudioForScene(activeSegmentIndex, 0, true);
 
     let cycleStartTime = performance.now();
 
@@ -583,12 +622,8 @@ function playSingleScene() {
         if (elapsed >= itemDur) {
             // Loop restart for single scene preview
             cycleStartTime = performance.now();
-            if (bgmTrack && bgmTrack.url) {
-                try {
-                    studioAudio.currentTime = audioStart;
-                    studioAudio.play().catch(() => {});
-                } catch (e) {}
-            }
+            currentStudioAudioSrc = '';
+            syncStudioAudioForScene(activeSegmentIndex, 0, true);
         }
 
         const progress = Math.min(1.0, Math.max(0, elapsed / itemDur));

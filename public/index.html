@@ -464,6 +464,17 @@
                                         <input type="number" id="insp-fadeout" class="form-control form-control-sm text-center" min="0" max="3" step="0.1" value="0.8" placeholder="Out" title="Fade Out cuối cảnh (s)">
                                     </div>
                                 </div>
+                                <div class="form-group" style="grid-column: span 2;">
+                                    <label class="form-label-xs">🎙️ File Âm Thanh / Voice của cảnh:</label>
+                                    <div class="flex-between align-center" style="background: rgba(15,23,42,0.5); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08);">
+                                        <span id="insp-voice-label" class="text-xs text-dim" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 170px;">🎵 Dùng BGM chung</span>
+                                        <div class="flex-row gap-xs">
+                                            <input type="file" id="insp-voice-file-input" accept="audio/*" hidden>
+                                            <button type="button" class="btn btn-xs btn-outline" onclick="document.getElementById('insp-voice-file-input').click()" title="Đổi / Gán audio riêng cho cảnh này">📂 Nạp</button>
+                                            <button type="button" id="btn-insp-remove-voice" class="btn btn-xs btn-ghost text-danger hidden" title="Xóa voice riêng">✕</button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- Video controls -->
@@ -1483,21 +1494,58 @@
 
                 <!-- Step 1.5: Direct Audio & Pause Interval Settings (All-in-One Director) -->
                 <div class="ai-audio-sync-box mt-2" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 8px; padding: 12px;">
-                    <div class="flex-between flex-wrap gap-xs align-center">
+                    <!-- Mode Selector Tab -->
+                    <div class="flex-between align-center mb-2 pb-2" style="border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
                         <div class="flex-row align-center gap-xs">
                             <span style="font-size: 1.2rem;">🎙️</span>
+                            <strong style="color: var(--accent-cyan);">Chế Độ Nạp Giọng Đọc (Voice Audio):</strong>
+                        </div>
+                        <div class="btn-group">
+                            <button type="button" id="btn-audio-mode-single" class="btn btn-xs btn-primary active">
+                                🎵 1 File Audio Dài (Full)
+                            </button>
+                            <button type="button" id="btn-audio-mode-batch" class="btn btn-xs btn-outline">
+                                📂 Loạt File Audio Rời (Mỗi Cảnh 1 Voice)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Single Full Audio Mode View -->
+                    <div id="ai-audio-single-container" class="flex-between flex-wrap gap-xs align-center">
+                        <div class="flex-row align-center gap-xs">
+                            <span class="text-accent">🎶</span>
                             <div>
-                                <strong style="color: var(--accent-cyan);">Tệp Âm Thanh Giọng Đọc (Voiceover / BGM):</strong>
+                                <strong class="text-sm">Tệp Audio đơn:</strong>
                                 <div id="ai-modal-audio-status" class="text-xs text-dim">Chưa chọn audio. (Nếu có audio, AI sẽ tự động căn thời lượng từng ảnh khớp 100% tiếng nói).</div>
                             </div>
                         </div>
                         <div class="flex-row align-center gap-xs">
                             <input type="file" id="ai-modal-audio-file" accept="audio/*" hidden>
                             <button type="button" class="btn btn-small btn-outline" onclick="document.getElementById('ai-modal-audio-file').click()">
-                                📁 Nạp File Audio (.MP3/.WAV)
+                                📁 Nạp 1 File Audio (.MP3/.WAV)
                             </button>
                             <button type="button" id="btn-ai-use-current-bgm" class="btn btn-small btn-secondary hidden" title="Sử dụng ngay file BGM đang có trên Tab 1">
                                 🎶 Dùng BGM Hiện Tại
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Batch Audio Files Mode View -->
+                    <div id="ai-audio-batch-container" class="flex-between flex-wrap gap-xs align-center hidden">
+                        <div class="flex-row align-center gap-xs">
+                            <span class="text-accent">📂</span>
+                            <div>
+                                <strong class="text-sm">Loạt tệp Audio theo từng câu:</strong>
+                                <div id="ai-modal-batch-audio-status" class="text-xs text-dim">Chưa nạp audio rời. (Nạp 01.mp3, 02.mp3... tương ứng 1-1 với từng dòng Script).</div>
+                            </div>
+                        </div>
+                        <div class="flex-row align-center gap-xs">
+                            <input type="file" id="ai-modal-batch-audio-files" accept="audio/*" multiple hidden>
+                            <button type="button" class="btn btn-small btn-ai" onclick="document.getElementById('ai-modal-batch-audio-files').click()">
+                                📂 Nạp Loạt File Audio Rời (N tệp)
+                            </button>
+                            <button type="button" id="btn-clear-batch-audio" class="btn btn-xs btn-ghost text-danger hidden" title="Hủy loạt audio">
+                                ✕ Bỏ chọn
                             </button>
                         </div>
                     </div>
@@ -1515,7 +1563,7 @@
                                 <option value="0.0">0.0s (Nói liền mạch)</option>
                             </select>
                         </div>
-                        <span class="text-xs text-dim">💡 Giúp tính toán nhịp thở và độ dài từng bức ảnh chính xác từng giây theo file thu âm.</span>
+                        <span class="text-xs text-dim">💡 Tự động cộng thêm khoảng nghỉ vào độ dài mỗi phân cảnh để tạo nhịp thở tự nhiên.</span>
                     </div>
                 </div>
 

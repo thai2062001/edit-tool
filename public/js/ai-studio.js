@@ -138,11 +138,44 @@ const btnCleanScript = document.getElementById('btn-clean-script');
 let currentAiMatchedScenes = [];
 let aiModalSelectedAudioFile = null;
 let aiModalMatchedAudioTrack = null;
+let aiModalAudioMode = 'single'; // 'single' or 'batch'
+let aiModalBatchAudioFiles = []; // Array of File objects
 
 const aiModalAudioFile = document.getElementById('ai-modal-audio-file');
 const aiModalAudioStatus = document.getElementById('ai-modal-audio-status');
 const btnAiUseCurrentBgm = document.getElementById('btn-ai-use-current-bgm');
 const aiModalPauseInterval = document.getElementById('ai-modal-pause-interval');
+
+const btnAudioModeSingle = document.getElementById('btn-audio-mode-single');
+const btnAudioModeBatch = document.getElementById('btn-audio-mode-batch');
+const aiAudioSingleContainer = document.getElementById('ai-audio-single-container');
+const aiAudioBatchContainer = document.getElementById('ai-audio-batch-container');
+const aiModalBatchAudioFilesInput = document.getElementById('ai-modal-batch-audio-files');
+const aiModalBatchAudioStatus = document.getElementById('ai-modal-batch-audio-status');
+const btnClearBatchAudio = document.getElementById('btn-clear-batch-audio');
+
+// Switch mode Single Audio vs Batch Audio
+if (btnAudioModeSingle && btnAudioModeBatch) {
+    btnAudioModeSingle.addEventListener('click', () => {
+        aiModalAudioMode = 'single';
+        btnAudioModeSingle.classList.add('btn-primary', 'active');
+        btnAudioModeSingle.classList.remove('btn-outline');
+        btnAudioModeBatch.classList.remove('btn-primary', 'active');
+        btnAudioModeBatch.classList.add('btn-outline');
+        if (aiAudioSingleContainer) aiAudioSingleContainer.classList.remove('hidden');
+        if (aiAudioBatchContainer) aiAudioBatchContainer.classList.add('hidden');
+    });
+
+    btnAudioModeBatch.addEventListener('click', () => {
+        aiModalAudioMode = 'batch';
+        btnAudioModeBatch.classList.add('btn-primary', 'active');
+        btnAudioModeBatch.classList.remove('btn-outline');
+        btnAudioModeSingle.classList.remove('btn-primary', 'active');
+        btnAudioModeSingle.classList.add('btn-outline');
+        if (aiAudioBatchContainer) aiAudioBatchContainer.classList.remove('hidden');
+        if (aiAudioSingleContainer) aiAudioSingleContainer.classList.add('hidden');
+    });
+}
 
 if (aiModalAudioFile) {
     aiModalAudioFile.addEventListener('change', (e) => {
@@ -153,6 +186,34 @@ if (aiModalAudioFile) {
                 aiModalAudioStatus.innerHTML = `🎵 <strong>Đã chọn tệp:</strong> <span style="color: var(--accent-cyan);">${file.name}</span> (${(file.size / (1024 * 1024)).toFixed(2)} MB)`;
             }
         }
+    });
+}
+
+if (aiModalBatchAudioFilesInput) {
+    aiModalBatchAudioFilesInput.addEventListener('change', (e) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length > 0) {
+            // Natural sort files by name (e.g., 01.mp3, 2.mp3, 10.mp3)
+            aiModalBatchAudioFiles = files.sort((a, b) => {
+                return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+            });
+            if (aiModalBatchAudioStatus) {
+                const totalMb = (aiModalBatchAudioFiles.reduce((s, f) => s + f.size, 0) / (1024 * 1024)).toFixed(2);
+                aiModalBatchAudioStatus.innerHTML = `📂 <strong>Đã chọn ${aiModalBatchAudioFiles.length} tệp audio rời:</strong> <span style="color: #38BDF8">${aiModalBatchAudioFiles[0].name} ... ${aiModalBatchAudioFiles[aiModalBatchAudioFiles.length - 1].name}</span> (${totalMb} MB)`;
+            }
+            if (btnClearBatchAudio) btnClearBatchAudio.classList.remove('hidden');
+        }
+    });
+}
+
+if (btnClearBatchAudio) {
+    btnClearBatchAudio.addEventListener('click', () => {
+        aiModalBatchAudioFiles = [];
+        if (aiModalBatchAudioFilesInput) aiModalBatchAudioFilesInput.value = '';
+        if (aiModalBatchAudioStatus) {
+            aiModalBatchAudioStatus.innerText = 'Chưa nạp audio rời. (Nạp 01.mp3, 02.mp3... tương ứng 1-1 với từng dòng Script).';
+        }
+        btnClearBatchAudio.classList.add('hidden');
     });
 }
 
@@ -318,11 +379,19 @@ if (btnRunAiMatch) {
             formData.append('customApiKey', key);
             formData.append('pauseInterval', pauseIntervalVal);
 
-            if (aiModalSelectedAudioFile) {
-                formData.append('audioFile', aiModalSelectedAudioFile);
-            } else if (window.bgmTrack && window.bgmTrack.filename) {
-                formData.append('bgmFilename', window.bgmTrack.filename);
-                formData.append('bgmOriginalName', window.bgmTrack.originalName || '');
+            if (aiModalAudioMode === 'batch' && aiModalBatchAudioFiles.length > 0) {
+                // Batch Audio mode
+                aiModalBatchAudioFiles.forEach(f => {
+                    formData.append('audioFiles', f);
+                });
+            } else {
+                // Single Audio mode (GIỮ NGUYÊN 100% LOGIC NẠP 1 FILE AUDIO CŨ)
+                if (aiModalSelectedAudioFile) {
+                    formData.append('audioFile', aiModalSelectedAudioFile);
+                } else if (window.bgmTrack && window.bgmTrack.filename) {
+                    formData.append('bgmFilename', window.bgmTrack.filename);
+                    formData.append('bgmOriginalName', window.bgmTrack.originalName || '');
+                }
             }
 
             const res = await fetch('/api/ai/match-script', {
@@ -350,7 +419,7 @@ if (btnRunAiMatch) {
             alert('Lỗi phân tích AI: ' + err.message);
         } finally {
             btnRunAiMatch.disabled = false;
-            btnRunAiMatch.innerHTML = '✨ Phân Tích & Khớp Ảnh Tự Động';
+            btnRunAiMatch.innerHTML = '✨ Phân Tích & Khớp Kịch Bản + Audio';
         }
     });
 }
@@ -486,6 +555,10 @@ if (btnApplyAiTimeline) {
                 if (scene.sceneText) {
                     cloned.settings.overlayText = scene.sceneText;
                 }
+                if (scene.voiceAudio) {
+                    cloned.settings.voiceAudio = scene.voiceAudio;
+                    cloned.voiceAudio = scene.voiceAudio;
+                }
                 cloned.settings.textPosition = cloned.settings.textPosition || 'bottom';
                 cloned.settings.textStyle = cloned.settings.textStyle || 'banner';
                 cloned.settings.fontSize = cloned.settings.fontSize || 48;
@@ -500,11 +573,13 @@ if (btnApplyAiTimeline) {
                     type: 'image',
                     isPlaceholder: true,
                     url: '',
+                    voiceAudio: scene.voiceAudio || null,
                     settings: {
                         motion: scene.suggestedMotion || 'zoom_in',
                         duration: parseFloat(scene.suggestedDuration || 5.0),
                         fadeIn: parseFloat(scene.fadeIn || 0.8),
                         fadeOut: parseFloat(scene.fadeOut || 0.8),
+                        voiceAudio: scene.voiceAudio || null,
                         overlayText: scene.sceneText || '',
                         textPosition: 'bottom',
                         textStyle: 'banner',
@@ -529,7 +604,10 @@ if (btnApplyAiTimeline) {
             mediaItems = newTimeline;
             window.mediaItems = newTimeline;
 
-            // Automatically set matched Audio track into Timeline BGM if uploaded
+            // Count how many scenes have discrete voice audio attached
+            const batchVoiceCount = newTimeline.filter(it => it.settings?.voiceAudio || it.voiceAudio).length;
+
+            // Automatically set matched Audio track into Timeline BGM if single uploaded
             if (aiModalMatchedAudioTrack) {
                 bgmTrack = {
                     filename: aiModalMatchedAudioTrack.filename,
@@ -545,8 +623,10 @@ if (btnApplyAiTimeline) {
             if (typeof renderMediaList === 'function') renderMediaList();
             closeAiModal();
             
-            let msg = `🎉 Đã áp dụng toàn bộ ${newTimeline.length} phân cảnh theo kịch bản & Audio vào Timeline!`;
-            if (aiModalMatchedAudioTrack) {
+            let msg = `🎉 Đã áp dụng toàn bộ ${newTimeline.length} phân cảnh theo kịch bản vào Timeline!`;
+            if (batchVoiceCount > 0) {
+                msg += `\n\n🎙️ Đã đồng bộ & gán chuẩn xác ${batchVoiceCount} tệp audio giọng đọc vào từng phân cảnh 1-1.`;
+            } else if (aiModalMatchedAudioTrack) {
                 msg += `\n\n🎵 Đã đồng bộ & nạp Audio giọng đọc "${aiModalMatchedAudioTrack.originalName}" vào Timeline thành công.`;
             }
             if (placeholderCount > 0) {
@@ -724,6 +804,21 @@ function applyAllPacingSuggestions() {
     if (!currentPacingEvaluationScenes || currentPacingEvaluationScenes.length === 0) return;
 
     if (typeof recordHistorySnapshot === 'function') recordHistorySnapshot();
+
+    let appliedCount = 0;
+    currentPacingEvaluationScenes.forEach(scene => {
+        const sIdx = (scene.sceneIndex || 1) - 1;
+        if (mediaItems[sIdx] && typeof scene.suggestedDuration === 'number' && scene.suggestedDuration > 0) {
+            mediaItems[sIdx].settings.duration = parseFloat(scene.suggestedDuration.toFixed(2));
+            appliedCount++;
+        }
+    });
+
+    if (typeof renderMediaList === 'function') renderMediaList();
+    alert(`🎉 Đã áp dụng cân chỉnh nhịp điệu & thời lượng tự động cho toàn bộ ${appliedCount} phân cảnh!`);
+    if (scriptPacingModal) scriptPacingModal.classList.add('hidden');
+}
+
 // ==========================================
 // AI VISUAL-SCRIPT ALIGNMENT & SMART SWAPPER (VIDEO QC AUDITOR)
 // ==========================================

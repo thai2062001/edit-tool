@@ -98,6 +98,7 @@ function renderMediaList() {
             : '';
 
         const loopCount = item.settings?.loopCount || 1;
+        const voiceAudio = item.settings?.voiceAudio || item.voiceAudio;
 
         let thumbHtml = '';
         if (isPlaceholder) {
@@ -117,11 +118,16 @@ function renderMediaList() {
             thumbHtml = `<video src="${item.url}" class="storyboard-thumb-img" muted></video>`;
         }
 
+        const voiceBadgeHtml = voiceAudio 
+            ? `<span class="storyboard-voice-tag" title="Voice audio riêng: ${voiceAudio.originalName || voiceAudio.filename} (${voiceAudio.duration}s)">🎙️ ${voiceAudio.duration ? voiceAudio.duration.toFixed(1) + 's' : 'Voice'}</span>` 
+            : '';
+
         card.innerHTML = `
             <div class="storyboard-thumb-box">
                 ${thumbHtml}
                 <span class="storyboard-idx-tag">#${index + 1}</span>
                 <span class="storyboard-dur-tag">⏱️ ${dur.toFixed(1)}s${loopCount > 1 ? ` (🔁 ${loopCount}x)` : ''}</span>
+                ${voiceBadgeHtml}
             </div>
             <div class="storyboard-meta-strip">
                 <span class="storyboard-motion-tag">${motionLabel}</span>
@@ -361,6 +367,69 @@ function updateQuickInspector(index) {
         if (inspTextSize) inspTextSize.value = item.settings?.fontSize || 48;
         if (inspTextColor) inspTextColor.value = item.settings?.textColor || '#FFFFFF';
         if (inspTextAccent) inspTextAccent.value = item.settings?.textAccent || '#06B6D4';
+
+        // Scene-specific voice audio management
+        const inspVoiceLabel = document.getElementById('insp-voice-label');
+        const btnInspRemoveVoice = document.getElementById('btn-insp-remove-voice');
+        const inspVoiceFileInput = document.getElementById('insp-voice-file-input');
+        const currentVoice = item.settings?.voiceAudio || item.voiceAudio;
+
+        if (inspVoiceLabel) {
+            if (currentVoice && currentVoice.filename) {
+                inspVoiceLabel.innerHTML = `🎙️ <strong style="color: #38BDF8">${currentVoice.originalName || currentVoice.filename}</strong> (${currentVoice.duration ? currentVoice.duration.toFixed(1) + 's' : ''})`;
+                inspVoiceLabel.title = `Tệp audio riêng của cảnh: ${currentVoice.originalName || currentVoice.filename}`;
+            } else {
+                inspVoiceLabel.innerHTML = `🎵 <span class="text-dim">Dùng BGM chung</span>`;
+                inspVoiceLabel.title = 'Phân cảnh này đang dùng nhạc nền BGM chung của timeline';
+            }
+        }
+
+        if (btnInspRemoveVoice) {
+            if (currentVoice && currentVoice.filename) {
+                btnInspRemoveVoice.classList.remove('hidden');
+                btnInspRemoveVoice.onclick = () => {
+                    if (item.settings) delete item.settings.voiceAudio;
+                    delete item.voiceAudio;
+                    renderMediaList();
+                    updateQuickInspector(index);
+                };
+            } else {
+                btnInspRemoveVoice.classList.add('hidden');
+            }
+        }
+
+        if (inspVoiceFileInput) {
+            inspVoiceFileInput.onchange = async (e) => {
+                const file = e.target.files && e.target.files[0];
+                if (!file) return;
+                const formData = new FormData();
+                formData.append('files', file);
+                try {
+                    const res = await fetch('/api/upload', { method: 'POST', body: formData });
+                    const data = await res.json();
+                    if (data.success && data.files && data.files[0]) {
+                        const upAudio = data.files[0];
+                        const voiceObj = {
+                            filename: upAudio.filename,
+                            originalName: upAudio.originalName,
+                            url: upAudio.url,
+                            duration: upAudio.duration
+                        };
+                        if (!item.settings) item.settings = {};
+                        item.settings.voiceAudio = voiceObj;
+                        item.voiceAudio = voiceObj;
+                        // Auto-adjust scene duration to audio duration + 0.5s pause
+                        item.settings.duration = parseFloat((upAudio.duration + 0.5).toFixed(2));
+                        renderMediaList();
+                        updateQuickInspector(index);
+                    }
+                } catch (err) {
+                    alert('Lỗi nạp voice cho cảnh: ' + err.message);
+                } finally {
+                    inspVoiceFileInput.value = '';
+                }
+            };
+        }
 
         const align = item.settings?.textAlign || 'center';
         document.querySelectorAll('.btn-align-option').forEach(btn => {
