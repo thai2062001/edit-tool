@@ -199,6 +199,36 @@ function getThumbnailBase64(filePath) {
     });
 }
 
+// Resilient Gemini Generator with automatic model fallback & retry for 503 high demand
+async function generateWithModelFallback(ai, params) {
+    const candidateModels = ['gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.6-flash'];
+    let lastError = null;
+
+    for (const modelName of candidateModels) {
+        for (let attempt = 1; attempt <= 2; attempt++) {
+            try {
+                const response = await ai.models.generateContent({
+                    ...params,
+                    model: modelName
+                });
+                return response;
+            } catch (err) {
+                lastError = err;
+                const errStr = (err.message || '') + (err.status || '');
+                const isOverloaded = errStr.includes('503') || errStr.includes('high demand') || errStr.includes('UNAVAILABLE') || errStr.includes('429');
+                console.warn(`[Gemini Fallback] Model ${modelName} (attempt ${attempt}/2) failed: ${err.message}`);
+                if (isOverloaded) {
+                    // Small jitter backoff before retry or switching model
+                    await new Promise(r => setTimeout(r, attempt * 1200));
+                } else {
+                    break; // Non-overload error, try next model immediately
+                }
+            }
+        }
+    }
+    throw lastError || new Error('Tất cả các mô hình Gemini hiện đang bận, vui lòng thử lại sau.');
+}
+
 // AI Script & Audio Matching API (Ultra-Fast Optimized with Strict Non-Duplicate Image Policy, Audio Speech Pacing & Multi-Audio Batch Support)
 app.post('/api/ai/match-script', upload.fields([{ name: 'audioFile', maxCount: 1 }, { name: 'audioFiles', maxCount: 150 }]), async (req, res) => {
     try {
@@ -393,9 +423,7 @@ Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
 `;
         contents.push({ text: promptText });
 
-
-        const response = await ai.models.generateContent({
-            model: 'gemini-3.6-flash',
+        const response = await generateWithModelFallback(ai, {
             contents: contents,
             config: {
                 responseMimeType: 'application/json'
@@ -670,8 +698,7 @@ Trả về DUY NHẤT một JSON hợp lệ theo cấu trúc:
 `;
                 contents.push({ text: promptText });
 
-                const response = await ai.models.generateContent({
-                    model: 'gemini-3.6-flash',
+                const response = await generateWithModelFallback(ai, {
                     contents: contents,
                     config: { responseMimeType: 'application/json' }
                 });
@@ -831,8 +858,7 @@ YÊU CẦU:
 `;
         contents.push({ text: prompt });
 
-        const response = await ai.models.generateContent({
-            model: 'gemini-3.6-flash',
+        const response = await generateWithModelFallback(ai, {
             contents: contents,
             config: { responseMimeType: 'application/json' }
         });
