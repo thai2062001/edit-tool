@@ -283,13 +283,25 @@
 
                         <!-- Player Controls Bar -->
                         <div class="studio-player-controls">
+                            <button type="button" id="studio-btn-prev-scene" class="btn btn-icon btn-secondary btn-small" title="Về cảnh trước (Phím ◄)">
+                                ⏮️
+                            </button>
+                            <button type="button" id="studio-btn-seek-backward" class="btn btn-icon btn-secondary btn-small" title="Tua lùi 5 giây (-5s)">
+                                ⏪ 5s
+                            </button>
                             <button type="button" id="studio-btn-play" class="btn btn-primary btn-small">
-                                ▶ Phát Toàn Bộ Video
+                                ▶ Phát Toàn Bộ
+                            </button>
+                            <button type="button" id="studio-btn-seek-forward" class="btn btn-icon btn-secondary btn-small" title="Tua tới 5 giây (+5s)">
+                                5s ⏩
+                            </button>
+                            <button type="button" id="studio-btn-next-scene" class="btn btn-icon btn-secondary btn-small" title="Sang cảnh tiếp (Phím ►)">
+                                ⏭️
                             </button>
                             <button type="button" id="studio-btn-play-scene" class="btn btn-secondary btn-small" title="Chỉ phát lặp lại phân cảnh hiện tại">
-                                🔁 Xem Cảnh Này
+                                🔁 Cảnh Này
                             </button>
-                            <input type="range" id="studio-scrubber" class="custom-range studio-scrubber" min="0" max="100" step="0.1" value="0">
+                            <input type="range" id="studio-scrubber" class="custom-range studio-scrubber" min="0" max="100" step="0.1" value="0" title="Kéo thanh này để tua chính xác từng giây/cảnh bất kỳ">
                             <span id="studio-scrubber-time" class="studio-time-badge">0:00 / 0:00</span>
                         </div>
 

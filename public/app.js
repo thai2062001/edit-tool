@@ -487,6 +487,25 @@ function selectSegment(index, shouldScroll = true) {
 
     updateQuickInspector(index);
     drawStudioCanvasFrame(index, 0);
+
+    // Sync timeline position and scrubber when user clicks on a storyboard card
+    if (!isStudioPlayingAll && !isStudioPlayingSingle && typeof getSceneAudioRange === 'function') {
+        const range = getSceneAudioRange(index);
+        currentStudioTimelineTimeMs = range.startTime * 1000;
+        const totalDur = typeof getTotalTimelineDurationSec === 'function' ? getTotalTimelineDurationSec() : 0;
+        const studioScrubber = document.getElementById('studio-scrubber');
+        const scrubberTime = document.getElementById('studio-scrubber-time');
+        if (studioScrubber && totalDur > 0) {
+            studioScrubber.value = ((range.startTime / totalDur) * 100).toFixed(1);
+        }
+        if (scrubberTime && totalDur > 0) {
+            const curMin = Math.floor(range.startTime / 60);
+            const curSecInt = Math.floor(range.startTime % 60);
+            const totMin = Math.floor(totalDur / 60);
+            const totSecInt = Math.floor(totalDur % 60);
+            scrubberTime.innerText = `${curMin}:${curSecInt.toString().padStart(2, '0')} / ${totMin}:${totSecInt.toString().padStart(2, '0')}`;
+        }
+    }
 }
 
 function updateQuickInspector(index) {
@@ -911,6 +930,21 @@ const studioAudio = new Audio();
 window.studioAudio = studioAudio;
 let isStudioPlayingSingle = false;
 
+// Global timeline playback position tracker in milliseconds
+let currentStudioTimelineTimeMs = 0;
+let lastStudioPlayTick = 0;
+
+function getTotalTimelineDurationSec() {
+    let total = 0;
+    mediaItems.forEach(it => {
+        const d = it.type === 'image' 
+            ? Number(it.settings?.duration || 5.0) 
+            : Math.max(0.5, Number(it.settings?.trimEnd || it.duration || 5) - Number(it.settings?.trimStart || 0));
+        total += Math.max(0.5, d);
+    });
+    return total;
+}
+
 function getSceneAudioRange(index) {
     if (index < 0 || index >= mediaItems.length) return { startTime: 0, endTime: 0, duration: 0 };
     let startTime = 0;
@@ -919,21 +953,84 @@ function getSceneAudioRange(index) {
         const d = it.type === 'image' 
             ? Number(it.settings?.duration || 5.0) 
             : Math.max(0.5, Number(it.settings?.trimEnd || it.duration || 5) - Number(it.settings?.trimStart || 0));
-        startTime += d;
+        startTime += Math.max(0.5, d);
     }
     const currentItem = mediaItems[index];
     const currentDur = currentItem.type === 'image' 
         ? Number(currentItem.settings?.duration || 5.0) 
         : Math.max(0.5, Number(currentItem.settings?.trimEnd || currentItem.duration || 5) - Number(currentItem.settings?.trimStart || 0));
-    const endTime = startTime + currentDur;
+    const endTime = startTime + Math.max(0.5, currentDur);
     return { startTime: parseFloat(startTime.toFixed(2)), endTime: parseFloat(endTime.toFixed(2)), duration: parseFloat(currentDur.toFixed(2)) };
+}
+
+// Convert global timeline time (seconds) to scene index & scene progress (0..1)
+function getSceneAtTimelineSec(targetSec) {
+    if (mediaItems.length === 0) return { sceneIndex: 0, progress: 0, totalDuration: 0 };
+    const totalDur = getTotalTimelineDurationSec();
+    const clampedSec = Math.max(0, Math.min(totalDur, targetSec));
+
+    let accumulated = 0;
+    for (let i = 0; i < mediaItems.length; i++) {
+        const it = mediaItems[i];
+        const d = it.type === 'image' 
+            ? Number(it.settings?.duration || 5.0) 
+            : Math.max(0.5, Number(it.settings?.trimEnd || it.duration || 5) - Number(it.settings?.trimStart || 0));
+        
+        if (clampedSec < accumulated + d || i === mediaItems.length - 1) {
+            const sceneProgress = d > 0 ? Math.max(0, Math.min(1.0, (clampedSec - accumulated) / d)) : 0;
+            return { sceneIndex: i, progress: sceneProgress, totalDuration: totalDur, currentSec: clampedSec };
+        }
+        accumulated += d;
+    }
+    return { sceneIndex: mediaItems.length - 1, progress: 1.0, totalDuration: totalDur, currentSec: clampedSec };
+}
+
+// Main function to seek / scrub timeline anywhere
+function seekToTimelinePosition(targetSec, shouldAutoScroll = true) {
+    if (mediaItems.length === 0) return;
+    const { sceneIndex, progress, totalDuration, currentSec } = getSceneAtTimelineSec(targetSec);
+    
+    currentStudioTimelineTimeMs = currentSec * 1000;
+    lastStudioPlayTick = performance.now();
+
+    // Select scene if changed
+    if (sceneIndex !== activeSegmentIndex) {
+        selectSegment(sceneIndex, shouldAutoScroll);
+    }
+
+    // Draw canvas at exact progress
+    drawStudioCanvasFrame(sceneIndex, progress);
+
+    // Sync Audio BGM
+    if (bgmTrack && bgmTrack.url) {
+        try {
+            if (Math.abs(studioAudio.currentTime - currentSec) > 0.25) {
+                studioAudio.currentTime = currentSec;
+            }
+        } catch (e) {}
+    }
+
+    // Update scrubber UI
+    const studioScrubber = document.getElementById('studio-scrubber');
+    const scrubberTime = document.getElementById('studio-scrubber-time');
+
+    if (studioScrubber && totalDuration > 0) {
+        studioScrubber.value = ((currentSec / totalDuration) * 100).toFixed(1);
+    }
+    if (scrubberTime && totalDuration > 0) {
+        const curMin = Math.floor(currentSec / 60);
+        const curSecInt = Math.floor(currentSec % 60);
+        const totMin = Math.floor(totalDuration / 60);
+        const totSecInt = Math.floor(totalDuration % 60);
+        scrubberTime.innerText = `${curMin}:${curSecInt.toString().padStart(2, '0')} / ${totMin}:${totSecInt.toString().padStart(2, '0')}`;
+    }
 }
 
 function playStudioSequence() {
     if (isStudioPlayingSingle) {
         isStudioPlayingSingle = false;
         const btnScene = document.getElementById('studio-btn-play-scene');
-        if (btnScene) btnScene.innerHTML = '🔁 Xem Cảnh Này';
+        if (btnScene) btnScene.innerHTML = '🔁 Cảnh Này';
     }
 
     if (isStudioPlayingAll) {
@@ -941,26 +1038,30 @@ function playStudioSequence() {
         if (studioAnimFrame) cancelAnimationFrame(studioAnimFrame);
         studioAudio.pause();
         const btn = document.getElementById('studio-btn-play');
-        if (btn) btn.innerHTML = '▶ Phát Toàn Bộ Video';
+        if (btn) btn.innerHTML = '▶ Phát Toàn Bộ';
         return;
     }
 
     if (mediaItems.length === 0) return;
 
+    const totalDur = getTotalTimelineDurationSec();
+    if (totalDur <= 0) return;
+
+    // If at the end, restart from beginning
+    if (currentStudioTimelineTimeMs >= totalDur * 1000 - 100) {
+        currentStudioTimelineTimeMs = 0;
+    }
+
     isStudioPlayingAll = true;
     const btn = document.getElementById('studio-btn-play');
     if (btn) btn.innerHTML = '⏸️ Tạm Dừng';
 
-    let currentItemIdx = activeSegmentIndex;
-    let itemStartTime = performance.now();
-    let currentItem = mediaItems[currentItemIdx];
-    let itemDur = (currentItem.type === 'image' ? (currentItem.settings?.duration || 5.0) : (currentItem.duration || 5.0)) * 1000;
+    lastStudioPlayTick = performance.now();
 
-    const { startTime: audioStart } = getSceneAudioRange(currentItemIdx);
     if (bgmTrack && bgmTrack.url) {
         try {
             studioAudio.src = bgmTrack.url;
-            studioAudio.currentTime = audioStart;
+            studioAudio.currentTime = currentStudioTimelineTimeMs / 1000;
             studioAudio.volume = bgmTrack.volume ?? 1.0;
             studioAudio.play().catch(() => {});
         } catch (e) {}
@@ -968,50 +1069,43 @@ function playStudioSequence() {
 
     function step(now) {
         if (!isStudioPlayingAll) return;
-        const elapsed = now - itemStartTime;
-        const progress = Math.min(1.0, elapsed / itemDur);
+        const delta = now - lastStudioPlayTick;
+        lastStudioPlayTick = now;
 
-        drawStudioCanvasFrame(currentItemIdx, progress);
+        currentStudioTimelineTimeMs += delta;
+        const totalMs = totalDur * 1000;
 
-        // Update timeline global scrubber & time text in real-time
-        let totalTimelineDur = 0;
-        let elapsedSoFar = 0;
-        mediaItems.forEach((it, idx) => {
-            const d = it.type === 'image' ? (it.settings?.duration || 5.0) : Math.max(0.5, (it.settings?.trimEnd || it.duration || 5) - (it.settings?.trimStart || 0));
-            totalTimelineDur += d;
-            if (idx < currentItemIdx) {
-                elapsedSoFar += d;
-            }
-        });
-        const currentDur = currentItem.type === 'image' ? (currentItem.settings?.duration || 5.0) : Math.max(0.5, (currentItem.settings?.trimEnd || currentItem.duration || 5) - (currentItem.settings?.trimStart || 0));
-        const currentPlaySec = elapsedSoFar + (progress * currentDur);
-
-        const scrubberTime = document.getElementById('studio-scrubber-time');
-        const studioScrubber = document.getElementById('studio-scrubber');
-        if (scrubberTime && totalTimelineDur > 0) {
-            const curMin = Math.floor(currentPlaySec / 60);
-            const curSec = Math.floor(currentPlaySec % 60);
-            const totMin = Math.floor(totalTimelineDur / 60);
-            const totSec = Math.floor(totalTimelineDur % 60);
-            scrubberTime.innerText = `${curMin}:${curSec.toString().padStart(2, '0')} / ${totMin}:${totSec.toString().padStart(2, '0')}`;
-        }
-        if (studioScrubber && totalTimelineDur > 0) {
-            studioScrubber.value = ((currentPlaySec / totalTimelineDur) * 100).toFixed(1);
-        }
-
-        if (progress >= 1.0) {
-            currentItemIdx = (currentItemIdx + 1) % mediaItems.length;
-            selectSegment(currentItemIdx, true);
-            currentItem = mediaItems[currentItemIdx];
-            itemDur = (currentItem.type === 'image' ? (currentItem.settings?.duration || 5.0) : (currentItem.duration || 5.0)) * 1000;
-            itemStartTime = performance.now();
-
-            if (currentItemIdx === 0 && bgmTrack && bgmTrack.url) {
+        if (currentStudioTimelineTimeMs >= totalMs) {
+            // Loop video playback from start smoothly
+            currentStudioTimelineTimeMs = 0;
+            if (bgmTrack && bgmTrack.url) {
                 try {
                     studioAudio.currentTime = 0;
                     studioAudio.play().catch(() => {});
                 } catch (e) {}
             }
+        }
+
+        const curSec = currentStudioTimelineTimeMs / 1000;
+        const { sceneIndex, progress } = getSceneAtTimelineSec(curSec);
+
+        if (sceneIndex !== activeSegmentIndex) {
+            selectSegment(sceneIndex, true);
+        }
+        drawStudioCanvasFrame(sceneIndex, progress);
+
+        // Update scrubber UI
+        const studioScrubber = document.getElementById('studio-scrubber');
+        const scrubberTime = document.getElementById('studio-scrubber-time');
+        if (studioScrubber && totalDur > 0) {
+            studioScrubber.value = ((curSec / totalDur) * 100).toFixed(1);
+        }
+        if (scrubberTime && totalDur > 0) {
+            const curMin = Math.floor(curSec / 60);
+            const curSecInt = Math.floor(curSec % 60);
+            const totMin = Math.floor(totalDur / 60);
+            const totSecInt = Math.floor(totalDur % 60);
+            scrubberTime.innerText = `${curMin}:${curSecInt.toString().padStart(2, '0')} / ${totMin}:${totSecInt.toString().padStart(2, '0')}`;
         }
 
         studioAnimFrame = requestAnimationFrame(step);
@@ -1025,7 +1119,7 @@ function playSingleScene() {
         isStudioPlayingAll = false;
         if (studioAnimFrame) cancelAnimationFrame(studioAnimFrame);
         const btnAll = document.getElementById('studio-btn-play');
-        if (btnAll) btnAll.innerHTML = '▶ Phát Toàn Bộ Video';
+        if (btnAll) btnAll.innerHTML = '▶ Phát Toàn Bộ';
     }
 
     const btnScene = document.getElementById('studio-btn-play-scene');
@@ -1033,7 +1127,7 @@ function playSingleScene() {
         isStudioPlayingSingle = false;
         if (studioAnimFrame) cancelAnimationFrame(studioAnimFrame);
         studioAudio.pause();
-        if (btnScene) btnScene.innerHTML = '🔁 Xem Cảnh Này';
+        if (btnScene) btnScene.innerHTML = '🔁 Cảnh Này';
         return;
     }
 
@@ -1078,17 +1172,9 @@ function playSingleScene() {
         drawStudioCanvasFrame(activeSegmentIndex, progress);
 
         // Update scrubber & time during single scene playback
-        let totalTimelineDur = 0;
-        let elapsedSoFar = 0;
-        mediaItems.forEach((it, idx) => {
-            const d = it.type === 'image' ? (it.settings?.duration || 5.0) : Math.max(0.5, (it.settings?.trimEnd || it.duration || 5) - (it.settings?.trimStart || 0));
-            totalTimelineDur += d;
-            if (idx < activeSegmentIndex) {
-                elapsedSoFar += d;
-            }
-        });
-        const currentDur = item.type === 'image' ? (item.settings?.duration || 5.0) : Math.max(0.5, (item.settings?.trimEnd || item.duration || 5) - (item.settings?.trimStart || 0));
-        const currentPlaySec = elapsedSoFar + (progress * currentDur);
+        const range = getSceneAudioRange(activeSegmentIndex);
+        const currentPlaySec = range.startTime + (progress * range.duration);
+        const totalTimelineDur = getTotalTimelineDurationSec();
 
         const scrubberTime = document.getElementById('studio-scrubber-time');
         const studioScrubber = document.getElementById('studio-scrubber');
@@ -1186,6 +1272,46 @@ function bindQuickInspectorInputs() {
 
     const btnPlayScene = document.getElementById("studio-btn-play-scene");
     if (btnPlayScene) btnPlayScene.addEventListener("click", playSingleScene);
+
+    // Fast Seek & Next/Prev Scene Navigation Buttons
+    const btnSeekBwd = document.getElementById("studio-btn-seek-backward");
+    if (btnSeekBwd) {
+        btnSeekBwd.addEventListener("click", () => {
+            const curSec = currentStudioTimelineTimeMs / 1000;
+            seekToTimelinePosition(Math.max(0, curSec - 5));
+        });
+    }
+
+    const btnSeekFwd = document.getElementById("studio-btn-seek-forward");
+    if (btnSeekFwd) {
+        btnSeekFwd.addEventListener("click", () => {
+            const curSec = currentStudioTimelineTimeMs / 1000;
+            const totalDur = getTotalTimelineDurationSec();
+            seekToTimelinePosition(Math.min(totalDur, curSec + 5));
+        });
+    }
+
+    const btnPrevScene = document.getElementById("studio-btn-prev-scene");
+    if (btnPrevScene) {
+        btnPrevScene.addEventListener("click", () => {
+            if (activeSegmentIndex > 0) {
+                const range = getSceneAudioRange(activeSegmentIndex - 1);
+                seekToTimelinePosition(range.startTime);
+            } else {
+                seekToTimelinePosition(0);
+            }
+        });
+    }
+
+    const btnNextScene = document.getElementById("studio-btn-next-scene");
+    if (btnNextScene) {
+        btnNextScene.addEventListener("click", () => {
+            if (activeSegmentIndex < mediaItems.length - 1) {
+                const range = getSceneAudioRange(activeSegmentIndex + 1);
+                seekToTimelinePosition(range.startTime);
+            }
+        });
+    }
 }
 
 function applyTextStyleToAllScenes() {
@@ -1263,45 +1389,15 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Timeline Scrubber Dragging
+    // Timeline Scrubber Dragging & Realtime Seeking
     const studioScrubber = document.getElementById('studio-scrubber');
     if (studioScrubber) {
         studioScrubber.addEventListener('input', (e) => {
             if (mediaItems.length === 0) return;
             const pct = parseFloat(e.target.value) / 100;
-            let totalDur = 0;
-            mediaItems.forEach(it => {
-                const d = it.type === 'image' ? (it.settings.duration || 5.0) : Math.max(0.5, (it.settings.trimEnd || it.duration || 5) - (it.settings.trimStart || 0));
-                totalDur += d;
-            });
-
+            const totalDur = getTotalTimelineDurationSec();
             const targetSec = pct * totalDur;
-            let accumulated = 0;
-            let foundIdx = 0;
-            let sceneProgress = 0;
-
-            for (let i = 0; i < mediaItems.length; i++) {
-                const it = mediaItems[i];
-                const d = it.type === 'image' ? (it.settings.duration || 5.0) : Math.max(0.5, (it.settings.trimEnd || it.duration || 5) - (it.settings.trimStart || 0));
-                if (targetSec <= accumulated + d || i === mediaItems.length - 1) {
-                    foundIdx = i;
-                    sceneProgress = Math.max(0, Math.min(1.0, (targetSec - accumulated) / d));
-                    break;
-                }
-                accumulated += d;
-            }
-
-            selectSegment(foundIdx, true);
-            drawStudioCanvasFrame(foundIdx, sceneProgress);
-
-            const scrubberTime = document.getElementById('studio-scrubber-time');
-            if (scrubberTime) {
-                const curMin = Math.floor(targetSec / 60);
-                const curSec = Math.floor(targetSec % 60);
-                const totMin = Math.floor(totalDur / 60);
-                const totSec = Math.floor(totalDur % 60);
-                scrubberTime.innerText = curMin + ':' + curSec.toString().padStart(2, '0') + ' / ' + totMin + ':' + totSec.toString().padStart(2, '0');
-            }
+            seekToTimelinePosition(targetSec, true);
         });
     }
 
@@ -1314,15 +1410,14 @@ document.addEventListener("DOMContentLoaded", () => {
             e.preventDefault();
             playStudioSequence();
         } else if (e.code === 'ArrowLeft') {
-            if (activeSegmentIndex > 0) {
-                e.preventDefault();
-                selectSegment(activeSegmentIndex - 1);
-            }
+            e.preventDefault();
+            const curSec = currentStudioTimelineTimeMs / 1000;
+            seekToTimelinePosition(Math.max(0, curSec - 5));
         } else if (e.code === 'ArrowRight') {
-            if (activeSegmentIndex < mediaItems.length - 1) {
-                e.preventDefault();
-                selectSegment(activeSegmentIndex + 1);
-            }
+            e.preventDefault();
+            const curSec = currentStudioTimelineTimeMs / 1000;
+            const totalDur = getTotalTimelineDurationSec();
+            seekToTimelinePosition(Math.min(totalDur, curSec + 5));
         } else if (e.code === 'Delete' || e.code === 'Backspace') {
             if (mediaItems.length > 0 && activeSegmentIndex >= 0) {
                 e.preventDefault();
