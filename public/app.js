@@ -1508,6 +1508,53 @@ function applyTextStyleToAllScenes() {
 document.addEventListener("DOMContentLoaded", () => {
     bindQuickInspectorInputs();
 
+    // AI Magic Tools Dropdown Toggle Logic
+    const btnAiToggle = document.getElementById('btn-ai-dropdown-toggle');
+    const aiMenu = document.getElementById('ai-magic-dropdown-menu');
+
+    if (btnAiToggle && aiMenu) {
+        btnAiToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            aiMenu.classList.toggle('hidden');
+        });
+
+        // Close menu when clicking outside or clicking any dropdown item
+        document.addEventListener('click', (e) => {
+            if (!aiMenu.contains(e.target) && e.target !== btnAiToggle) {
+                aiMenu.classList.add('hidden');
+            }
+        });
+
+        aiMenu.querySelectorAll('.dropdown-item').forEach(item => {
+            item.addEventListener('click', () => {
+                aiMenu.classList.add('hidden');
+            });
+        });
+    }
+
+    // Stepper buttons for inspector duration
+    const btnDurMinus = document.getElementById('btn-dur-minus');
+    const btnDurPlus = document.getElementById('btn-dur-plus');
+    const inspDurInput = document.getElementById('insp-duration');
+
+    if (btnDurMinus && inspDurInput) {
+        btnDurMinus.addEventListener('click', () => {
+            let val = parseFloat(inspDurInput.value) || 5.0;
+            val = Math.max(1.0, parseFloat((val - 0.5).toFixed(1)));
+            inspDurInput.value = val;
+            inspDurInput.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+    }
+
+    if (btnDurPlus && inspDurInput) {
+        btnDurPlus.addEventListener('click', () => {
+            let val = parseFloat(inspDurInput.value) || 5.0;
+            val = Math.min(30.0, parseFloat((val + 0.5).toFixed(1)));
+            inspDurInput.value = val;
+            inspDurInput.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+    }
+
     const batchDurSlider = document.getElementById("batch-duration-slider");
     const batchDurVal = document.getElementById("batch-duration-val");
     const btnApplyDurAll = document.getElementById("btn-apply-duration-all");

@@ -35,23 +35,50 @@
                     </button>
                 </div>
 
-                <!-- AI Automation Group -->
-                <div class="nav-btn-group">
-                    <button id="btn-open-ai-modal" class="btn btn-ai btn-small" title="Tự động phân tích kịch bản và khớp các phân cảnh">
-                        <span class="icon">🤖</span> Khớp Kịch Bản (AI)
+                <!-- AI Magic Tools Dropdown Group -->
+                <div class="nav-btn-group nav-ai-dropdown-wrap">
+                    <button type="button" id="btn-ai-dropdown-toggle" class="btn btn-ai btn-small" title="Mở bộ công cụ tự động hóa AI">
+                        <span class="icon">✨</span> Bộ Công Cụ AI (AI Studio) <span class="dropdown-caret">▾</span>
                     </button>
-                    <button id="btn-auto-sync-voiceover" class="btn btn-ai btn-small" title="Tải file Audio giọng đọc lên để AI tự động cắt câu, gán phụ đề và cân chỉnh thời lượng Timeline 1 chạm">
-                        <span class="icon">🎙️</span> Khớp Giọng Đọc (AI)
-                    </button>
-                    <button id="btn-audit-image-alignment" class="btn btn-ai btn-small" title="AI Đánh giá xem hình ảnh đã khớp nội dung câu kịch bản chưa, gợi ý đổi ảnh chuẩn hơn từ kho ảnh">
-                        <span class="icon">🖼️</span> Khớp Hình Ảnh (AI)
-                    </button>
-                    <button id="btn-audit-script-pacing" class="btn btn-ai btn-small" title="AI Đánh giá xem ảnh & thời lượng đã khớp kịch bản chưa, tự động cân chỉnh nhanh/chậm">
-                        <span class="icon">⚖️</span> Khớp Script & Nhịp Điệu (AI)
-                    </button>
-                    <button id="btn-audit-timeline" class="btn btn-ai btn-small" title="AI Đánh giá tổng quan kịch bản, phân cảnh, nhịp điệu và âm thanh">
-                        <span class="icon">🧐</span> Đánh Giá Video (AI)
-                    </button>
+                    <div id="ai-magic-dropdown-menu" class="ai-dropdown-menu hidden">
+                        <div class="dropdown-category">🤖 Phân tích kịch bản & Thoại</div>
+                        <button type="button" id="btn-open-ai-modal" class="dropdown-item" title="Tự động phân tích kịch bản và khớp các phân cảnh">
+                            <span class="item-icon">🤖</span>
+                            <div class="item-text">
+                                <strong>Khớp Kịch Bản (AI Script Match)</strong>
+                                <small>Tự động phân tích kịch bản & chia từng cảnh</small>
+                            </div>
+                        </button>
+                        <button type="button" id="btn-auto-sync-voiceover" class="dropdown-item" title="Tải file Audio giọng đọc lên để AI tự động cắt câu, gán phụ đề và cân chỉnh thời lượng Timeline 1 chạm">
+                            <span class="item-icon">🎙️</span>
+                            <div class="item-text">
+                                <strong>Khớp Giọng Đọc 1-Chạm (Voiceover Sync)</strong>
+                                <small>Lắng nghe audio và tự động tính số giây từng câu</small>
+                            </div>
+                        </button>
+                        <div class="dropdown-category mt-1">🔍 Kiểm định & Tối ưu</div>
+                        <button type="button" id="btn-audit-image-alignment" class="dropdown-item" title="AI Đánh giá xem hình ảnh đã khớp nội dung câu kịch bản chưa, gợi ý đổi ảnh chuẩn hơn từ kho ảnh">
+                            <span class="item-icon">🖼️</span>
+                            <div class="item-text">
+                                <strong>Khớp Hình Ảnh (Smart Image Swapper)</strong>
+                                <small>Đánh giá & tìm ảnh tối ưu hơn từ kho ảnh</small>
+                            </div>
+                        </button>
+                        <button type="button" id="btn-audit-script-pacing" class="dropdown-item" title="AI Đánh giá xem ảnh & thời lượng đã khớp kịch bản chưa, tự động cân chỉnh nhanh/chậm">
+                            <span class="item-icon">⚖️</span>
+                            <div class="item-text">
+                                <strong>Cân Chỉnh Nhịp Điệu (Pacing Auditor)</strong>
+                                <small>Tự động tăng/giảm giây cho câu dài/ngắn</small>
+                            </div>
+                        </button>
+                        <button type="button" id="btn-audit-timeline" class="dropdown-item" title="AI Đánh giá tổng quan kịch bản, phân cảnh, nhịp điệu và âm thanh">
+                            <span class="item-icon">🧐</span>
+                            <div class="item-text">
+                                <strong>Đánh Giá Tổng Thể Video (AI QA)</strong>
+                                <small>Chấm điểm kịch bản, hình ảnh và âm thanh</small>
+                            </div>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Template & Render CTA Group -->
@@ -357,7 +384,11 @@
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label-xs">⏱️ Thời lượng (s):</label>
-                                    <input type="number" id="insp-duration" class="form-control form-control-sm" min="1" max="30" step="0.5" value="5.0">
+                                    <div class="stepper-input-group">
+                                        <button type="button" class="btn-stepper" id="btn-dur-minus" title="Giảm 0.5s">−</button>
+                                        <input type="number" id="insp-duration" class="form-control form-control-sm text-center" min="1" max="30" step="0.5" value="5.0">
+                                        <button type="button" class="btn-stepper" id="btn-dur-plus" title="Tăng 0.5s">+</button>
+                                    </div>
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label-xs">🔁 Lặp cảnh (Loop):</label>
@@ -380,8 +411,8 @@
                                 <div class="form-group">
                                     <label class="form-label-xs">✨ Fade In / Out (s):</label>
                                     <div class="flex-row-gap">
-                                        <input type="number" id="insp-fadein" class="form-control form-control-sm" min="0" max="3" step="0.1" value="0.8" placeholder="In">
-                                        <input type="number" id="insp-fadeout" class="form-control form-control-sm" min="0" max="3" step="0.1" value="0.8" placeholder="Out">
+                                        <input type="number" id="insp-fadein" class="form-control form-control-sm text-center" min="0" max="3" step="0.1" value="0.8" placeholder="In" title="Fade In (s)">
+                                        <input type="number" id="insp-fadeout" class="form-control form-control-sm text-center" min="0" max="3" step="0.1" value="0.8" placeholder="Out" title="Fade Out (s)">
                                     </div>
                                 </div>
                             </div>

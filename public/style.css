@@ -119,6 +119,123 @@ body {
     border: 1px solid var(--border-color);
 }
 
+/* AI Magic Tools Dropdown */
+.nav-ai-dropdown-wrap {
+    position: relative;
+}
+
+.dropdown-caret {
+    font-size: 10px;
+    margin-left: 4px;
+    transition: transform 0.2s ease;
+}
+
+.ai-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 320px;
+    background: #0F172A;
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    border-radius: var(--radius-md);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.65), 0 0 15px rgba(99, 102, 241, 0.2);
+    padding: 8px;
+    z-index: 1000;
+    backdrop-filter: blur(16px);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    animation: fadeInDown 0.18s ease-out;
+}
+
+.dropdown-category {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 6px 8px 4px 8px;
+}
+
+.ai-dropdown-menu .dropdown-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    border: none;
+    color: var(--text-color);
+    text-align: left;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.ai-dropdown-menu .dropdown-item:hover {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+.ai-dropdown-menu .item-icon {
+    font-size: 18px;
+    line-height: 1.2;
+}
+
+.ai-dropdown-menu .item-text strong {
+    display: block;
+    font-size: 12.5px;
+    color: #FFF;
+}
+
+.ai-dropdown-menu .item-text small {
+    display: block;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 1px;
+}
+
+/* Stepper Input Group */
+.stepper-input-group {
+    display: flex;
+    align-items: center;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.stepper-input-group input {
+    border: none !important;
+    background: transparent !important;
+    padding: 4px 6px !important;
+    width: 60px;
+}
+
+.btn-stepper {
+    background: rgba(255, 255, 255, 0.06);
+    border: none;
+    color: #FFF;
+    width: 26px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-stepper:hover {
+    background: var(--primary);
+    color: #FFF;
+}
+
+.text-center {
+    text-align: center;
+}
+
 /* Workflow Step Indicator for Beginners */
 .workflow-steps-bar {
     display: flex;
