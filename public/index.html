@@ -1464,9 +1464,47 @@
                             </button>
                         </div>
                     </div>
-                    <textarea id="script-textarea" class="custom-textarea mt-2" rows="7" placeholder="Dán nội dung kịch bản vào đây hoặc tải file .md lên..."></textarea>
+                    <textarea id="script-textarea" class="custom-textarea mt-2" rows="6" placeholder="Dán nội dung kịch bản vào đây hoặc tải file .md lên..."></textarea>
                     <div class="script-stats-bar mt-1">
                         <span id="script-stats-text" class="text-dim text-xs">Chưa có kịch bản</span>
+                    </div>
+                </div>
+
+                <!-- Step 1.5: Direct Audio & Pause Interval Settings (All-in-One Director) -->
+                <div class="ai-audio-sync-box mt-2" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 8px; padding: 12px;">
+                    <div class="flex-between flex-wrap gap-xs align-center">
+                        <div class="flex-row align-center gap-xs">
+                            <span style="font-size: 1.2rem;">🎙️</span>
+                            <div>
+                                <strong style="color: var(--accent-cyan);">Tệp Âm Thanh Giọng Đọc (Voiceover / BGM):</strong>
+                                <div id="ai-modal-audio-status" class="text-xs text-dim">Chưa chọn audio. (Nếu có audio, AI sẽ tự động căn thời lượng từng ảnh khớp 100% tiếng nói).</div>
+                            </div>
+                        </div>
+                        <div class="flex-row align-center gap-xs">
+                            <input type="file" id="ai-modal-audio-file" accept="audio/*" hidden>
+                            <button type="button" class="btn btn-small btn-outline" onclick="document.getElementById('ai-modal-audio-file').click()">
+                                📁 Nạp File Audio (.MP3/.WAV)
+                            </button>
+                            <button type="button" id="btn-ai-use-current-bgm" class="btn btn-small btn-secondary hidden" title="Sử dụng ngay file BGM đang có trên Tab 1">
+                                🎶 Dùng BGM Hiện Tại
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex-row align-center gap-md mt-2 pt-2" style="border-top: 1px dashed rgba(255, 255, 255, 0.1);">
+                        <div class="flex-row align-center gap-xs">
+                            <label for="ai-modal-pause-interval" class="text-xs" title="Khoảng nghỉ giữa các câu thoại trong audio giọng đọc">
+                                ⏱️ <strong>Khoảng nghỉ giữa các câu (Pause):</strong>
+                            </label>
+                            <select id="ai-modal-pause-interval" class="custom-select form-control-sm" style="width: 140px;">
+                                <option value="0.5" selected>0.5s (Khuyên dùng)</option>
+                                <option value="0.3">0.3s (Nói nhanh)</option>
+                                <option value="0.4">0.4s (Vừa phải)</option>
+                                <option value="0.8">0.8s (Nghỉ dài)</option>
+                                <option value="0.0">0.0s (Nói liền mạch)</option>
+                            </select>
+                        </div>
+                        <span class="text-xs text-dim">💡 Giúp tính toán nhịp thở và độ dài từng bức ảnh chính xác từng giây theo file thu âm.</span>
                     </div>
                 </div>
 
@@ -1474,7 +1512,7 @@
                 <div class="ai-status-bar mt-2">
                     <span>🖼️ Số lượng ảnh hiện có trên Timeline: <strong id="ai-image-count">0 ảnh</strong></span>
                     <button id="btn-run-ai-match" class="btn btn-ai-action">
-                        ✨ Phân Tích & Khớp Ảnh Tự Động
+                        ✨ Phân Tích & Khớp Kịch Bản + Audio
                     </button>
                 </div>
 

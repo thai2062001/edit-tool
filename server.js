@@ -201,10 +201,19 @@ function getThumbnailBase64(filePath) {
     });
 }
 
-// AI Script Matching API (Ultra-Fast Optimized with Strict Non-Duplicate Image Policy)
-app.post('/api/ai/match-script', async (req, res) => {
+// AI Script & Audio Matching API (Ultra-Fast Optimized with Strict Non-Duplicate Image Policy & Audio Speech Pacing)
+app.post('/api/ai/match-script', upload.single('audioFile'), async (req, res) => {
     try {
-        const { scriptText, items, customApiKey } = req.body;
+        let scriptText = req.body.scriptText || '';
+        let items = [];
+        try {
+            items = typeof req.body.items === 'string' ? JSON.parse(req.body.items) : (req.body.items || []);
+        } catch (e) {
+            items = [];
+        }
+
+        const customApiKey = req.body.customApiKey;
+        const pauseInterval = typeof req.body.pauseInterval !== 'undefined' ? parseFloat(req.body.pauseInterval) : 0.5;
         const apiKey = (customApiKey && customApiKey.trim()) ? customApiKey.trim() : DEFAULT_GEMINI_API_KEY;
 
         if (!scriptText || !scriptText.trim()) {
@@ -214,8 +223,58 @@ app.post('/api/ai/match-script', async (req, res) => {
             return res.status(400).json({ error: 'Vui lòng tải lên ít nhất một ảnh để khớp kịch bản' });
         }
 
+        // Check if an audio file was uploaded or referenced from BGM
+        let audioPath = null;
+        let audioFilename = '';
+        let audioOriginalName = '';
+
+        if (req.file && fs.existsSync(req.file.path)) {
+            audioPath = req.file.path;
+            audioFilename = req.file.filename;
+            audioOriginalName = req.file.originalname;
+        } else if (req.body.bgmFilename) {
+            const safeBgm = path.basename(req.body.bgmFilename);
+            const candidate = path.join(UPLOADS_DIR, safeBgm);
+            if (fs.existsSync(candidate)) {
+                audioPath = candidate;
+                audioFilename = safeBgm;
+                audioOriginalName = req.body.bgmOriginalName || safeBgm;
+            }
+        }
+
+        let audioDuration = 0;
+        let audioBase64 = null;
+
+        if (audioPath && fs.existsSync(audioPath)) {
+            try {
+                audioDuration = await getMediaDuration(audioPath);
+                // Extract lightweight audio buffer for Gemini
+                const tempAudio = path.join(UPLOADS_DIR, `temp_match_vo_${Date.now()}.mp3`);
+                await extractLightweightAudio(audioPath, tempAudio);
+                if (fs.existsSync(tempAudio)) {
+                    const buf = fs.readFileSync(tempAudio);
+                    if (buf.length <= 25 * 1024 * 1024) {
+                        audioBase64 = buf.toString('base64');
+                    }
+                    try { fs.unlinkSync(tempAudio); } catch (e) {}
+                }
+            } catch (aErr) {
+                console.warn('[AI Script Match] Audio analysis notice:', aErr.message);
+            }
+        }
+
         const ai = new GoogleGenAI({ apiKey });
         const contents = [];
+
+        // Attach audio buffer if available
+        if (audioBase64) {
+            contents.push({
+                inlineData: {
+                    mimeType: 'audio/mp3',
+                    data: audioBase64
+                }
+            });
+        }
 
         // Attach lightweight thumbnails for vision matching (supports up to 40 images)
         const imageItems = items.filter(i => i.type === 'image');
@@ -266,6 +325,7 @@ app.post('/api/ai/match-script', async (req, res) => {
         const promptText = `
 Bạn là một Đạo Diễn Dựng Phim & Biên Tập Video Chuyên Nghiệp (Senior Film Director & AI Video Editor).
 Tác giả đã phân chia kịch bản thành CHÍNH XÁC ${scriptLines.length} PHÂN ĐOẠN / CÂU THOẠI (từ SCENE 1 đến SCENE ${scriptLines.length}).
+${audioDuration > 0 ? `ĐẶC BIỆT: Đính kèm tệp âm thanh giọng đọc có tổng thời lượng: ${audioDuration.toFixed(2)}s (khoảng nghỉ giữa các câu: ${pauseInterval}s). Hãy tính toán thời lượng từng câu khớp khít 100% với giọng đọc trong audio.` : ''}
 
 --- NỘI DUNG KỊCH BẢN ĐÃ CHIA SẴN (${scriptLines.length} PHÂN ĐOẠN) ---
 ${formattedScriptNumbered}
@@ -290,7 +350,7 @@ ${formattedScriptNumbered}
 
 5. 🎬 CHỌN HIỆU ỨNG VÀ THỜI LƯỢNG TƯƠNG THÍCH:
    - suggestedMotion: 'zoom_in', 'zoom_out', 'pan_left', 'pan_right', 'pan_up', 'pan_down', 'zoom_pan', 'zoom_in_left', 'zoom_in_right', 'none'.
-   - suggestedDuration: từ 7.5s đến 9.5s (trung bình 8.5s cho mỗi câu).
+   - suggestedDuration: thời lượng giây cho câu thoại đó (nếu có audio thì tính khớp theo audio và khoảng nghỉ ${pauseInterval}s).
    - fadeIn, fadeOut: 0.8s.
 
 === CẤU TRÚC JSON TRẢ VỀ ===
@@ -300,7 +360,7 @@ Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
     "imageIndex": 0, // Index ảnh từ 0 đến ${imageItems.length - 1}, HOẶC -1 NẾU ĐỂ TRỐNG
     "sceneText": "Nguyên văn câu thoại của SCENE tương ứng bằng ngôn ngữ gốc",
     "suggestedMotion": "zoom_in",
-    "suggestedDuration": 8.5,
+    "suggestedDuration": 5.0,
     "fadeIn": 0.8,
     "fadeOut": 0.8,
     "reason": "Giải thích ngắn lý do chọn ảnh hoặc lý do để trống"
@@ -342,6 +402,27 @@ Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
         // Strict deduplication tracker: ensure every imageIndex is used AT MOST ONCE
         const usedImageIndices = new Set();
 
+        // Calculate audio-driven natural pacing if audio is present
+        let computedAudioDurations = null;
+        if (audioDuration > 0 && scriptLines.length > 0) {
+            const totalPauseTime = Math.max(0, (scriptLines.length - 1) * pauseInterval);
+            const pureSpeechDuration = Math.max(scriptLines.length * 1.5, audioDuration - totalPauseTime);
+
+            const sentenceWeights = scriptLines.map(text => {
+                const words = text.split(/\s+/).filter(Boolean).length;
+                const commas = (text.match(/[,;:]/g) || []).length;
+                return Math.max(2, words + (commas * 1.5));
+            });
+            const totalWeight = sentenceWeights.reduce((a, b) => a + b, 0) || 1;
+
+            computedAudioDurations = scriptLines.map((_, i) => {
+                const speechPart = (sentenceWeights[i] / totalWeight) * pureSpeechDuration;
+                // Add pause interval to each scene (except last scene has tail pause)
+                const fullSceneDur = parseFloat((speechPart + pauseInterval).toFixed(2));
+                return Math.max(1.5, fullSceneDur);
+            });
+        }
+
         const scenes = rawScenes.map((s, idx) => {
             let candidateIdx = -1;
             if (Array.isArray(s)) {
@@ -367,18 +448,28 @@ Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
 
             const sceneText = Array.isArray(s) ? (s[1] || `Phân cảnh ${idx + 1}`) : (s.sceneText || s.t || `Phân cảnh ${idx + 1}`);
             const motion = Array.isArray(s) ? cleanMotion(s[2]) : cleanMotion(s.suggestedMotion || s.motion || s.m);
-            const duration = Array.isArray(s) ? parseFloat(s[3] || 4.0) : parseFloat(s.suggestedDuration || s.duration || s.d || 4.0);
-            const fadeIn = Array.isArray(s) ? parseFloat(s[4] || 0.8) : parseFloat(s.fadeIn || s.fi || 0.8);
-            const fadeOut = Array.isArray(s) ? parseFloat(s[5] || 0.8) : parseFloat(s.fadeOut || s.fo || 0.8);
+            
+            // Priority: computed Audio duration with pause -> AI returned duration -> default
+            let finalDuration = 5.0;
+            if (computedAudioDurations && typeof computedAudioDurations[idx] === 'number') {
+                finalDuration = computedAudioDurations[idx];
+            } else {
+                const durFromAi = Array.isArray(s) ? parseFloat(s[3] || 5.0) : parseFloat(s.suggestedDuration || s.duration || s.d || 5.0);
+                finalDuration = isNaN(durFromAi) ? 5.0 : durFromAi;
+            }
+
+            const defaultTransitionDur = Math.min(pauseInterval > 0 ? pauseInterval : 0.5, 0.8);
+            const fadeIn = Array.isArray(s) ? parseFloat(s[4] || defaultTransitionDur) : parseFloat(s.fadeIn || s.fi || defaultTransitionDur);
+            const fadeOut = Array.isArray(s) ? parseFloat(s[5] || defaultTransitionDur) : parseFloat(s.fadeOut || s.fo || defaultTransitionDur);
             const reason = Array.isArray(s) ? (s[6] || '') : (s.reason || s.matchReason || '');
 
             return {
                 imageIndex: finalImageIndex,
                 sceneText: sceneText.trim(),
                 suggestedMotion: motion,
-                suggestedDuration: Math.max(1.0, Math.min(30.0, isNaN(duration) ? 4.0 : duration)),
-                fadeIn: Math.max(0, Math.min(3.0, isNaN(fadeIn) ? 0.8 : fadeIn)),
-                fadeOut: Math.max(0, Math.min(3.0, isNaN(fadeOut) ? 0.8 : fadeOut)),
+                suggestedDuration: Math.max(1.0, Math.min(60.0, finalDuration)),
+                fadeIn: Math.max(0, Math.min(3.0, isNaN(fadeIn) ? defaultTransitionDur : fadeIn)),
+                fadeOut: Math.max(0, Math.min(3.0, isNaN(fadeOut) ? defaultTransitionDur : fadeOut)),
                 reason: finalImageIndex === -1 
                     ? (reason || 'Để trống để tránh lặp ảnh cũ / cần bổ sung ảnh mới cho câu này') 
                     : reason
@@ -392,11 +483,18 @@ Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
 
         res.json({ 
             success: true, 
+            audioTrack: audioFilename ? {
+                filename: audioFilename,
+                originalName: audioOriginalName,
+                duration: audioDuration,
+                url: `/uploads/${audioFilename}`
+            } : null,
             result: { 
                 scenes,
                 totalScenes: scenes.length,
                 matchedCount,
-                emptyCount
+                emptyCount,
+                audioDuration
             } 
         });
     } catch (err) {

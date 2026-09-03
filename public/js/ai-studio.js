@@ -136,11 +136,48 @@ const scriptStatsText = document.getElementById('script-stats-text');
 const btnCleanScript = document.getElementById('btn-clean-script');
 
 let currentAiMatchedScenes = [];
+let aiModalSelectedAudioFile = null;
+let aiModalMatchedAudioTrack = null;
+
+const aiModalAudioFile = document.getElementById('ai-modal-audio-file');
+const aiModalAudioStatus = document.getElementById('ai-modal-audio-status');
+const btnAiUseCurrentBgm = document.getElementById('btn-ai-use-current-bgm');
+const aiModalPauseInterval = document.getElementById('ai-modal-pause-interval');
+
+if (aiModalAudioFile) {
+    aiModalAudioFile.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (file) {
+            aiModalSelectedAudioFile = file;
+            if (aiModalAudioStatus) {
+                aiModalAudioStatus.innerHTML = `🎵 <strong>Đã chọn tệp:</strong> <span style="color: var(--accent-cyan);">${file.name}</span> (${(file.size / (1024 * 1024)).toFixed(2)} MB)`;
+            }
+        }
+    });
+}
+
+if (btnAiUseCurrentBgm) {
+    btnAiUseCurrentBgm.addEventListener('click', () => {
+        if (window.bgmTrack && window.bgmTrack.url) {
+            aiModalSelectedAudioFile = null; // Use current bgm on server
+            if (aiModalAudioStatus) {
+                aiModalAudioStatus.innerHTML = `🎵 <strong>Đang dùng BGM Timeline:</strong> <span style="color: var(--accent-cyan);">${window.bgmTrack.originalName || 'BGM Track'}</span>`;
+            }
+        }
+    });
+}
 
 if (btnOpenAiModal) {
     btnOpenAiModal.addEventListener('click', () => {
         const imgCount = mediaItems.filter(i => i.type === 'image').length;
         if (aiImageCount) aiImageCount.innerText = `${imgCount} ảnh`;
+        if (btnAiUseCurrentBgm) {
+            if (window.bgmTrack && window.bgmTrack.url) {
+                btnAiUseCurrentBgm.classList.remove('hidden');
+            } else {
+                btnAiUseCurrentBgm.classList.add('hidden');
+            }
+        }
         if (aiModal) aiModal.classList.remove('hidden');
     });
 }
@@ -269,23 +306,38 @@ if (btnRunAiMatch) {
         }
 
         const key = inputGeminiKey ? inputGeminiKey.value.trim() : '';
+        const pauseIntervalVal = aiModalPauseInterval ? parseFloat(aiModalPauseInterval.value) : 0.5;
 
         btnRunAiMatch.disabled = true;
-        btnRunAiMatch.innerHTML = '<span class="icon">⏳</span> Gemini AI Đang Phân Tích...';
+        btnRunAiMatch.innerHTML = '<span class="icon">⏳</span> Gemini AI Đang Phân Tích Kịch Bản & Audio...';
 
         try {
+            const formData = new FormData();
+            formData.append('scriptText', script);
+            formData.append('items', JSON.stringify(mediaItems));
+            formData.append('customApiKey', key);
+            formData.append('pauseInterval', pauseIntervalVal);
+
+            if (aiModalSelectedAudioFile) {
+                formData.append('audioFile', aiModalSelectedAudioFile);
+            } else if (window.bgmTrack && window.bgmTrack.filename) {
+                formData.append('bgmFilename', window.bgmTrack.filename);
+                formData.append('bgmOriginalName', window.bgmTrack.originalName || '');
+            }
+
             const res = await fetch('/api/ai/match-script', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    scriptText: script,
-                    items: mediaItems,
-                    customApiKey: key
-                })
+                body: formData
             });
 
             const data = await res.json();
             if (data.error) throw new Error(data.error);
+
+            if (data.audioTrack) {
+                aiModalMatchedAudioTrack = data.audioTrack;
+            } else {
+                aiModalMatchedAudioTrack = null;
+            }
 
             if (data.result && data.result.scenes) {
                 currentAiMatchedScenes = data.result.scenes;
@@ -466,10 +518,27 @@ if (btnApplyAiTimeline) {
             if (typeof recordHistorySnapshot === 'function') recordHistorySnapshot();
             mediaItems = newTimeline;
             window.mediaItems = newTimeline;
+
+            // Automatically set matched Audio track into Timeline BGM if uploaded
+            if (aiModalMatchedAudioTrack) {
+                bgmTrack = {
+                    filename: aiModalMatchedAudioTrack.filename,
+                    originalName: aiModalMatchedAudioTrack.originalName,
+                    url: aiModalMatchedAudioTrack.url,
+                    duration: aiModalMatchedAudioTrack.duration,
+                    volume: 0.8
+                };
+                window.bgmTrack = bgmTrack;
+                if (typeof updateBgmUI === 'function') updateBgmUI();
+            }
+
             if (typeof renderMediaList === 'function') renderMediaList();
             closeAiModal();
             
-            let msg = `🎉 Đã áp dụng toàn bộ ${newTimeline.length} phân cảnh theo kịch bản vào Timeline!`;
+            let msg = `🎉 Đã áp dụng toàn bộ ${newTimeline.length} phân cảnh theo kịch bản & Audio vào Timeline!`;
+            if (aiModalMatchedAudioTrack) {
+                msg += `\n\n🎵 Đã đồng bộ & nạp Audio giọng đọc "${aiModalMatchedAudioTrack.originalName}" vào Timeline thành công.`;
+            }
             if (placeholderCount > 0) {
                 msg += `\n\nℹ️ Có ${placeholderCount} phân cảnh chưa có ảnh (thẻ viền vàng trên Timeline). Bạn có thể bấm trực tiếp vào nút "➕ Bù ảnh" trên từng thẻ để tải ảnh khớp vào đúng vị trí nhé!`;
             }
