@@ -406,14 +406,36 @@ function bindQuickInspectorInputs() {
     const inspTrimEnd = document.getElementById('insp-trimend');
     const inspVideoVolume = document.getElementById('insp-videovolume');
     const inspText = document.getElementById('insp-text');
+    const inspTextFont = document.getElementById('insp-textfont');
     const inspTextPos = document.getElementById('insp-textpos');
     const inspTextStyle = document.getElementById('insp-textstyle');
     const inspTextSize = document.getElementById('insp-textsize');
+    const inspTextColor = document.getElementById('insp-textcolor');
+    const inspTextAccent = document.getElementById('insp-textaccent');
+
+    // Alignment buttons
+    document.querySelectorAll('.btn-align-option').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.btn-align-option').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const align = btn.dataset.align || 'center';
+            const item = mediaItems[activeSegmentIndex];
+            if (item) {
+                if (!item.settings) item.settings = {};
+                item.settings.textAlign = align;
+                if (typeof recordHistorySnapshot === 'function') recordHistorySnapshot();
+                if (typeof drawStudioCanvasFrame === 'function') {
+                    drawStudioCanvasFrame(activeSegmentIndex, 0);
+                }
+            }
+        });
+    });
 
     function onInspectorChange() {
         if (isUpdatingInspector) return;
         const item = mediaItems[activeSegmentIndex];
         if (!item) return;
+        if (!item.settings) item.settings = {};
 
         if (item.type === 'image') {
             if (inspMotion) item.settings.motion = inspMotion.value;
@@ -432,9 +454,12 @@ function bindQuickInspectorInputs() {
         }
 
         if (inspText) item.settings.overlayText = inspText.value;
+        if (inspTextFont) item.settings.fontFamily = inspTextFont.value;
         if (inspTextPos) item.settings.textPosition = inspTextPos.value;
         if (inspTextStyle) item.settings.textStyle = inspTextStyle.value;
         if (inspTextSize) item.settings.fontSize = parseInt(inspTextSize.value) || 48;
+        if (inspTextColor) item.settings.textColor = inspTextColor.value;
+        if (inspTextAccent) item.settings.textAccent = inspTextAccent.value;
 
         const mediaListEl = document.getElementById('media-list');
         const activeCard = mediaListEl ? mediaListEl.querySelector(`.storyboard-card[data-index="${activeSegmentIndex}"]`) : null;
@@ -457,7 +482,7 @@ function bindQuickInspectorInputs() {
         }
     }
 
-    [inspMotion, inspTransition, inspDuration, inspLoopCount, inspLoopCountVideo, inspIntensity, inspFadeIn, inspFadeOut, inspTrimStart, inspTrimEnd, inspVideoVolume, inspText, inspTextPos, inspTextStyle, inspTextSize].forEach(el => {
+    [inspMotion, inspTransition, inspDuration, inspLoopCount, inspLoopCountVideo, inspIntensity, inspFadeIn, inspFadeOut, inspTrimStart, inspTrimEnd, inspVideoVolume, inspText, inspTextFont, inspTextPos, inspTextStyle, inspTextSize, inspTextColor, inspTextAccent].forEach(el => {
         if (el) {
             el.addEventListener('input', onInspectorChange);
             el.addEventListener('change', () => {
@@ -526,6 +551,10 @@ function applyTextStyleToAllScenes() {
     const currentPos = document.getElementById('insp-textpos')?.value || 'bottom';
     const currentStyle = document.getElementById('insp-textstyle')?.value || 'banner';
     const currentSize = parseInt(document.getElementById('insp-textsize')?.value) || 48;
+    const currentFont = document.getElementById('insp-textfont')?.value || 'Outfit';
+    const currentColor = document.getElementById('insp-textcolor')?.value || '#FFFFFF';
+    const currentAccent = document.getElementById('insp-textaccent')?.value || '#06B6D4';
+    const currentAlign = document.querySelector('.btn-align-option.active')?.dataset.align || 'center';
 
     if (typeof recordHistorySnapshot === 'function') recordHistorySnapshot();
     mediaItems.forEach(item => {
@@ -533,6 +562,10 @@ function applyTextStyleToAllScenes() {
         item.settings.textPosition = currentPos;
         item.settings.textStyle = currentStyle;
         item.settings.fontSize = currentSize;
+        item.settings.fontFamily = currentFont;
+        item.settings.textColor = currentColor;
+        item.settings.textAccent = currentAccent;
+        item.settings.textAlign = currentAlign;
     });
 
     if (typeof renderMediaList === 'function') renderMediaList();
@@ -540,9 +573,9 @@ function applyTextStyleToAllScenes() {
         drawStudioCanvasFrame(activeSegmentIndex, 0);
     }
 
-    const styleNames = { banner: 'Banner mờ', outline: 'Viền đen', glow: 'Neon sáng', plain: 'Chữ trắng' };
+    const styleNames = { banner: 'Banner mờ', outline: 'Viền nổi', glow: 'Neon sáng', plain: 'Chữ trơn' };
     const posNames = { bottom: 'Dưới đáy', center: 'Giữa khung', top: 'Trên đỉnh' };
-    alert(`✨ Đã đồng bộ thành công:\n• Kiểu chữ: ${styleNames[currentStyle] || currentStyle}\n• Vị trí: ${posNames[currentPos] || currentPos}\n• Cỡ chữ: ${currentSize}px\n\nCho toàn bộ ${mediaItems.length} phân cảnh trên Timeline!`);
+    alert(`✨ Đã đồng bộ thành công phong cách chữ:\n• Font: ${currentFont}\n• Kiểu dáng: ${styleNames[currentStyle] || currentStyle}\n• Vị trí: ${posNames[currentPos] || currentPos}\n• Cỡ chữ: ${currentSize}px • Căn: ${currentAlign}\n• Màu chữ: ${currentColor} • Viền/Glow: ${currentAccent}\n\nCho toàn bộ ${mediaItems.length} phân cảnh trên Timeline!`);
 }
 
 // Universal Tab Switching

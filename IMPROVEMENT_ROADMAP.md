@@ -33,13 +33,15 @@ Tài liệu này tổng hợp 4 nhóm tính năng cải tiến cốt lõi đã �
 
 ---
 
-## 4. 🎨 Tùy Chỉnh Màu Sắc, Font Chữ & Kiểu Dáng Text Overlay
+## 4. ✅ 🎨 Tùy Chỉnh Màu Sắc, Font Chữ & Kiểu Dáng Text Overlay (ĐÃ HOÀN THÀNH)
 - **Color Picker tự do**:
-  - Cho phép chọn màu chữ, màu viền chữ (stroke), màu phát sáng (glow) và màu nền banner riêng biệt theo bảng mã màu hex/picker.
+  - Tích hợp 2 bộ Color Picker trực tiếp trên Quick Inspector: Chọn màu chữ (Text Color) và màu viền/phát sáng Neon (Accent/Glow Color) theo mã màu hex bất kỳ.
 - **Kho Font chữ Google Fonts Việt Hóa**:
-  - Tích hợp bộ chọn Font chữ đa dạng (Outfit, Montserrat, Inter, Roboto, Be Vietnam Pro, Bangers,...) trực tiếp tại Tab 1.
+  - Hỗ trợ đa dạng font chữ thời thượng: `Outfit`, `Montserrat`, `Inter`, `Roboto`, `Be Vietnam Pro`, `Bangers (Comic)`, `Playfair Display (Sang trọng)`.
 - **Căn lề & Định dạng đoạn văn**:
-  - Hỗ trợ căn lề Trái / Giữa / Phải, tùy chỉnh độ mờ (opacity) của banner chữ, hỗ trợ xuống dòng nhiều dòng đẹp mắt mà không bị tràn khung hình.
+  - Hỗ trợ căn lề Trái / Giữa / Phải qua cụm nút toggle nhanh.
+  - Tự động ngắt dòng thông minh (Smart Word-Wrap) chống tràn khung hình trên cả Canvas Studio Preview và Render Engine FFmpeg backend.
+  - Hỗ trợ nút "✨ Đồng bộ tất cả" để áp dụng toàn bộ phong cách chữ cho tất cả các phân cảnh trên Timeline chỉ với 1 click.
 
 ---
 

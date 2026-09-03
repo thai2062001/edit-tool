@@ -168,9 +168,13 @@ function commitCurrentInspectorSettings() {
     const inspTrimEnd = document.getElementById('insp-trimend');
     const inspVideoVolume = document.getElementById('insp-videovolume');
     const inspText = document.getElementById('insp-text');
+    const inspTextFont = document.getElementById('insp-textfont');
     const inspTextPos = document.getElementById('insp-textpos');
     const inspTextStyle = document.getElementById('insp-textstyle');
     const inspTextSize = document.getElementById('insp-textsize');
+    const inspTextColor = document.getElementById('insp-textcolor');
+    const inspTextAccent = document.getElementById('insp-textaccent');
+    const activeAlignBtn = document.querySelector('.btn-align-option.active');
 
     if (item.type === 'image') {
         if (inspMotion) item.settings.motion = inspMotion.value;
@@ -189,9 +193,13 @@ function commitCurrentInspectorSettings() {
     }
 
     if (inspText) item.settings.overlayText = inspText.value;
+    if (inspTextFont) item.settings.fontFamily = inspTextFont.value;
     if (inspTextPos) item.settings.textPosition = inspTextPos.value;
     if (inspTextStyle) item.settings.textStyle = inspTextStyle.value;
     if (inspTextSize) item.settings.fontSize = parseInt(inspTextSize.value) || 48;
+    if (inspTextColor) item.settings.textColor = inspTextColor.value;
+    if (inspTextAccent) item.settings.textAccent = inspTextAccent.value;
+    if (activeAlignBtn) item.settings.textAlign = activeAlignBtn.dataset.align || 'center';
 }
 
 function selectSegment(index, shouldScroll = true) {
@@ -302,9 +310,12 @@ function updateQuickInspector(index) {
         const inspTrimEnd = document.getElementById('insp-trimend');
         const inspVideoVolume = document.getElementById('insp-videovolume');
         const inspText = document.getElementById('insp-text');
+        const inspTextFont = document.getElementById('insp-textfont');
         const inspTextPos = document.getElementById('insp-textpos');
         const inspTextStyle = document.getElementById('insp-textstyle');
         const inspTextSize = document.getElementById('insp-textsize');
+        const inspTextColor = document.getElementById('insp-textcolor');
+        const inspTextAccent = document.getElementById('insp-textaccent');
 
         if (inspTransition) inspTransition.value = item.settings?.transition || 'fade_black';
 
@@ -329,9 +340,17 @@ function updateQuickInspector(index) {
         }
 
         if (inspText) inspText.value = item.settings?.overlayText || '';
+        if (inspTextFont) inspTextFont.value = item.settings?.fontFamily || 'Outfit';
         if (inspTextPos) inspTextPos.value = item.settings?.textPosition || 'bottom';
         if (inspTextStyle) inspTextStyle.value = item.settings?.textStyle || 'banner';
         if (inspTextSize) inspTextSize.value = item.settings?.fontSize || 48;
+        if (inspTextColor) inspTextColor.value = item.settings?.textColor || '#FFFFFF';
+        if (inspTextAccent) inspTextAccent.value = item.settings?.textAccent || '#06B6D4';
+
+        const align = item.settings?.textAlign || 'center';
+        document.querySelectorAll('.btn-align-option').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.align === align);
+        });
 
         // Actions
         const btnInspPrev = document.getElementById('btn-inspector-move-prev');

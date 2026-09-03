@@ -1468,10 +1468,18 @@ function buildDrawtextFilter(settings, width, height, tempFiles = []) {
     const style = settings.textStyle || 'banner';
     const baseFontSize = Number(settings.fontSize) || 48;
     const scaledFontSize = Math.max(20, Math.round(baseFontSize * (height / 1080)));
+    const textColorHex = (settings.textColor || '#FFFFFF').replace('#', '0x');
+    const textAccentHex = (settings.textAccent || '#06B6D4').replace('#', '0x');
+    const textAlign = settings.textAlign || 'center'; // 'left' | 'center' | 'right'
 
     let x = '(w-text_w)/2';
-    let y = 'h-text_h-120';
+    if (textAlign === 'left') {
+        x = 'w*0.08';
+    } else if (textAlign === 'right') {
+        x = 'w*0.92-text_w';
+    }
 
+    let y = 'h-text_h-120';
     if (position === 'top') {
         y = `${Math.round(height * 0.10)}`;
     } else if (position === 'center') {
@@ -1481,15 +1489,15 @@ function buildDrawtextFilter(settings, width, height, tempFiles = []) {
         y = `h-text_h-${Math.round(height * 0.10)}`;
     }
 
-    let styleParams = ':fontcolor=white:line_spacing=10';
+    let styleParams = `:fontcolor=${textColorHex}:line_spacing=10`;
     if (style === 'banner') {
-        styleParams = ':fontcolor=white:box=1:boxcolor=black@0.78:boxborderw=18:line_spacing=10';
+        styleParams = `:fontcolor=${textColorHex}:box=1:boxcolor=black@0.78:boxborderw=18:line_spacing=10`;
     } else if (style === 'outline') {
-        styleParams = ':fontcolor=white:borderw=4:bordercolor=black:line_spacing=10';
+        styleParams = `:fontcolor=${textColorHex}:borderw=4:bordercolor=${textAccentHex}:line_spacing=10`;
     } else if (style === 'glow') {
-        styleParams = ':fontcolor=white:shadowcolor=0x6366F1@0.8:shadowx=3:shadowy=3:borderw=2:bordercolor=black:line_spacing=10';
+        styleParams = `:fontcolor=${textColorHex}:shadowcolor=${textAccentHex}@0.85:shadowx=4:shadowy=4:borderw=2:bordercolor=black:line_spacing=10`;
     } else if (style === 'plain') {
-        styleParams = ':fontcolor=white:line_spacing=10';
+        styleParams = `:fontcolor=${textColorHex}:line_spacing=10`;
     }
 
     let animParams = '';
@@ -1499,7 +1507,20 @@ function buildDrawtextFilter(settings, width, height, tempFiles = []) {
     }
 
     const safeTextFilePath = textTmpFile.replace(/\\/g, '/').replace(/:/g, '\\:');
-    const fontPath = fs.existsSync('C:/Windows/Fonts/arialbd.ttf') ? 'C\\:/Windows/Fonts/arialbd.ttf' : 'C\\:/Windows/Fonts/arial.ttf';
+    
+    // Choose font file on Windows system
+    const requestedFont = (settings.fontFamily || '').toLowerCase();
+    let fontPath = 'C\\:/Windows/Fonts/segoeui.ttf';
+    if (requestedFont.includes('montserrat') || requestedFont.includes('outfit') || requestedFont.includes('vietnam')) {
+        fontPath = fs.existsSync('C:/Windows/Fonts/segoeuib.ttf') ? 'C\\:/Windows/Fonts/segoeuib.ttf' : 'C\\:/Windows/Fonts/arialbd.ttf';
+    } else if (requestedFont.includes('times') || requestedFont.includes('playfair')) {
+        fontPath = fs.existsSync('C:/Windows/Fonts/timesbd.ttf') ? 'C\\:/Windows/Fonts/timesbd.ttf' : 'C\\:/Windows/Fonts/times.ttf';
+    } else if (fs.existsSync('C:/Windows/Fonts/arialbd.ttf')) {
+        fontPath = 'C\\:/Windows/Fonts/arialbd.ttf';
+    } else {
+        fontPath = 'C\\:/Windows/Fonts/arial.ttf';
+    }
+
     return `drawtext=fontfile='${fontPath}':expansion=none:textfile='${safeTextFilePath}':fontsize=${scaledFontSize}:x=${x}:y=${y}${styleParams}${animParams}`;
 }
 

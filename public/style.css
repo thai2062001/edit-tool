@@ -687,25 +687,110 @@ body {
 }
 
 .inspector-text-row {
-    display: grid;
-    grid-template-columns: 2fr 1.5fr;
-    gap: 12px;
-    align-items: end;
-    background: rgba(15, 23, 42, 0.6);
-    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: rgba(15, 23, 42, 0.75);
+    padding: 10px 14px;
     border-radius: var(--radius-md);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-@media (max-width: 768px) {
-    .inspector-text-row {
-        grid-template-columns: 1fr;
-    }
+.text-input-wrap {
+    width: 100%;
+}
+
+.text-align-btn-group {
+    display: flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-sm);
+    padding: 2px;
+    gap: 2px;
+}
+
+.btn-align-option {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-align-option:hover {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.btn-align-option.active {
+    background: var(--primary);
+    color: #FFF;
+    box-shadow: 0 1px 4px rgba(99, 102, 241, 0.4);
 }
 
 .text-options-grid {
     display: flex;
-    gap: 6px;
+    align-items: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.text-opt-item {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+    min-width: 110px;
+}
+
+.text-opt-item.color-opt-item {
+    flex: 0 0 62px;
+    min-width: 62px;
+}
+
+.text-opt-item.sync-all-item {
+    flex: 0 0 auto;
+    min-width: auto;
+}
+
+.form-label-micro {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.color-picker-wrap {
+    position: relative;
+    width: 100%;
+    height: 30px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+}
+
+.color-picker-wrap:hover {
+    border-color: var(--accent-cyan);
+}
+
+.color-picker-input {
+    position: absolute;
+    top: -6px;
+    left: -6px;
+    width: calc(100% + 12px);
+    height: calc(100% + 12px);
+    border: none;
+    cursor: pointer;
+    background: transparent;
 }
 
 /* Horizontal Storyboard Ribbon */
