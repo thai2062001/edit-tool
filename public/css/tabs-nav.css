@@ -1,0 +1,137 @@
+/* ==========================================================================
+   TAB NAVIGATION & WORKFLOW STEPS (css/tabs-nav.css)
+   Contains:
+   - Top Tab Switcher (.main-tab-nav, .tab-btn, .tab-badge)
+   - Tab Pane Display State (.tab-pane, .tab-pane.active)
+   - Workflow Steps Guide for Beginners (.workflow-steps-bar, .step-item...)
+   ========================================================================== */
+
+/* Top Tab Switcher */
+.main-tab-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(18, 24, 36, 0.85);
+    padding: 6px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    backdrop-filter: blur(12px);
+    margin-bottom: 20px;
+}
+
+.tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 22px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.tab-btn:hover {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.tab-btn.active {
+    color: #ffffff;
+    background: linear-gradient(135deg, var(--primary), #4338ca);
+    box-shadow: 0 4px 18px var(--primary-glow);
+}
+
+.tab-badge {
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 7px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+}
+
+/* Tab Content Visibility */
+.tab-pane {
+    display: none;
+    animation: fadeInTab 0.3s ease-out;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+@keyframes fadeInTab {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Workflow Step Indicator for Beginners */
+.workflow-steps-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(90deg, rgba(30, 27, 75, 0.5), rgba(15, 23, 42, 0.8), rgba(6, 182, 212, 0.08));
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    border-radius: var(--radius-md);
+    padding: 10px 24px;
+    margin-bottom: 20px;
+    gap: 12px;
+    backdrop-filter: blur(12px);
+}
+
+.step-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    opacity: 0.65;
+    transition: var(--transition);
+}
+
+.step-item.active {
+    opacity: 1;
+}
+
+.step-badge {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    color: #FFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.step-item.active .step-badge {
+    background: linear-gradient(135deg, var(--primary), var(--accent-cyan));
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 12px rgba(6, 182, 212, 0.4);
+}
+
+.step-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.step-info strong {
+    font-size: 12.5px;
+    color: #FFFFFF;
+}
+
+.step-info span {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.step-arrow {
+    color: var(--text-dim);
+    font-size: 14px;
+    font-weight: 700;
+}
