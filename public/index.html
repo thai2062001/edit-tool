@@ -384,9 +384,16 @@
                             <!-- Placeholder Alert Banner -->
                             <div id="inspector-placeholder-banner" class="inspector-placeholder-banner hidden">
                                 <div class="inspector-placeholder-text">
-                                    <span>⚠️</span> <span><strong>Phân cảnh này chưa có ảnh!</strong> Tải ảnh lên để lấp đầy phân cảnh.</span>
+                                    <span>⚠️</span> <span><strong>Phân cảnh này chưa có ảnh!</strong> Hãy để AI lựa ảnh phù hợp nhất từ kho hoặc tải ảnh mới.</span>
                                 </div>
-                                <button type="button" id="btn-insp-upload-placeholder" class="btn-inspector-upload-placeholder">📤 Tải Ảnh Bù Vào Đây</button>
+                                <div class="flex-row gap-xs align-center flex-wrap">
+                                    <button type="button" id="btn-insp-ai-pick-placeholder" class="btn btn-ai btn-xs" title="Nhờ Gemini AI quét toàn bộ kho ảnh và tự động chọn bức ảnh khớp nhất với câu thoại này">
+                                        ✨ Gemini Lựa Ảnh Trong Kho
+                                    </button>
+                                    <button type="button" id="btn-insp-upload-placeholder" class="btn-inspector-upload-placeholder">
+                                        📤 Tải Ảnh Từ Máy
+                                    </button>
+                                </div>
                             </div>
 
                             <!-- Image controls -->

@@ -105,7 +105,10 @@ function renderMediaList() {
                 <div class="storyboard-placeholder-thumb">
                     <span class="placeholder-icon">📷</span>
                     <span style="font-size: 9px; font-weight: 700; color: #FBBF24;">Chờ thêm ảnh</span>
-                    <button type="button" class="placeholder-btn-mini btn-card-upload-img" data-index="${index}">➕ Bù ảnh</button>
+                    <div class="placeholder-btn-group">
+                        <button type="button" class="placeholder-btn-mini btn-card-ai-pick-img" data-index="${index}" title="Nhờ Gemini AI quét kho ảnh chọn ảnh khớp nhất">✨ AI Lựa</button>
+                        <button type="button" class="placeholder-btn-mini btn-card-upload-img" data-index="${index}" title="Tải ảnh từ máy">📤 Tải</button>
+                    </div>
                 </div>
             `;
         } else if (isImage) {
@@ -128,13 +131,21 @@ function renderMediaList() {
         if (mediaList) mediaList.appendChild(card);
     });
 
-    // Attach inline upload listeners for placeholder cards
+    // Attach inline upload and AI pick listeners for placeholder cards
     if (mediaList) {
         mediaList.querySelectorAll('.btn-card-upload-img').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const idx = parseInt(btn.dataset.index);
                 uploadImageForSegment(idx);
+            });
+        });
+
+        mediaList.querySelectorAll('.btn-card-ai-pick-img').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const idx = parseInt(btn.dataset.index);
+                autoPickImageForSegment(idx);
             });
         });
     }
@@ -291,6 +302,10 @@ function updateQuickInspector(index) {
         }
         if (btnInspUploadPlaceholder) {
             btnInspUploadPlaceholder.onclick = () => uploadImageForSegment(index);
+        }
+        const btnInspAiPickPlaceholder = document.getElementById('btn-insp-ai-pick-placeholder');
+        if (btnInspAiPickPlaceholder) {
+            btnInspAiPickPlaceholder.onclick = () => autoPickImageForSegment(index);
         }
 
         const isImage = item.type === 'image';
@@ -530,8 +545,78 @@ function uploadImageForSegment(itemIndex) {
     tempInput.click();
 }
 
-// Expose uploadImageForSegment to window
+// Auto-pick best matching image from library pool via Gemini AI for a specific placeholder segment
+async function autoPickImageForSegment(itemIndex) {
+    const targetItem = mediaItems[itemIndex];
+    if (!targetItem) return;
+
+    // Collect all valid images in library
+    let pool = [];
+    if (typeof libraryImages !== 'undefined' && Array.isArray(libraryImages) && libraryImages.length > 0) {
+        pool = libraryImages;
+    } else {
+        pool = mediaItems.filter(i => i.type === 'image' && !i.isPlaceholder && i.filename);
+    }
+
+    if (pool.length === 0) {
+        alert('Chưa có ảnh nào trong kho tải lên để Gemini lựa chọn! Vui lòng tải ít nhất 1 ảnh lên hoặc bấm "Nạp Mẫu Thử Nghiệm".');
+        return;
+    }
+
+    const sceneText = targetItem.settings?.overlayText || targetItem.originalName || `Phân cảnh ${itemIndex + 1}`;
+    const key = (typeof inputGeminiKey !== 'undefined' && inputGeminiKey) ? inputGeminiKey.value.trim() : '';
+
+    const btnInspAiPick = document.getElementById('btn-insp-ai-pick-placeholder');
+    if (btnInspAiPick) {
+        btnInspAiPick.disabled = true;
+        btnInspAiPick.innerHTML = '⏳ Gemini Đang Lựa Ảnh...';
+    }
+
+    try {
+        const res = await fetch('/api/ai/auto-pick-library-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                sceneIndex: itemIndex + 1,
+                sceneText: sceneText,
+                libraryPool: pool,
+                currentTimelineItems: mediaItems,
+                customApiKey: key
+            })
+        });
+
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+
+        if (data.selectedImage) {
+            if (typeof recordHistorySnapshot === 'function') recordHistorySnapshot();
+            targetItem.filename = data.selectedImage.filename;
+            targetItem.originalName = data.selectedImage.originalName;
+            targetItem.url = data.selectedImage.url;
+            targetItem.type = 'image';
+            targetItem.isPlaceholder = false;
+            
+            renderMediaList();
+            selectSegment(itemIndex);
+
+            alert(`✨ Gemini AI đã chọn ảnh: "${data.selectedImage.originalName}" (Độ khớp: ${data.matchScore}%)\n\n💡 Lý do: ${data.reason}`);
+        } else {
+            throw new Error('Không tìm thấy ảnh phù hợp trong kho');
+        }
+
+    } catch (err) {
+        alert('Lỗi khi nhờ Gemini lựa ảnh: ' + err.message);
+    } finally {
+        if (btnInspAiPick) {
+            btnInspAiPick.disabled = false;
+            btnInspAiPick.innerHTML = '✨ Gemini Lựa Ảnh Trong Kho';
+        }
+    }
+}
+
+// Expose functions to window
 window.uploadImageForSegment = uploadImageForSegment;
+window.autoPickImageForSegment = autoPickImageForSegment;
 
 // ==========================================
 // Video Trimmer & Splitter Modal Logic

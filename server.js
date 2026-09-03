@@ -693,6 +693,122 @@ Trả về JSON chính xác theo cấu trúc:
     }
 });
 
+// =========================================================================
+// AI SMART PICK: CHOOSE BEST MATCHING IMAGE FROM LIBRARY POOL FOR A SINGLE SCENE
+// =========================================================================
+app.post('/api/ai/auto-pick-library-image', async (req, res) => {
+    try {
+        const { sceneText, sceneIndex, libraryPool, currentTimelineItems, customApiKey } = req.body;
+        const apiKey = (customApiKey && customApiKey.trim()) ? customApiKey.trim() : DEFAULT_GEMINI_API_KEY;
+
+        const pool = Array.isArray(libraryPool) ? libraryPool : [];
+        const availableImages = pool.filter(i => i.type === 'image' && !i.isPlaceholder && i.filename);
+
+        if (availableImages.length === 0) {
+            return res.status(400).json({ error: 'Kho ảnh hiện tại không có ảnh nào để AI lựa chọn.' });
+        }
+
+        const timelineItems = Array.isArray(currentTimelineItems) ? currentTimelineItems : [];
+        const usedFilenames = new Set(timelineItems.map(i => i.filename).filter(Boolean));
+
+        // Prioritize unused images, then all images
+        const prioritizedPool = availableImages.map((img, idx) => ({
+            index: idx,
+            filename: img.filename,
+            originalName: img.originalName || `Ảnh ${idx + 1}`,
+            url: img.url,
+            isAlreadyUsed: usedFilenames.has(img.filename)
+        }));
+
+        const ai = new GoogleGenAI({ apiKey });
+        const contents = [];
+
+        // Attach lightweight thumbnails (up to 30 images)
+        const maxVisionThumbs = Math.min(30, prioritizedPool.length);
+        const thumbPromises = prioritizedPool.slice(0, maxVisionThumbs).map(async (item, i) => {
+            let filePath = path.join(UPLOADS_DIR, item.filename);
+            if (!fs.existsSync(filePath)) {
+                if (item.path && fs.existsSync(item.path)) filePath = item.path;
+                else if (fs.existsSync(path.join(OUTPUTS_DIR, item.filename))) filePath = path.join(OUTPUTS_DIR, item.filename);
+            }
+            if (fs.existsSync(filePath)) {
+                const base64Data = await getThumbnailBase64(filePath);
+                return { index: i, name: item.originalName, base64Data };
+            }
+            return { index: i, name: item.originalName, base64Data: null };
+        });
+
+        const thumbResults = await Promise.all(thumbPromises);
+
+        contents.push({
+            text: `--- KHO ẢNH KHẢ DỤNG TRONG THƯ VIỆN (${prioritizedPool.length} ảnh) ---\n` +
+                prioritizedPool.map(p => `[INDEX ${p.index}]: "${p.originalName}" ${p.isAlreadyUsed ? '(Đã dùng ở cảnh khác, ưu tiên thấp hơn)' : '(Ảnh mới chưa dùng - ƯU TIÊN CAO)'}`).join('\n')
+        });
+
+        thumbResults.forEach(r => {
+            if (r && r.base64Data) {
+                contents.push({ text: `[VISUAL PREVIEW CHO ẢNH INDEX ${r.index} - ${r.name}]` });
+                contents.push({
+                    inlineData: {
+                        mimeType: 'image/jpeg',
+                        data: r.base64Data
+                    }
+                });
+            }
+        });
+
+        const prompt = `
+Bạn là Đạo diễn Giám sát Mỹ thuật Video AI.
+Nhiệm vụ: Hãy tìm trong KHO ẢNH KHẢ DỤNG bức ảnh THÍCH HỢP NHẤT để gán vào Phân cảnh #${sceneIndex || 1}.
+
+NỘI DUNG CÂU THOẠI CỦA PHÂN CẢNH NÀY:
+"""${sceneText || 'Khung cảnh minh họa cho video'}"""
+
+YÊU CẦU:
+1. Đánh giá nội dung và hình ảnh xem bức ảnh nào mô tả chính xác nhất câu thoại trên.
+2. Ưu tiên các ảnh CHƯA DÙNG (isAlreadyUsed = false), nhưng nếu ảnh đã dùng mà nội dung khớp vượt trội 100% thì vẫn có thể chọn.
+3. Trả về DUY NHẤT một JSON hợp lệ:
+{
+  "chosenPoolIndex": 0, // Số nguyên index ảnh được chọn từ kho (0 đến ${prioritizedPool.length - 1})
+  "matchScore": 95, // Điểm từ 0 đến 100
+  "reason": "Giải thích ngắn 1 câu tại sao bức ảnh này khớp hoàn hảo với câu thoại"
+}
+`;
+        contents.push({ text: prompt });
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-3.6-flash',
+            contents: contents,
+            config: { responseMimeType: 'application/json' }
+        });
+
+        const cleanJson = (response.text || '').replace(/```json/g, '').replace(/```/g, '').trim();
+        const parsed = JSON.parse(cleanJson);
+
+        const chosenIdx = (typeof parsed.chosenPoolIndex === 'number' && parsed.chosenPoolIndex >= 0 && parsed.chosenPoolIndex < availableImages.length)
+            ? parsed.chosenPoolIndex
+            : 0;
+
+        const selectedItem = availableImages[chosenIdx];
+
+        res.json({
+            success: true,
+            selectedImage: {
+                filename: selectedItem.filename,
+                originalName: selectedItem.originalName,
+                url: selectedItem.url,
+                type: 'image'
+            },
+            matchScore: parsed.matchScore || 90,
+            reason: parsed.reason || 'Bức ảnh này thể hiện rất sát với nội dung câu thoại của phân cảnh'
+        });
+
+    } catch (err) {
+        console.error('Auto-pick image error:', err);
+        res.status(500).json({ error: err.message || 'Lỗi khi để Gemini AI tự động chọn ảnh' });
+    }
+});
+
 // Helper: Extract lightweight MP3 for fast AI processing
 function extractLightweightAudio(inputPath, outputPath) {
     return new Promise((resolve, reject) => {
