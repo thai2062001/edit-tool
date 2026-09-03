@@ -456,6 +456,9 @@
                             <span class="badge-total-duration">⏱️ Tổng thời lượng: <strong id="total-est-duration">0.0s</strong></span>
                         </div>
                         <div class="timeline-quick-actions">
+                            <button type="button" id="btn-fit-timeline-audio" class="btn btn-xs btn-ai" title="Tự động co/dãn thời lượng toàn bộ ảnh hiện có trên Timeline sao cho vừa khít 100% thời lượng bài nhạc BGM / Audio">
+                                🎵 Co Dãn Vừa Audio (Fit to Audio)
+                            </button>
                             <button type="button" id="btn-quick-image-alignment" class="btn btn-xs btn-ai" title="AI Đánh giá xem hình ảnh từng cảnh đã khớp kịch bản chưa và tự động đổi ảnh tối ưu">
                                 🖼️ Khớp Hình Ảnh
                             </button>
@@ -468,6 +471,18 @@
                             <button type="button" id="btn-clear-all" class="btn btn-xs btn-ghost text-danger">
                                 🗑️ Xóa hết
                             </button>
+                        </div>
+                    </div>
+
+                    <!-- Audio Waveform Visualizer Bar (Hiển thị khi có BGM/Audio) -->
+                    <div id="audio-waveform-container" class="audio-waveform-container hidden">
+                        <div class="waveform-header">
+                            <span class="waveform-title">🎵 Dải Sóng Âm (Audio Waveform Sync)</span>
+                            <span id="waveform-meta-info" class="waveform-meta">Thời lượng audio: 0.0s</span>
+                        </div>
+                        <div class="waveform-canvas-wrap">
+                            <canvas id="audio-waveform-canvas" height="42"></canvas>
+                            <div id="waveform-playhead" class="waveform-playhead"></div>
                         </div>
                     </div>
 

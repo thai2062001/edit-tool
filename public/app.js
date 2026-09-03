@@ -246,15 +246,118 @@ async function uploadBgmFile(file) {
     }
 }
 
+let audioWaveformPeaks = null;
+let audioContextInstance = null;
+
+async function generateAndDrawAudioWaveform(url) {
+    const container = document.getElementById('audio-waveform-container');
+    const canvas = document.getElementById('audio-waveform-canvas');
+    const metaInfo = document.getElementById('waveform-meta-info');
+    if (!container || !canvas) return;
+
+    if (!url || !bgmTrack) {
+        container.classList.add('hidden');
+        audioWaveformPeaks = null;
+        return;
+    }
+
+    container.classList.remove('hidden');
+    if (metaInfo) {
+        const m = Math.floor(bgmTrack.duration / 60);
+        const s = Math.floor(bgmTrack.duration % 60);
+        metaInfo.innerText = `File: ${bgmTrack.originalName} (${m}:${s.toString().padStart(2, '0')})`;
+    }
+
+    try {
+        const response = await fetch(url);
+        const arrayBuffer = await response.arrayBuffer();
+        
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!audioContextInstance) audioContextInstance = new AudioContext();
+        
+        const audioBuffer = await audioContextInstance.decodeAudioData(arrayBuffer);
+        const rawData = audioBuffer.getChannelData(0); // Left channel
+        const samples = 400; // Number of peak bars
+        const blockSize = Math.floor(rawData.length / samples);
+        const peaks = [];
+
+        for (let i = 0; i < samples; i++) {
+            let blockStart = blockSize * i;
+            let sum = 0;
+            for (let j = 0; j < blockSize; j++) {
+                sum += Math.abs(rawData[blockStart + j] || 0);
+            }
+            peaks.push(sum / blockSize);
+        }
+
+        // Normalize peaks between 0.1 and 1.0
+        const maxPeak = Math.max(...peaks) || 1;
+        audioWaveformPeaks = peaks.map(p => Math.max(0.12, p / maxPeak));
+
+        drawAudioWaveformCanvas();
+    } catch (err) {
+        console.warn('Audio Waveform generation notice:', err);
+        // Fallback synthetic wave bars
+        const samples = 300;
+        const peaks = [];
+        for (let i = 0; i < samples; i++) {
+            peaks.push(0.2 + 0.6 * Math.abs(Math.sin(i * 0.15) * Math.cos(i * 0.05)));
+        }
+        audioWaveformPeaks = peaks;
+        drawAudioWaveformCanvas();
+    }
+}
+
+function drawAudioWaveformCanvas() {
+    const canvas = document.getElementById('audio-waveform-canvas');
+    if (!canvas || !audioWaveformPeaks) return;
+
+    const ctx = canvas.getContext('2d');
+    const width = canvas.offsetWidth || 800;
+    const height = canvas.offsetHeight || 42;
+    canvas.width = width;
+    canvas.height = height;
+
+    ctx.clearRect(0, 0, width, height);
+
+    const barWidth = width / audioWaveformPeaks.length;
+    const centerY = height / 2;
+
+    const gradient = ctx.createLinearGradient(0, 0, width, 0);
+    gradient.addColorStop(0, '#6366F1');
+    gradient.addColorStop(0.5, '#06B6D4');
+    gradient.addColorStop(1, '#38BDF8');
+    ctx.fillStyle = gradient;
+
+    audioWaveformPeaks.forEach((peak, i) => {
+        const barHeight = peak * (height - 6);
+        const x = i * barWidth;
+        const y = centerY - barHeight / 2;
+        ctx.fillRect(x, y, Math.max(1.5, barWidth - 1), barHeight);
+    });
+}
+
+function updateWaveformPlayhead(progressSec, totalSec) {
+    const playhead = document.getElementById('waveform-playhead');
+    if (!playhead || totalSec <= 0) return;
+    const pct = Math.max(0, Math.min(100, (progressSec / totalSec) * 100));
+    playhead.style.left = `${pct}%`;
+}
+
 function updateBgmUI() {
     if (bgmTrack) {
         bgmEmptyState.classList.add('hidden');
         bgmActiveState.classList.remove('hidden');
         bgmTitle.innerText = bgmTrack.originalName;
         bgmDuration.innerText = `${Math.floor(bgmTrack.duration / 60)}:${Math.floor(bgmTrack.duration % 60).toString().padStart(2, '0')}`;
+        
+        // Render Waveform
+        generateAndDrawAudioWaveform(bgmTrack.url || `/uploads/${bgmTrack.filename}`);
     } else {
         bgmEmptyState.classList.remove('hidden');
         bgmActiveState.classList.add('hidden');
+        const container = document.getElementById('audio-waveform-container');
+        if (container) container.classList.add('hidden');
     }
 }
 
@@ -268,6 +371,56 @@ btnRemoveBgm.addEventListener('click', () => {
     bgmTrack = null;
     updateBgmUI();
 });
+
+// Fit Timeline to Audio (Co / Dãn vừa khít thời lượng Audio BGM)
+function fitTimelineToAudioDuration() {
+    if (!bgmTrack || !bgmTrack.duration || bgmTrack.duration <= 0) {
+        alert('⚠️ Chưa có bài nhạc nền BGM hoặc file âm thanh giọng đọc nào được nạp!');
+        return;
+    }
+
+    const imageItems = mediaItems.filter(i => i.type === 'image');
+    if (imageItems.length === 0) {
+        alert('⚠️ Không có bức ảnh nào trên Timeline để co dãn!');
+        return;
+    }
+
+    const totalAudioSec = bgmTrack.duration;
+    // Calculate current total image duration
+    let currentTotalImageDur = 0;
+    imageItems.forEach(it => {
+        currentTotalImageDur += Number(it.settings?.duration || 5.0);
+    });
+
+    if (currentTotalImageDur <= 0) currentTotalImageDur = imageItems.length * 5.0;
+
+    // Scale proportionally so that relative scene pacings are preserved
+    const scaleRatio = totalAudioSec / currentTotalImageDur;
+
+    let appliedTotal = 0;
+    imageItems.forEach((it, idx) => {
+        if (!it.settings) it.settings = {};
+        const curD = Number(it.settings.duration || 5.0);
+        let newD = parseFloat((curD * scaleRatio).toFixed(1));
+        newD = Math.max(1.0, newD);
+        it.settings.duration = newD;
+        appliedTotal += newD;
+    });
+
+    // Compensate minor rounding difference on the last image
+    const diff = parseFloat((totalAudioSec - appliedTotal).toFixed(1));
+    if (Math.abs(diff) > 0.05 && imageItems.length > 0) {
+        const last = imageItems[imageItems.length - 1];
+        last.settings.duration = Math.max(1.0, parseFloat((last.settings.duration + diff).toFixed(1)));
+    }
+
+    renderMediaList();
+    if (typeof triggerAutoSave === 'function') triggerAutoSave();
+
+    const m = Math.floor(totalAudioSec / 60);
+    const s = Math.floor(totalAudioSec % 60);
+    alert(`🎉 Đã tự động co dãn thời lượng ${imageItems.length} bức ảnh vừa khít 100% với Audio!\n• Tổng thời lượng Audio: ${m}:${s.toString().padStart(2, '0')} (${totalAudioSec.toFixed(1)}s)\n• Toàn bộ ảnh đã phủ kín từ đầu đến cuối audio mà không bị lệch giây.`);
+}
 
 let activeSegmentIndex = 0;
 let studioAnimFrame = null;
@@ -1024,6 +1177,11 @@ function seekToTimelinePosition(targetSec, shouldAutoScroll = true) {
         const totSecInt = Math.floor(totalDuration % 60);
         scrubberTime.innerText = `${curMin}:${curSecInt.toString().padStart(2, '0')} / ${totMin}:${totSecInt.toString().padStart(2, '0')}`;
     }
+
+    // Sync waveform playhead
+    if (typeof updateWaveformPlayhead === 'function' && bgmTrack && bgmTrack.duration) {
+        updateWaveformPlayhead(currentSec, bgmTrack.duration);
+    }
 }
 
 function playStudioSequence() {
@@ -1106,6 +1264,11 @@ function playStudioSequence() {
             const totMin = Math.floor(totalDur / 60);
             const totSecInt = Math.floor(totalDur % 60);
             scrubberTime.innerText = `${curMin}:${curSecInt.toString().padStart(2, '0')} / ${totMin}:${totSecInt.toString().padStart(2, '0')}`;
+        }
+
+        // Sync Audio Waveform Playhead
+        if (typeof updateWaveformPlayhead === 'function' && bgmTrack && bgmTrack.duration) {
+            updateWaveformPlayhead(curSec, bgmTrack.duration);
         }
 
         studioAnimFrame = requestAnimationFrame(step);
@@ -1386,6 +1549,25 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             });
             renderMediaList();
+        });
+    }
+
+    // Fit Timeline to Audio Button
+    const btnFitAudio = document.getElementById('btn-fit-timeline-audio');
+    if (btnFitAudio) {
+        btnFitAudio.addEventListener('click', fitTimelineToAudioDuration);
+    }
+
+    // Audio Waveform Canvas Click to Seek
+    const waveformCanvasWrap = document.querySelector('.waveform-canvas-wrap');
+    if (waveformCanvasWrap) {
+        waveformCanvasWrap.addEventListener('click', (e) => {
+            if (!bgmTrack || !bgmTrack.duration) return;
+            const rect = waveformCanvasWrap.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const pct = Math.max(0, Math.min(1.0, clickX / rect.width));
+            const targetSec = pct * bgmTrack.duration;
+            seekToTimelinePosition(targetSec, true);
         });
     }
 
