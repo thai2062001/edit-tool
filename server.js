@@ -523,7 +523,7 @@ Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
 // =========================================================================
 app.post('/api/ai/audit-image-alignment', async (req, res) => {
     try {
-        const { items, libraryPool, scriptText, customApiKey } = req.body;
+        const { items, libraryPool, scriptText, bgmTrack, customApiKey } = req.body;
         const apiKey = (customApiKey && customApiKey.trim()) ? customApiKey.trim() : DEFAULT_GEMINI_API_KEY;
 
         if (!items || items.length === 0) {
@@ -533,14 +533,18 @@ app.post('/api/ai/audit-image-alignment', async (req, res) => {
         const availablePool = Array.isArray(libraryPool) && libraryPool.length > 0 ? libraryPool : items;
         const imagePool = availablePool.filter(i => i.type === 'image' && !i.isPlaceholder && i.filename);
 
+        const audioDur = (bgmTrack && typeof bgmTrack.duration === 'number') ? bgmTrack.duration : 0;
+        const audioName = (bgmTrack && bgmTrack.originalName) ? bgmTrack.originalName : (audioDur > 0 ? 'Audio giọng đọc' : 'Chưa có Audio');
+
         // Prepare baseline evaluation
         const evaluatedScenes = items.map((item, idx) => {
             const isPlaceholder = Boolean(item.isPlaceholder || !item.filename);
             const overlayText = (item.settings?.overlayText || '').trim();
             const originalName = item.originalName || `Ảnh ${idx + 1}`;
+            const currentDur = parseFloat(item.settings?.duration || 5.0);
             
             // Baseline heuristic score
-            let matchScore = isPlaceholder ? 20 : 85;
+            let matchScore = isPlaceholder ? 25 : 88;
             let matchGrade = isPlaceholder ? 'placeholder' : 'perfect';
             let explanation = isPlaceholder 
                 ? 'Phân cảnh chưa có ảnh (thẻ chờ bù ảnh).' 
@@ -554,6 +558,9 @@ app.post('/api/ai/audit-image-alignment', async (req, res) => {
                 url: item.url || '',
                 isPlaceholder,
                 overlayText,
+                currentDuration: currentDur,
+                suggestedDuration: currentDur,
+                suggestedMotion: item.settings?.motion || 'zoom_in',
                 matchScore,
                 matchGrade,
                 explanation,
@@ -561,7 +568,7 @@ app.post('/api/ai/audit-image-alignment', async (req, res) => {
             };
         });
 
-        // AI Vision & Content Deep Alignment via Gemini
+        // AI Vision, Audio & Content Deep Alignment via Gemini 3.6 Flash
         if (apiKey) {
             try {
                 const ai = new GoogleGenAI({ apiKey });
@@ -576,41 +583,48 @@ app.post('/api/ai/audit-image-alignment', async (req, res) => {
                 }));
 
                 const promptText = `
-Bạn là Đạo diễn Giám sát Hình ảnh & Mỹ thuật Video (Visual Director & Image Match Auditor).
-Nhiệm vụ của bạn là đánh giá xem HÌNH ẢNH của từng phân cảnh trên Timeline có thực sự KHỚP VỚI NỘI DUNG CÂU THOẠI/KỊCH BẢN không.
-Nếu phân cảnh nào ảnh KHÔNG KHỚP hoặc ĐANG ĐỂ TRỐNG, hãy rà soát KHO ẢNH KHẢ DỤNG và chọn ra BỨC ẢNH PHÙ HỢP NHẤT để thay thế.
+Bạn là Đạo diễn Giám sát Hậu kỳ & Giám định Chất lượng Video AI (AI Executive Video Director & QC Auditor).
+Nhiệm vụ: Đánh giá xem VIDEO PREVIEW hiện tại gồm [AUDIO GIỌNG ĐỌC + KỊCH BẢN PHỤ ĐỀ + HÌNH ẢNH TỪNG PHÂN CẢNH] đã KHỚP HOÀN TOÀN 100% với nhau chưa.
+
+THÔNG TIN VIDEO HIỆN TẠI:
+- Tệp Audio: "${audioName}" (${audioDur > 0 ? audioDur.toFixed(1) + 's' : 'Chưa đính kèm audio'})
+- Tổng số phân cảnh trên Timeline: ${items.length} phân cảnh
 
 DANH SÁCH ${items.length} PHÂN CẢNH TRÊN TIMELINE:
 ${JSON.stringify(evaluatedScenes.map(s => ({
     sceneIndex: s.index,
     currentImageName: s.originalName,
     isPlaceholder: s.isPlaceholder,
-    sceneText: s.overlayText
+    sceneText: s.overlayText,
+    currentDuration: s.currentDuration,
+    motion: s.suggestedMotion
 })), null, 2)}
 
-KHO ẢNH KHẢ DỤNG HIỆN CÓ (${imagePool.length} ảnh):
+KHO ẢNH KHẢ DỤNG HIỆN CÓ ĐỂ THAY THẾ (${imagePool.length} ảnh):
 ${JSON.stringify(poolCatalog.map(p => ({ poolIndex: p.poolIndex, name: p.name })), null, 2)}
 
-YÊU CẦU:
-1. Chấm điểm độ khớp hình ảnh với câu thoại (matchScore 0-100%).
+YÊU CẦU ĐÁNH GIÁ CHUYÊN SÂU:
+1. Đánh giá độ khớp giữa HÌNH ẢNH và CÂU THOẠI (matchScore 0-100%).
    - matchGrade: "perfect" (>=80%), "acceptable" (60-79%), "mismatch" (<60%), "placeholder" (chưa có ảnh).
-2. Với các cảnh "mismatch" hoặc "placeholder", hãy tìm trong KHO ẢNH KHẢ DỤNG một bức ảnh khớp hơn nhiều và gợi ý suggestedReplacement: { poolIndex, newMatchScore, reason }.
-3. Nếu không có ảnh nào trong kho tốt hơn thì suggestedReplacement để null.
+2. Nếu phân cảnh nào là "mismatch" hoặc "placeholder", hãy tìm trong KHO ẢNH KHẢ DỤNG bức ảnh KHỚP HƠN RÕ RỆT và gợi ý:
+   suggestedReplacement: { poolIndex, newMatchScore, reason }. (Nếu không có ảnh nào trong kho tốt hơn thì để null).
+3. Đánh giá THỜI LƯỢNG (Duration) của từng cảnh dựa theo độ dài câu thoại và nhịp đọc, đưa ra suggestedDuration hợp lý nhất (ví dụ câu ngắn 3.5s, câu dài 6.0s).
 
-Trả về JSON chính xác theo cấu trúc:
+Trả về DUY NHẤT một JSON hợp lệ theo cấu trúc:
 {
-  "overallAlignmentScore": 82,
-  "summary": "Tóm tắt 1-2 câu về mức độ khớp hình ảnh và số lượng ảnh cần đổi",
+  "overallAlignmentScore": 88,
+  "summary": "Tóm tắt 1-2 câu tổng quan về mức độ khớp giữa Audio, Kịch bản và Hình ảnh",
   "scenes": [
     {
       "sceneIndex": 1,
       "matchScore": 45,
       "matchGrade": "mismatch", // "perfect" | "acceptable" | "mismatch" | "placeholder"
-      "explanation": "Câu thoại nói về tuyết rơi Seoul nhưng ảnh hiện tại lại là phòng làm việc",
+      "explanation": "Câu thoại nói về tắc đường New York nhưng ảnh hiện tại lại là phòng ngủ tĩnh lặng",
+      "suggestedDuration": 4.5,
       "suggestedReplacement": {
-        "poolIndex": 4,
+        "poolIndex": 2,
         "newMatchScore": 95,
-        "reason": "Ảnh #4 thể hiện khung cảnh đường phố phủ đầy tuyết trắng, chuẩn xác 100% với câu thoại"
+        "reason": "Ảnh #2 thể hiện phố xá đông đúc xe cộ tại New York, chuẩn xác 100% với câu thoại"
       }
     }
   ]
@@ -634,6 +648,9 @@ Trả về JSON chính xác theo cấu trúc:
                             if (typeof aiScene.matchScore === 'number') target.matchScore = aiScene.matchScore;
                             if (aiScene.matchGrade) target.matchGrade = aiScene.matchGrade;
                             if (aiScene.explanation) target.explanation = aiScene.explanation;
+                            if (typeof aiScene.suggestedDuration === 'number' && aiScene.suggestedDuration > 0) {
+                                target.suggestedDuration = parseFloat(aiScene.suggestedDuration.toFixed(2));
+                            }
 
                             if (aiScene.suggestedReplacement && typeof aiScene.suggestedReplacement.poolIndex === 'number') {
                                 const pIdx = aiScene.suggestedReplacement.poolIndex;
