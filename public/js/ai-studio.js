@@ -816,8 +816,20 @@ function applyAllPacingSuggestions() {
 
     if (typeof renderMediaList === 'function') renderMediaList();
     alert(`🎉 Đã áp dụng cân chỉnh nhịp điệu & thời lượng tự động cho toàn bộ ${appliedCount} phân cảnh!`);
+    closeScriptPacingModal();
+}
+
+if (btnApplyAllPacing) btnApplyAllPacing.addEventListener('click', applyAllPacingSuggestions);
+if (btnApplyAllPacingFooter) btnApplyAllPacingFooter.addEventListener('click', applyAllPacingSuggestions);
+
+function closeScriptPacingModal() {
     if (scriptPacingModal) scriptPacingModal.classList.add('hidden');
 }
+
+window.openScriptPacingModal = openScriptPacingModal;
+window.closeScriptPacingModal = closeScriptPacingModal;
+window.applySingleScenePacing = applySingleScenePacing;
+window.applyAllPacingSuggestions = applyAllPacingSuggestions;
 
 // ==========================================
 // AI VISUAL-SCRIPT ALIGNMENT & SMART SWAPPER (VIDEO QC AUDITOR)
