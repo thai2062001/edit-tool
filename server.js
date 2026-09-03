@@ -199,6 +199,63 @@ function getThumbnailBase64(filePath) {
     });
 }
 
+// Helper to extract ultra-compressed lightweight MP3 audio for Gemini
+function extractLightweightAudio(inputPath, outputPath) {
+    return new Promise((resolve, reject) => {
+        const proc = spawn('ffmpeg', [
+            '-y', '-i', inputPath,
+            '-vn',
+            '-ar', '16000',
+            '-ac', '1',
+            '-b:a', '32k',
+            outputPath
+        ]);
+        proc.on('close', (code) => {
+            if (code === 0 && fs.existsSync(outputPath)) {
+                resolve(outputPath);
+            } else {
+                reject(new Error(`FFmpeg audio extract failed with code ${code}`));
+            }
+        });
+        proc.on('error', reject);
+    });
+}
+
+// Helper to detect audio silence pauses via FFmpeg for precise cutpoint snapping
+function detectAudioPauses(filePath) {
+    return new Promise((resolve) => {
+        const proc = spawn('ffmpeg', [
+            '-i', filePath,
+            '-af', 'silencedetect=noise=-30dB:d=0.28',
+            '-f', 'null', '-'
+        ]);
+        let output = '';
+        proc.stderr.on('data', d => output += d.toString());
+        proc.on('close', () => {
+            const silences = [];
+            let currentStart = null;
+            for (const l of output.split('\n')) {
+                const sMatch = l.match(/silence_start:\s*([\d\.]+)/);
+                if (sMatch) currentStart = parseFloat(sMatch[1]);
+                const eMatch = l.match(/silence_end:\s*([\d\.]+)\s*\|\s*silence_duration:\s*([\d\.]+)/);
+                if (eMatch && currentStart !== null) {
+                    const end = parseFloat(eMatch[1]);
+                    const dur = parseFloat(eMatch[2]);
+                    silences.push({
+                        start: currentStart,
+                        end: end,
+                        duration: dur,
+                        mid: parseFloat(((currentStart + end) / 2).toFixed(2))
+                    });
+                    currentStart = null;
+                }
+            }
+            resolve(silences);
+        });
+        proc.on('error', () => resolve([]));
+    });
+}
+
 // Resilient Gemini Generator with automatic model fallback & retry for 503 high demand
 async function generateWithModelFallback(ai, params) {
     const candidateModels = ['gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.6-flash'];
@@ -454,11 +511,18 @@ Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
         // Strict deduplication tracker: ensure every imageIndex is used AT MOST ONCE
         const usedImageIndices = new Set();
 
-        // Calculate audio-driven natural pacing if audio is present
+        // Calculate audio-driven natural pacing with silence pause snapping
         let computedAudioDurations = null;
         if (audioDuration > 0 && scriptLines.length > 0) {
-            const totalPauseTime = Math.max(0, (scriptLines.length - 1) * pauseInterval);
-            const pureSpeechDuration = Math.max(scriptLines.length * 1.5, audioDuration - totalPauseTime);
+            // Detect real silence pauses in audio if physical audio file exists
+            let silences = [];
+            if (audioPath && fs.existsSync(audioPath)) {
+                try {
+                    silences = await detectAudioPauses(audioPath);
+                } catch (silErr) {
+                    console.warn('[Audio Silence Detect] Notice:', silErr.message);
+                }
+            }
 
             const sentenceWeights = scriptLines.map(text => {
                 const words = text.split(/\s+/).filter(Boolean).length;
@@ -467,27 +531,64 @@ Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
             });
             const totalWeight = sentenceWeights.reduce((a, b) => a + b, 0) || 1;
 
-            const rawDurs = scriptLines.map((_, i) => {
-                const speechPart = (sentenceWeights[i] / totalWeight) * pureSpeechDuration;
-                // Add pause interval to each scene
-                return Math.max(1.5, parseFloat((speechPart + pauseInterval).toFixed(2)));
-            });
-
-            // Re-normalize exact sum to match 100.00% of total audio duration without cumulative rounding drift
-            const rawSum = rawDurs.reduce((a, b) => a + b, 0);
-            const scaleRatio = audioDuration / (rawSum || 1);
-            let accumulated = 0;
-
-            computedAudioDurations = rawDurs.map((d, i) => {
-                if (i === rawDurs.length - 1) {
-                    // Last scene takes the exact remaining balance so sum === audioDuration
-                    const remaining = parseFloat(Math.max(1.5, audioDuration - accumulated).toFixed(2));
-                    return remaining;
+            if (silences.length > 0) {
+                // High precision snapping: snap scene cutpoints to real speech silence pauses
+                let estAcc = 0;
+                const estCutpoints = [];
+                for (let i = 0; i < scriptLines.length - 1; i++) {
+                    estAcc += (sentenceWeights[i] / totalWeight) * audioDuration;
+                    estCutpoints.push(estAcc);
                 }
-                const scaled = parseFloat(Math.max(1.5, d * scaleRatio).toFixed(2));
-                accumulated += scaled;
-                return scaled;
-            });
+
+                let lastSnap = 0;
+                const snappedCutpoints = [];
+                for (let i = 0; i < estCutpoints.length; i++) {
+                    const est = estCutpoints[i];
+                    const minTime = lastSnap + 2.0; // At least 2.0s per scene
+                    const candidates = silences.filter(s => s.mid >= minTime && Math.abs(s.mid - est) <= 4.0);
+                    if (candidates.length > 0) {
+                        candidates.sort((a, b) => Math.abs(a.mid - est) - Math.abs(b.mid - est));
+                        const best = candidates[0].mid;
+                        snappedCutpoints.push(best);
+                        lastSnap = best;
+                    } else {
+                        snappedCutpoints.push(parseFloat(est.toFixed(2)));
+                        lastSnap = est;
+                    }
+                }
+                snappedCutpoints.push(audioDuration);
+
+                let prev = 0;
+                computedAudioDurations = snappedCutpoints.map(pt => {
+                    const dur = parseFloat((pt - prev).toFixed(2));
+                    prev = pt;
+                    return Math.max(1.5, dur);
+                });
+                console.log(`[AI Script Match] Successfully snapped ${computedAudioDurations.length} scenes to real audio silence pauses.`);
+            } else {
+                // Fallback: weight-proportional calculation
+                const totalPauseTime = Math.max(0, (scriptLines.length - 1) * pauseInterval);
+                const pureSpeechDuration = Math.max(scriptLines.length * 1.5, audioDuration - totalPauseTime);
+
+                const rawDurs = scriptLines.map((_, i) => {
+                    const speechPart = (sentenceWeights[i] / totalWeight) * pureSpeechDuration;
+                    return Math.max(1.5, parseFloat((speechPart + pauseInterval).toFixed(2)));
+                });
+
+                const rawSum = rawDurs.reduce((a, b) => a + b, 0);
+                const scaleRatio = audioDuration / (rawSum || 1);
+                let accumulated = 0;
+
+                computedAudioDurations = rawDurs.map((d, i) => {
+                    if (i === rawDurs.length - 1) {
+                        const remaining = parseFloat(Math.max(1.5, audioDuration - accumulated).toFixed(2));
+                        return remaining;
+                    }
+                    const scaled = parseFloat(Math.max(1.5, d * scaleRatio).toFixed(2));
+                    accumulated += scaled;
+                    return scaled;
+                });
+            }
         }
 
         const scenes = rawScenes.map((s, idx) => {
