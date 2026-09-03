@@ -444,6 +444,211 @@ function getMotionShortName(motion) {
     }
 }
 
+// ==========================================
+// UNDO / REDO HISTORY MANAGER (TAB 1)
+// ==========================================
+const undoStack = [];
+const redoStack = [];
+const MAX_HISTORY_STEPS = 30;
+let isApplyingHistory = false;
+
+function recordHistorySnapshot() {
+    if (isApplyingHistory) return;
+    try {
+        const snapshot = {
+            mediaItems: JSON.parse(JSON.stringify(mediaItems)),
+            bgmTrack: bgmTrack ? JSON.parse(JSON.stringify(bgmTrack)) : null,
+            activeSegmentIndex: activeSegmentIndex
+        };
+        undoStack.push(snapshot);
+        if (undoStack.length > MAX_HISTORY_STEPS) {
+            undoStack.shift();
+        }
+        // Clear redo stack on new user action
+        redoStack.length = 0;
+        updateUndoRedoButtonsUI();
+    } catch (e) {
+        console.warn('History snapshot warning:', e);
+    }
+}
+
+function performUndoAction() {
+    if (undoStack.length === 0) return;
+    try {
+        isApplyingHistory = true;
+        const currentSnapshot = {
+            mediaItems: JSON.parse(JSON.stringify(mediaItems)),
+            bgmTrack: bgmTrack ? JSON.parse(JSON.stringify(bgmTrack)) : null,
+            activeSegmentIndex: activeSegmentIndex
+        };
+        redoStack.push(currentSnapshot);
+
+        const prevState = undoStack.pop();
+        mediaItems = prevState.mediaItems;
+        window.mediaItems = mediaItems;
+        bgmTrack = prevState.bgmTrack;
+        window.bgmTrack = bgmTrack;
+        activeSegmentIndex = Math.min(mediaItems.length - 1, Math.max(0, prevState.activeSegmentIndex || 0));
+
+        updateBgmUI();
+        renderMediaList();
+        clearMultiSelection();
+    } finally {
+        isApplyingHistory = false;
+        updateUndoRedoButtonsUI();
+    }
+}
+
+function performRedoAction() {
+    if (redoStack.length === 0) return;
+    try {
+        isApplyingHistory = true;
+        const currentSnapshot = {
+            mediaItems: JSON.parse(JSON.stringify(mediaItems)),
+            bgmTrack: bgmTrack ? JSON.parse(JSON.stringify(bgmTrack)) : null,
+            activeSegmentIndex: activeSegmentIndex
+        };
+        undoStack.push(currentSnapshot);
+
+        const nextState = redoStack.pop();
+        mediaItems = nextState.mediaItems;
+        window.mediaItems = mediaItems;
+        bgmTrack = nextState.bgmTrack;
+        window.bgmTrack = bgmTrack;
+        activeSegmentIndex = Math.min(mediaItems.length - 1, Math.max(0, nextState.activeSegmentIndex || 0));
+
+        updateBgmUI();
+        renderMediaList();
+        clearMultiSelection();
+    } finally {
+        isApplyingHistory = false;
+        updateUndoRedoButtonsUI();
+    }
+}
+
+function updateUndoRedoButtonsUI() {
+    const btnUndo = document.getElementById('btn-undo-action');
+    const btnRedo = document.getElementById('btn-redo-action');
+    if (btnUndo) btnUndo.disabled = (undoStack.length === 0);
+    if (btnRedo) btnRedo.disabled = (redoStack.length === 0);
+}
+
+// ==========================================
+// MULTI-SELECTION SYSTEM (TAB 1)
+// ==========================================
+let selectedSegmentIndices = new Set();
+let lastClickedIndex = 0;
+
+function clearMultiSelection() {
+    selectedSegmentIndices.clear();
+    updateMultiSelectUI();
+}
+
+function toggleMultiSelectIndex(index, isCtrl, isShift) {
+    if (isShift) {
+        // Range selection from lastClickedIndex to index
+        const start = Math.min(lastClickedIndex, index);
+        const end = Math.max(lastClickedIndex, index);
+        for (let i = start; i <= end; i++) {
+            selectedSegmentIndices.add(i);
+        }
+    } else if (isCtrl) {
+        // Toggle single item in selection
+        if (selectedSegmentIndices.has(index)) {
+            selectedSegmentIndices.delete(index);
+        } else {
+            selectedSegmentIndices.add(index);
+        }
+    } else {
+        // Single selection mode
+        selectedSegmentIndices.clear();
+        selectedSegmentIndices.add(index);
+    }
+    lastClickedIndex = index;
+    updateMultiSelectUI();
+}
+
+function updateMultiSelectUI() {
+    const bar = document.getElementById('multi-select-action-bar');
+    const countEl = document.getElementById('multi-select-count');
+    const cards = mediaList ? mediaList.querySelectorAll('.storyboard-card') : [];
+
+    cards.forEach((c, idx) => {
+        if (selectedSegmentIndices.has(idx)) {
+            c.classList.add('is-multi-selected');
+        } else {
+            c.classList.remove('is-multi-selected');
+        }
+    });
+
+    if (bar && countEl) {
+        if (selectedSegmentIndices.size > 1) {
+            bar.classList.remove('hidden');
+            countEl.innerText = selectedSegmentIndices.size;
+        } else {
+            bar.classList.add('hidden');
+        }
+    }
+}
+
+function applyBatchDurationToSelected(dur) {
+    if (selectedSegmentIndices.size === 0) return;
+    recordHistorySnapshot();
+    selectedSegmentIndices.forEach(idx => {
+        if (mediaItems[idx] && mediaItems[idx].type === 'image') {
+            if (!mediaItems[idx].settings) mediaItems[idx].settings = {};
+            mediaItems[idx].settings.duration = dur;
+        }
+    });
+    renderMediaList();
+}
+
+function applyBatchMotionToSelected(motion) {
+    if (selectedSegmentIndices.size === 0 || !motion) return;
+    recordHistorySnapshot();
+    selectedSegmentIndices.forEach(idx => {
+        if (mediaItems[idx] && mediaItems[idx].type === 'image') {
+            if (!mediaItems[idx].settings) mediaItems[idx].settings = {};
+            mediaItems[idx].settings.motion = motion;
+        }
+    });
+    renderMediaList();
+}
+
+function applyBatchTransitionToSelected(trans) {
+    if (selectedSegmentIndices.size === 0 || !trans) return;
+    recordHistorySnapshot();
+    selectedSegmentIndices.forEach(idx => {
+        if (mediaItems[idx]) {
+            if (!mediaItems[idx].settings) mediaItems[idx].settings = {};
+            mediaItems[idx].settings.transition = trans;
+        }
+    });
+    renderMediaList();
+}
+
+function deleteSelectedSegments() {
+    if (selectedSegmentIndices.size === 0) return;
+    if (confirm(`Bạn có chắc muốn xóa ${selectedSegmentIndices.size} phân cảnh đã chọn không?`)) {
+        recordHistorySnapshot();
+        const sortedIndices = Array.from(selectedSegmentIndices).sort((a, b) => b - a);
+        sortedIndices.forEach(idx => {
+            if (idx >= 0 && idx < mediaItems.length) {
+                mediaItems.splice(idx, 1);
+            }
+        });
+        clearMultiSelection();
+        activeSegmentIndex = Math.max(0, Math.min(activeSegmentIndex, mediaItems.length - 1));
+        renderMediaList();
+    }
+}
+
+function selectAllSegments() {
+    selectedSegmentIndices.clear();
+    mediaItems.forEach((_, idx) => selectedSegmentIndices.add(idx));
+    updateMultiSelectUI();
+}
+
 // Render Media Storyboard Ribbon List
 function renderMediaList() {
     if (window.mediaItems && window.mediaItems !== mediaItems) {
@@ -468,6 +673,7 @@ function renderMediaList() {
         totalDurationEl.innerText = '0.0s';
         updateWorkflowStep(1);
         if (quickInspector) quickInspector.classList.add('hidden');
+        clearMultiSelection();
         return;
     }
 
@@ -491,8 +697,10 @@ function renderMediaList() {
             : Math.max(0.5, Number(item.settings?.trimEnd || item.duration || 5) - Number(item.settings?.trimStart || 0));
         totalDur += Math.max(0.5, dur);
 
+        const isMultiSelected = selectedSegmentIndices.has(index);
+
         const card = document.createElement('div');
-        card.className = `storyboard-card ${index === activeSegmentIndex ? 'active' : ''} ${isPlaceholder ? 'is-placeholder' : ''}`;
+        card.className = `storyboard-card ${index === activeSegmentIndex ? 'active' : ''} ${isPlaceholder ? 'is-placeholder' : ''} ${isMultiSelected ? 'is-multi-selected' : ''}`;
         card.dataset.index = index;
         card.setAttribute('draggable', 'true');
 
@@ -503,10 +711,15 @@ function renderMediaList() {
         card.addEventListener('drop', handleDrop);
         card.addEventListener('dragend', handleDragEnd);
 
-        // Click to select
+        // Click to select (Single / Multi Select with Ctrl / Shift)
         card.addEventListener('click', (e) => {
             if (e.target.closest('.btn-card-upload-img')) return; // Handled separately
-            selectSegment(index);
+            if (e.ctrlKey || e.metaKey || e.shiftKey) {
+                toggleMultiSelectIndex(index, e.ctrlKey || e.metaKey, e.shiftKey);
+            } else {
+                clearMultiSelection();
+                selectSegment(index);
+            }
         });
 
         const motionLabel = isPlaceholder 
@@ -562,6 +775,7 @@ function renderMediaList() {
     // Update Quick Inspector & Studio Canvas Player
     selectSegment(activeSegmentIndex, false);
     triggerAutoSave();
+    updateMultiSelectUI();
 }
 
 
@@ -574,6 +788,7 @@ function commitCurrentInspectorSettings() {
     if (!item.settings) item.settings = {};
 
     const inspMotion = document.getElementById('insp-motion');
+    const inspTransition = document.getElementById('insp-transition');
     const inspDuration = document.getElementById('insp-duration');
     const inspLoopCount = document.getElementById('insp-loopcount');
     const inspLoopCountVideo = document.getElementById('insp-loopcount-video');
@@ -590,12 +805,14 @@ function commitCurrentInspectorSettings() {
 
     if (item.type === 'image') {
         if (inspMotion) item.settings.motion = inspMotion.value;
+        if (inspTransition) item.settings.transition = inspTransition.value;
         if (inspDuration) item.settings.duration = parseFloat(inspDuration.value) || 5.0;
         if (inspLoopCount) item.settings.loopCount = parseInt(inspLoopCount.value) || 1;
         if (inspIntensity) item.settings.zoomIntensity = parseFloat(inspIntensity.value) || 1.25;
         if (inspFadeIn) item.settings.fadeIn = parseFloat(inspFadeIn.value) || 0;
         if (inspFadeOut) item.settings.fadeOut = parseFloat(inspFadeOut.value) || 0;
     } else {
+        if (inspTransition) item.settings.transition = inspTransition.value;
         if (inspTrimStart) item.settings.trimStart = parseFloat(inspTrimStart.value) || 0;
         if (inspTrimEnd) item.settings.trimEnd = parseFloat(inspTrimEnd.value) || item.duration || 5;
         if (inspLoopCountVideo) item.settings.loopCount = parseInt(inspLoopCountVideo.value) || 1;
@@ -703,6 +920,7 @@ function updateQuickInspector(index) {
 
     // Sync input values
     const inspMotion = document.getElementById('insp-motion');
+    const inspTransition = document.getElementById('insp-transition');
     const inspDuration = document.getElementById('insp-duration');
     const inspLoopCount = document.getElementById('insp-loopcount');
     const inspLoopCountVideo = document.getElementById('insp-loopcount-video');
@@ -716,6 +934,8 @@ function updateQuickInspector(index) {
     const inspTextPos = document.getElementById('insp-textpos');
     const inspTextStyle = document.getElementById('insp-textstyle');
     const inspTextSize = document.getElementById('insp-textsize');
+
+    if (inspTransition) inspTransition.value = item.settings?.transition || 'fade_black';
 
     if (isImage) {
         if (inspMotion) inspMotion.value = item.settings?.motion || 'zoom_in';
@@ -962,22 +1182,61 @@ function renderImageFrameOnCanvas(ctx, canvas, item, img, progress) {
         offsetY = 0;
     }
 
-    // Apply Fade In / Fade Out smoothly on canvas
+    // Apply Transition / Fade effects smoothly on canvas
     const currentTime = progress * dur;
     let alpha = 1.0;
+    const transition = item.settings?.transition || (fadeIn > 0 ? 'fade_black' : 'none');
+    
+    // Transition offsets / extra transforms
+    let transOffsetX = 0;
+    let transOffsetY = 0;
+    let transScale = 1.0;
+    let flashWhiteOpacity = 0.0;
+
     if (fadeIn > 0 && currentTime < fadeIn) {
-        alpha = Math.min(alpha, Math.max(0, currentTime / fadeIn));
+        const transProgress = currentTime / fadeIn; // 0.0 -> 1.0
+        
+        if (transition === 'flash_white') {
+            alpha = Math.min(1.0, transProgress * 1.5);
+            flashWhiteOpacity = Math.max(0, 1.0 - transProgress);
+        } else if (transition === 'slide_left') {
+            transOffsetX = (1.0 - transProgress) * canvas.width;
+            alpha = transProgress;
+        } else if (transition === 'slide_right') {
+            transOffsetX = -(1.0 - transProgress) * canvas.width;
+            alpha = transProgress;
+        } else if (transition === 'slide_up') {
+            transOffsetY = (1.0 - transProgress) * canvas.height;
+            alpha = transProgress;
+        } else if (transition === 'zoom_transition') {
+            transScale = 0.6 + (0.4 * transProgress);
+            alpha = transProgress;
+        } else if (transition === 'wipe_left') {
+            alpha = transProgress;
+        } else {
+            // fade_black or default
+            alpha = Math.min(alpha, Math.max(0, transProgress));
+        }
     }
+
     if (fadeOut > 0 && currentTime > dur - fadeOut) {
         alpha = Math.min(alpha, Math.max(0, (dur - currentTime) / fadeOut));
     }
 
     ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.translate(canvas.width / 2, canvas.height / 2);
-    ctx.scale(zoom, zoom);
+    ctx.globalAlpha = Math.max(0, Math.min(1.0, alpha));
+    ctx.translate(canvas.width / 2 + transOffsetX, canvas.height / 2 + transOffsetY);
+    ctx.scale(zoom * transScale, zoom * transScale);
     ctx.drawImage(img, sx, sy, sWidth, sHeight, -canvas.width / 2 + offsetX, -canvas.height / 2 + offsetY, canvas.width, canvas.height);
     ctx.restore();
+
+    // Render Flash White overlay if active
+    if (flashWhiteOpacity > 0.01) {
+        ctx.save();
+        ctx.fillStyle = `rgba(255, 255, 255, ${flashWhiteOpacity.toFixed(3)})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.restore();
+    }
 
     // Render Text Overlay (Smart Auto Word-Wrap to prevent overflow)
     const overlayText = item.settings?.overlayText?.trim();
@@ -1418,10 +1677,13 @@ function bindQuickInspectorInputs() {
         triggerAutoSave();
     }
 
-    [inspMotion, inspDuration, inspLoopCount, inspLoopCountVideo, inspIntensity, inspFadeIn, inspFadeOut, inspTrimStart, inspTrimEnd, inspVideoVolume, inspText, inspTextPos, inspTextStyle, inspTextSize].forEach(el => {
+    [inspMotion, inspTransition, inspDuration, inspLoopCount, inspLoopCountVideo, inspIntensity, inspFadeIn, inspFadeOut, inspTrimStart, inspTrimEnd, inspVideoVolume, inspText, inspTextPos, inspTextStyle, inspTextSize].forEach(el => {
         if (el) {
             el.addEventListener('input', onInspectorChange);
-            el.addEventListener('change', onInspectorChange);
+            el.addEventListener('change', () => {
+                recordHistorySnapshot();
+                onInspectorChange();
+            });
         }
     });
 
@@ -1630,10 +1892,83 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // Undo / Redo Top Bar Buttons
+    const btnUndo = document.getElementById('btn-undo-action');
+    const btnRedo = document.getElementById('btn-redo-action');
+    if (btnUndo) btnUndo.addEventListener('click', performUndoAction);
+    if (btnRedo) btnRedo.addEventListener('click', performRedoAction);
+
+    // Multi-select Toolbar Action Handlers
+    document.querySelectorAll('.btn-multi-dur').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const dur = parseFloat(btn.dataset.dur);
+            if (!isNaN(dur)) applyBatchDurationToSelected(dur);
+        });
+    });
+
+    const multiMotionSel = document.getElementById('multi-select-motion');
+    if (multiMotionSel) {
+        multiMotionSel.addEventListener('change', (e) => {
+            if (e.target.value) {
+                applyBatchMotionToSelected(e.target.value);
+                e.target.value = '';
+            }
+        });
+    }
+
+    const multiTransSel = document.getElementById('multi-select-transition');
+    if (multiTransSel) {
+        multiTransSel.addEventListener('change', (e) => {
+            if (e.target.value) {
+                applyBatchTransitionToSelected(e.target.value);
+                e.target.value = '';
+            }
+        });
+    }
+
+    const btnMultiDel = document.getElementById('btn-multi-delete');
+    if (btnMultiDel) btnMultiDel.addEventListener('click', deleteSelectedSegments);
+
+    const btnMultiSelAll = document.getElementById('btn-multi-select-all');
+    if (btnMultiSelAll) btnMultiSelAll.addEventListener('click', selectAllSegments);
+
+    const btnMultiClear = document.getElementById('btn-multi-clear');
+    if (btnMultiClear) btnMultiClear.addEventListener('click', clearMultiSelection);
+
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
         const tag = (e.target.tagName || '').toUpperCase();
         if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || e.target.isContentEditable) return;
+
+        // Undo / Redo Shortcuts (Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z)
+        if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ') {
+            e.preventDefault();
+            if (e.shiftKey) {
+                performRedoAction();
+            } else {
+                performUndoAction();
+            }
+            return;
+        }
+
+        if ((e.ctrlKey || e.metaKey) && e.code === 'KeyY') {
+            e.preventDefault();
+            performRedoAction();
+            return;
+        }
+
+        // Select All on Timeline (Ctrl+A)
+        if ((e.ctrlKey || e.metaKey) && e.code === 'KeyA') {
+            e.preventDefault();
+            selectAllSegments();
+            return;
+        }
+
+        // Escape to clear multi selection
+        if (e.code === 'Escape') {
+            clearMultiSelection();
+            return;
+        }
 
         if (e.code === 'Space') {
             e.preventDefault();
@@ -1648,8 +1983,12 @@ document.addEventListener("DOMContentLoaded", () => {
             const totalDur = getTotalTimelineDurationSec();
             seekToTimelinePosition(Math.min(totalDur, curSec + 5));
         } else if (e.code === 'Delete' || e.code === 'Backspace') {
-            if (mediaItems.length > 0 && activeSegmentIndex >= 0) {
+            if (selectedSegmentIndices.size > 1) {
                 e.preventDefault();
+                deleteSelectedSegments();
+            } else if (mediaItems.length > 0 && activeSegmentIndex >= 0) {
+                e.preventDefault();
+                recordHistorySnapshot();
                 removeItem(activeSegmentIndex);
             }
         }
@@ -1685,6 +2024,7 @@ function handleDrop(e) {
     this.classList.remove("drag-over-target");
     const targetIndex = parseInt(this.dataset.index);
     if (draggedIndex !== null && !isNaN(draggedIndex) && draggedIndex !== targetIndex) {
+        recordHistorySnapshot();
         const item = mediaItems.splice(draggedIndex, 1)[0];
         mediaItems.splice(targetIndex, 0, item);
         activeSegmentIndex = targetIndex;
@@ -1720,6 +2060,7 @@ window.updateWorkflowStep = updateWorkflowStep;
 
 function moveToTop(index) {
     if (index <= 0 || index >= mediaItems.length) return;
+    recordHistorySnapshot();
     const item = mediaItems.splice(index, 1)[0];
     mediaItems.unshift(item);
     renderMediaList();
@@ -1727,6 +2068,7 @@ function moveToTop(index) {
 
 function moveToBottom(index) {
     if (index < 0 || index >= mediaItems.length - 1) return;
+    recordHistorySnapshot();
     const item = mediaItems.splice(index, 1)[0];
     mediaItems.push(item);
     renderMediaList();
@@ -1751,6 +2093,7 @@ function updateItemSetting(index, key, val) {
 function moveItem(index, dir) {
     const newIdx = index + dir;
     if (newIdx < 0 || newIdx >= mediaItems.length) return;
+    recordHistorySnapshot();
     const temp = mediaItems[index];
     mediaItems[index] = mediaItems[newIdx];
     mediaItems[newIdx] = temp;
@@ -1760,6 +2103,7 @@ function moveItem(index, dir) {
 
 function duplicateItem(index) {
     if (!mediaItems[index]) return;
+    recordHistorySnapshot();
     const clone = JSON.parse(JSON.stringify(mediaItems[index]));
     clone.originalName = clone.originalName + ' (Bản sao)';
     mediaItems.splice(index + 1, 0, clone);
@@ -1768,12 +2112,14 @@ function duplicateItem(index) {
 }
 
 function removeItem(index) {
+    recordHistorySnapshot();
     mediaItems.splice(index, 1);
     renderMediaList();
 }
 
 btnClearAll.addEventListener('click', () => {
     if (confirm('Bạn có chắc muốn xóa tất cả các phân đoạn?')) {
+        recordHistorySnapshot();
         mediaItems = [];
         renderMediaList();
     }

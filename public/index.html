@@ -25,8 +25,14 @@
             <div class="nav-actions">
                 <input type="file" id="input-project-file" accept=".json,.edtproject" hidden>
                 
-                <!-- Project Management Group -->
+                <!-- Project Management & History Group -->
                 <div class="nav-btn-group">
+                    <button type="button" id="btn-undo-action" class="btn btn-small btn-outline" disabled title="Hoàn tác thao tác trước (Ctrl + Z)">
+                        <span class="icon">↩️</span> Hoàn Tác
+                    </button>
+                    <button type="button" id="btn-redo-action" class="btn btn-small btn-outline" disabled title="Làm lại thao tác vừa hoàn tác (Ctrl + Y)">
+                        <span class="icon">↪️</span> Làm Lại
+                    </button>
                     <button id="btn-open-project" class="btn btn-small btn-outline" title="Mở file dự án đã lưu (.json)">
                         <span class="icon">📂</span> Mở Dự Án
                     </button>
@@ -409,10 +415,24 @@
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label-xs">✨ Fade In / Out (s):</label>
+                                    <label class="form-label-xs">✨ Chuyển cảnh (Transition):</label>
+                                    <select id="insp-transition" class="custom-select form-control-sm" title="Hiệu ứng chuyển tiếp khi xuất hiện phân cảnh này">
+                                        <option value="fade_black">🌑 Fade Đen (Mặc định)</option>
+                                        <option value="flash_white">⚡ Flash Trắng (Chớp sáng)</option>
+                                        <option value="crossfade">🌫️ Mờ Chồng (Crossfade)</option>
+                                        <option value="slide_left">⬅️ Trượt Trái (Slide Left)</option>
+                                        <option value="slide_right">➡️ Trượt Phải (Slide Right)</option>
+                                        <option value="slide_up">⬆️ Trượt Lên (Slide Up)</option>
+                                        <option value="zoom_transition">🔍 Phóng Tới (Zoom Cut)</option>
+                                        <option value="wipe_left">🧹 Quét Ngang (Wipe)</option>
+                                        <option value="none">⏹️ Cắt Thẳng (Cut)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label-xs">⏱️ Fade In / Out (s):</label>
                                     <div class="flex-row-gap">
-                                        <input type="number" id="insp-fadein" class="form-control form-control-sm text-center" min="0" max="3" step="0.1" value="0.8" placeholder="In" title="Fade In (s)">
-                                        <input type="number" id="insp-fadeout" class="form-control form-control-sm text-center" min="0" max="3" step="0.1" value="0.8" placeholder="Out" title="Fade Out (s)">
+                                        <input type="number" id="insp-fadein" class="form-control form-control-sm text-center" min="0" max="3" step="0.1" value="0.8" placeholder="In" title="Thời lượng chuyển cảnh / Fade In (s)">
+                                        <input type="number" id="insp-fadeout" class="form-control form-control-sm text-center" min="0" max="3" step="0.1" value="0.8" placeholder="Out" title="Fade Out cuối cảnh (s)">
                                     </div>
                                 </div>
                             </div>
@@ -514,6 +534,59 @@
                         <div class="waveform-canvas-wrap">
                             <canvas id="audio-waveform-canvas" height="42"></canvas>
                             <div id="waveform-playhead" class="waveform-playhead"></div>
+                        </div>
+                    </div>
+
+                    <!-- Floating Multi-Selection Action Toolbar (Hiển thị khi chọn 2 cảnh trở lên) -->
+                    <div id="multi-select-action-bar" class="multi-select-action-bar hidden">
+                        <div class="multi-select-info">
+                            <span class="multi-select-count-badge">✨ Đang chọn <strong id="multi-select-count">0</strong> phân cảnh</span>
+                            <span class="multi-select-hint text-dim text-xs">(Giữ <kbd>Ctrl</kbd> hoặc <kbd>Shift</kbd> + Click để chọn thêm)</span>
+                        </div>
+                        <div class="multi-select-buttons">
+                            <div class="multi-btn-subgroup">
+                                <label class="multi-bar-label">⏱️ Đổi thời lượng:</label>
+                                <button type="button" class="btn btn-xs btn-outline btn-multi-dur" data-dur="3.0">3s</button>
+                                <button type="button" class="btn btn-xs btn-outline btn-multi-dur" data-dur="5.0">5s</button>
+                                <button type="button" class="btn btn-xs btn-outline btn-multi-dur" data-dur="8.0">8s</button>
+                            </div>
+                            <div class="multi-btn-subgroup">
+                                <label class="multi-bar-label">🎬 Hiệu ứng:</label>
+                                <select id="multi-select-motion" class="custom-select form-control-xs">
+                                    <option value="">(Motion...)</option>
+                                    <option value="zoom_in">🔍 Zoom In</option>
+                                    <option value="zoom_out">🔎 Zoom Out</option>
+                                    <option value="pan_left">⬅️ Pan Trái</option>
+                                    <option value="pan_right">➡️ Pan Phải</option>
+                                    <option value="pan_up">⬆️ Pan Lên</option>
+                                    <option value="pan_down">⬇️ Pan Xuống</option>
+                                    <option value="zoom_pan">🎯 Zoom+Pan</option>
+                                    <option value="none">⏹️ Tĩnh</option>
+                                </select>
+                            </div>
+                            <div class="multi-btn-subgroup">
+                                <label class="multi-bar-label">✨ Chuyển cảnh:</label>
+                                <select id="multi-select-transition" class="custom-select form-control-xs">
+                                    <option value="">(Transition...)</option>
+                                    <option value="fade_black">🌑 Fade Đen</option>
+                                    <option value="flash_white">⚡ Flash Trắng</option>
+                                    <option value="crossfade">🌫️ Crossfade</option>
+                                    <option value="slide_left">⬅️ Trượt Trái</option>
+                                    <option value="slide_right">➡️ Trượt Phải</option>
+                                    <option value="slide_up">⬆️ Trượt Lên</option>
+                                    <option value="zoom_transition">🔍 Phóng Tới</option>
+                                    <option value="none">⏹️ Cắt Thẳng</option>
+                                </select>
+                            </div>
+                            <button type="button" id="btn-multi-delete" class="btn btn-xs btn-ghost text-danger" title="Xóa các phân cảnh đang chọn">
+                                🗑️ Xóa nhóm này
+                            </button>
+                            <button type="button" id="btn-multi-select-all" class="btn btn-xs btn-outline" title="Chọn toàn bộ cảnh trên Timeline">
+                                🔘 Chọn tất cả
+                            </button>
+                            <button type="button" id="btn-multi-clear" class="btn btn-xs btn-secondary" title="Hủy chọn nhiều">
+                                ✕ Bỏ chọn
+                            </button>
                         </div>
                     </div>
 

@@ -1625,14 +1625,27 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
                     preScaleFilter = `scale=w=${highW}:h=${highH}:force_original_aspect_ratio=increase,crop=${highW}:${highH}`;
                 }
 
+                const transition = item.settings?.transition || (fadeIn > 0 ? 'fade_black' : 'none');
                 let vFilters = `${preScaleFilter},zoompan=z='${zExpr}':x='${xExpr}':y='${yExpr}':d=${frames}:s=${width}x${height}:fps=${fps},setpts=PTS-STARTPTS,fps=fps=${fps}:round=near,setsar=1,format=yuv420p`;
 
-                if (fadeIn > 0) {
+                // Multi-transition effect rendering
+                if (transition === 'flash_white' && fadeIn > 0) {
+                    vFilters += `,fade=t=in:st=0:d=${fadeIn}:color=white`;
+                } else if (transition === 'fade_black' && fadeIn > 0) {
+                    vFilters += `,fade=t=in:st=0:d=${fadeIn}:color=black`;
+                } else if (transition === 'slide_left' && fadeIn > 0) {
+                    vFilters += `,fade=t=in:st=0:d=${fadeIn}`;
+                } else if (transition === 'slide_right' && fadeIn > 0) {
+                    vFilters += `,fade=t=in:st=0:d=${fadeIn}`;
+                } else if (transition === 'crossfade' && fadeIn > 0) {
+                    vFilters += `,fade=t=in:st=0:d=${fadeIn}`;
+                } else if (fadeIn > 0) {
                     vFilters += `,fade=t=in:st=0:d=${fadeIn}`;
                 }
+
                 if (fadeOut > 0) {
                     const fadeStart = Math.max(0, dur - fadeOut);
-                    vFilters += `,fade=t=out:st=${fadeStart}:d=${fadeOut}`;
+                    vFilters += `,fade=t=out:st=${fadeStart}:d=${fadeOut}:color=black`;
                 }
 
                 const drawtextFilter = buildDrawtextFilter(item.settings, width, height, tempFiles);
@@ -1650,6 +1663,7 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
                 const videoDur = Math.max(0.5, trimEnd - trimStart);
                 chunkDuration += videoDur;
                 const vol = Number(item.settings?.videoVolume ?? 1.0);
+                const transition = item.settings?.transition || (fadeIn > 0 ? 'fade_black' : 'none');
 
                 let reframeFilter = '';
                 if (reframeMode === 'cover') {
@@ -1662,12 +1676,17 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
 
                 let vFilters = `trim=start=${trimStart}:end=${trimEnd},setpts=PTS-STARTPTS,${reframeFilter},setsar=1,fps=fps=${fps}:round=near,setpts=PTS-STARTPTS,format=yuv420p`;
 
-                if (fadeIn > 0) {
+                if (transition === 'flash_white' && fadeIn > 0) {
+                    vFilters += `,fade=t=in:st=0:d=${fadeIn}:color=white`;
+                } else if (transition === 'fade_black' && fadeIn > 0) {
+                    vFilters += `,fade=t=in:st=0:d=${fadeIn}:color=black`;
+                } else if (fadeIn > 0) {
                     vFilters += `,fade=t=in:st=0:d=${fadeIn}`;
                 }
+
                 if (fadeOut > 0) {
                     const fadeStart = Math.max(0, videoDur - fadeOut);
-                    vFilters += `,fade=t=out:st=${fadeStart}:d=${fadeOut}`;
+                    vFilters += `,fade=t=out:st=${fadeStart}:d=${fadeOut}:color=black`;
                 }
 
                 const drawtextFilter = buildDrawtextFilter(item.settings, width, height, tempFiles);
