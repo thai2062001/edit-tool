@@ -493,6 +493,12 @@ function syncStudioAudioForScene(sceneIndex, progress = 0, isSingle = false) {
         } else if (Math.abs(studioAudio.currentTime - targetTime) > 0.3) {
             try { studioAudio.currentTime = targetTime; } catch (e) {}
         }
+    } else {
+        // Neither voice audio nor global BGM is present -> pause audio
+        if (!studioAudio.paused) {
+            try { studioAudio.pause(); } catch (e) {}
+        }
+        currentStudioAudioSrc = '';
     }
 }
 
