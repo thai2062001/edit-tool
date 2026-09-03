@@ -277,6 +277,23 @@
                                 </select>
                                 <button type="button" id="btn-apply-motion-all" class="btn btn-secondary btn-xs" title="Đổi tất cả cảnh sang hiệu ứng này">Đổi Hết</button>
                             </div>
+                        </div>
+                        <div class="setting-row mt-2">
+                            <label for="batch-transition-select">✨ Gán chuyển cảnh (Transition):</label>
+                            <div class="input-with-btn">
+                                <select id="batch-transition-select" class="custom-select">
+                                    <option value="fade_black">🌑 Fade Đen (Mặc định)</option>
+                                    <option value="flash_white">⚡ Flash Trắng (Chớp sáng)</option>
+                                    <option value="crossfade">🌫️ Mờ Chồng (Crossfade)</option>
+                                    <option value="slide_left">⬅️ Trượt Trái (Slide Left)</option>
+                                    <option value="slide_right">➡️ Trượt Phải (Slide Right)</option>
+                                    <option value="slide_up">⬆️ Trượt Lên (Slide Up)</option>
+                                    <option value="zoom_transition">🔍 Phóng Tới (Zoom Cut)</option>
+                                    <option value="wipe_left">🧹 Quét Ngang (Wipe)</option>
+                                    <option value="none">⏹️ Cắt Thẳng (Cut)</option>
+                                </select>
+                                <button type="button" id="btn-apply-transition-all" class="btn btn-secondary btn-xs" title="Đổi tất cả cảnh sang hiệu ứng chuyển cảnh này">Gán Hết</button>
+                            </div>
                             <button type="button" id="btn-open-custom-motion-modal" class="btn btn-small btn-ai w-100 mt-2" style="font-weight: 600;">
                                 🎛️ Tùy Chọn & Phân Bổ Hiệu Ứng (Modal)
                             </button>

@@ -84,6 +84,28 @@ if (btnApplyMotionAll) {
     });
 }
 
+const batchTransitionSelect = document.getElementById('batch-transition-select');
+const btnApplyTransitionAll = document.getElementById('btn-apply-transition-all');
+
+if (btnApplyTransitionAll) {
+    btnApplyTransitionAll.addEventListener('click', () => {
+        const trans = batchTransitionSelect ? batchTransitionSelect.value : 'fade_black';
+        let count = 0;
+        if (typeof recordHistorySnapshot === 'function') recordHistorySnapshot();
+        mediaItems.forEach(item => {
+            if (!item.settings) item.settings = {};
+            item.settings.transition = trans;
+            count++;
+        });
+        if (count > 0) {
+            if (typeof renderMediaList === 'function') renderMediaList();
+            alert(`✨ Đã gán hiệu ứng chuyển cảnh cho toàn bộ ${count} phân cảnh!`);
+        } else {
+            alert('Chưa có phân cảnh nào trên timeline!');
+        }
+    });
+}
+
 function randomizeMotions() {
     const availableMotions = [
         'zoom_in', 'zoom_out', 'pan_left', 'pan_right', 
