@@ -415,11 +415,26 @@ Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
             });
             const totalWeight = sentenceWeights.reduce((a, b) => a + b, 0) || 1;
 
-            computedAudioDurations = scriptLines.map((_, i) => {
+            const rawDurs = scriptLines.map((_, i) => {
                 const speechPart = (sentenceWeights[i] / totalWeight) * pureSpeechDuration;
-                // Add pause interval to each scene (except last scene has tail pause)
-                const fullSceneDur = parseFloat((speechPart + pauseInterval).toFixed(2));
-                return Math.max(1.5, fullSceneDur);
+                // Add pause interval to each scene
+                return Math.max(1.5, parseFloat((speechPart + pauseInterval).toFixed(2)));
+            });
+
+            // Re-normalize exact sum to match 100.00% of total audio duration without cumulative rounding drift
+            const rawSum = rawDurs.reduce((a, b) => a + b, 0);
+            const scaleRatio = audioDuration / (rawSum || 1);
+            let accumulated = 0;
+
+            computedAudioDurations = rawDurs.map((d, i) => {
+                if (i === rawDurs.length - 1) {
+                    // Last scene takes the exact remaining balance so sum === audioDuration
+                    const remaining = parseFloat(Math.max(1.5, audioDuration - accumulated).toFixed(2));
+                    return remaining;
+                }
+                const scaled = parseFloat(Math.max(1.5, d * scaleRatio).toFixed(2));
+                accumulated += scaled;
+                return scaled;
             });
         }
 
