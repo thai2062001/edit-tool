@@ -5,6 +5,14 @@ const fs = require('fs');
 const { spawn } = require('child_process');
 const cors = require('cors');
 const { GoogleGenAI } = require('@google/genai');
+const { Agent, setGlobalDispatcher } = require('undici');
+
+// Configure global HTTP dispatcher with 10-minute timeout for heavy AI vision & audio requests
+setGlobalDispatcher(new Agent({
+    headersTimeout: 600000,
+    bodyTimeout: 600000,
+    connectTimeout: 60000
+}));
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -170,8 +178,8 @@ function getThumbnailBase64(filePath) {
     return new Promise((resolve) => {
         const proc = spawn('ffmpeg', [
             '-y', '-i', filePath,
-            '-vf', 'scale=400:-1',
-            '-q:v', '5',
+            '-vf', 'scale=240:-1',
+            '-q:v', '8',
             '-f', 'image2pipe',
             '-vcodec', 'mjpeg',
             'pipe:1'
@@ -182,21 +190,11 @@ function getThumbnailBase64(filePath) {
             if (code === 0 && chunks.length > 0) {
                 resolve(Buffer.concat(chunks).toString('base64'));
             } else {
-                // Fallback to reading file directly
-                try {
-                    const data = fs.readFileSync(filePath).toString('base64');
-                    resolve(data);
-                } catch (e) {
-                    resolve(null);
-                }
+                resolve(null);
             }
         });
         proc.on('error', () => {
-            try {
-                resolve(fs.readFileSync(filePath).toString('base64'));
-            } catch (e) {
-                resolve(null);
-            }
+            resolve(null);
         });
     });
 }
