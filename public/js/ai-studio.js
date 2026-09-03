@@ -516,6 +516,16 @@ if (btnApplyAiTimeline) {
 
         if (newTimeline.length > 0) {
             if (typeof recordHistorySnapshot === 'function') recordHistorySnapshot();
+            
+            // Backup full original images pool for single-scene smart picking
+            if (sourceItems && sourceItems.length > 0) {
+                const originalImages = sourceItems.filter(i => i.type === 'image' && !i.isPlaceholder && i.filename);
+                if (originalImages.length > 0) {
+                    libraryPool = JSON.parse(JSON.stringify(originalImages));
+                    window.libraryPool = libraryPool;
+                }
+            }
+
             mediaItems = newTimeline;
             window.mediaItems = newTimeline;
 

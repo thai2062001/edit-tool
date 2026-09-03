@@ -552,7 +552,9 @@ async function autoPickImageForSegment(itemIndex) {
 
     // Collect all valid images in library
     let pool = [];
-    if (typeof libraryImages !== 'undefined' && Array.isArray(libraryImages) && libraryImages.length > 0) {
+    if (window.libraryPool && Array.isArray(window.libraryPool) && window.libraryPool.length > 0) {
+        pool = window.libraryPool;
+    } else if (typeof libraryImages !== 'undefined' && Array.isArray(libraryImages) && libraryImages.length > 0) {
         pool = libraryImages;
     } else {
         pool = mediaItems.filter(i => i.type === 'image' && !i.isPlaceholder && i.filename);

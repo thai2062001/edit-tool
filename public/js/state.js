@@ -4,6 +4,7 @@
 
 // Global App State
 let mediaItems = [];
+let libraryPool = []; // Preserves all original uploaded images for AI re-matching and smart pick
 let bgmTrack = null;
 let currentSettings = {
     ratio: '16:9',
@@ -31,6 +32,7 @@ let audioWaveformPeaks = null;
 
 // Expose state variables to window for cross-module integration
 window.mediaItems = mediaItems;
+window.libraryPool = libraryPool;
 window.bgmTrack = bgmTrack;
 window.currentSettings = currentSettings;
 
