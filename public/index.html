@@ -243,6 +243,9 @@
                                 </select>
                                 <button type="button" id="btn-apply-motion-all" class="btn btn-secondary btn-xs" title="Đổi tất cả cảnh sang hiệu ứng này">Đổi Hết</button>
                             </div>
+                            <button type="button" id="btn-open-custom-motion-modal" class="btn btn-small btn-ai w-100 mt-2" style="font-weight: 600;">
+                                🎛️ Tùy Chọn & Phân Bổ Hiệu Ứng (Modal)
+                            </button>
                             <button type="button" id="btn-randomize-motions" class="btn btn-small btn-secondary w-100 mt-2" style="background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.4);">
                                 🎲 Phân Bổ Ngẫu Nhiên Mọi Cảnh
                             </button>
@@ -1936,6 +1939,132 @@
                 <button type="button" class="btn btn-secondary btn-small" id="btn-cancel-voiceover-modal">Đóng</button>
                 <button type="button" class="btn btn-primary btn-small" id="btn-confirm-voiceover-sync">
                     ⚡ Áp Dụng Toàn Bộ Vào Timeline & Dựng Video
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 1: Custom Motion Distribution Modal (Xếp lần lượt / Xáo trộn theo tập hiệu ứng đã chọn) -->
+    <div id="custom-motion-modal" class="modal hidden">
+        <div class="modal-backdrop" onclick="closeCustomMotionModal()"></div>
+        <div class="modal-dialog audit-dialog" style="max-width: 680px;">
+            <div class="modal-header">
+                <div class="modal-header-title">
+                    <span class="ai-badge" style="background: rgba(99, 102, 241, 0.15); color: #818CF8; border-color: rgba(99, 102, 241, 0.3);">🎬 Smart Motion Distribution</span>
+                    <h3>Tùy Chọn & Phân Bổ Hiệu Ứng Timeline</h3>
+                </div>
+                <button class="btn-close" onclick="closeCustomMotionModal()">✕</button>
+            </div>
+            <div class="modal-body" style="padding: 18px 22px;">
+                <p class="text-xs text-dim mb-3">
+                    Chọn các hiệu ứng bạn muốn sử dụng và kiểu phân bổ (lần lượt xoay vòng hoặc xáo trộn ngẫu nhiên) cho toàn bộ ảnh trên Timeline.
+                </p>
+
+                <!-- Section: Motion Checklist Selection -->
+                <div class="settings-card studio-card" style="background: rgba(15, 23, 42, 0.6); padding: 14px 16px;">
+                    <div class="card-header flex-between mb-2">
+                        <h4 style="margin: 0; font-size: 13px; color: #FFF;">📌 1. Chọn danh sách hiệu ứng muốn dùng:</h4>
+                        <div class="flex-row-gap" style="gap: 6px;">
+                            <button type="button" id="btn-motion-select-all" class="btn btn-xs btn-outline">Chọn tất cả</button>
+                            <button type="button" id="btn-motion-select-zoomonly" class="btn btn-xs btn-ai" title="Chỉ chọn Zoom In & Zoom Out">🔍 Zoom In & Out</button>
+                            <button type="button" id="btn-motion-clear-all" class="btn btn-xs btn-ghost text-danger">Bỏ chọn hết</button>
+                        </div>
+                    </div>
+
+                    <!-- Motion Checkboxes Grid -->
+                    <div class="motion-checkboxes-grid" id="motion-checkboxes-grid">
+                        <label class="motion-check-item">
+                            <input type="checkbox" name="selected-motion" value="zoom_in" checked>
+                            <span class="check-custom"></span>
+                            <span class="motion-label-text">🔍 <strong>Zoom In</strong> (Phóng to tâm)</span>
+                        </label>
+                        <label class="motion-check-item">
+                            <input type="checkbox" name="selected-motion" value="zoom_out" checked>
+                            <span class="check-custom"></span>
+                            <span class="motion-label-text">🔎 <strong>Zoom Out</strong> (Thu nhỏ tâm)</span>
+                        </label>
+                        <label class="motion-check-item">
+                            <input type="checkbox" name="selected-motion" value="pan_left">
+                            <span class="check-custom"></span>
+                            <span class="motion-label-text">⬅️ <strong>Pan Trái</strong></span>
+                        </label>
+                        <label class="motion-check-item">
+                            <input type="checkbox" name="selected-motion" value="pan_right">
+                            <span class="check-custom"></span>
+                            <span class="motion-label-text">➡️ <strong>Pan Phải</strong></span>
+                        </label>
+                        <label class="motion-check-item">
+                            <input type="checkbox" name="selected-motion" value="pan_up">
+                            <span class="check-custom"></span>
+                            <span class="motion-label-text">⬆️ <strong>Pan Lên Trên</strong></span>
+                        </label>
+                        <label class="motion-check-item">
+                            <input type="checkbox" name="selected-motion" value="pan_down">
+                            <span class="check-custom"></span>
+                            <span class="motion-label-text">⬇️ <strong>Pan Xuống Dưới</strong></span>
+                        </label>
+                        <label class="motion-check-item">
+                            <input type="checkbox" name="selected-motion" value="zoom_pan">
+                            <span class="check-custom"></span>
+                            <span class="motion-label-text">🎯 <strong>Zoom + Pan Chéo</strong></span>
+                        </label>
+                        <label class="motion-check-item">
+                            <input type="checkbox" name="selected-motion" value="zoom_in_left">
+                            <span class="check-custom"></span>
+                            <span class="motion-label-text">↖️ <strong>Zoom Góc Trái</strong></span>
+                        </label>
+                        <label class="motion-check-item">
+                            <input type="checkbox" name="selected-motion" value="zoom_in_right">
+                            <span class="check-custom"></span>
+                            <span class="motion-label-text">↗️ <strong>Zoom Góc Phải</strong></span>
+                        </label>
+                        <label class="motion-check-item">
+                            <input type="checkbox" name="selected-motion" value="none">
+                            <span class="check-custom"></span>
+                            <span class="motion-label-text">⏹️ <strong>Tĩnh</strong> (Không zoom)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Section: Distribution Mode -->
+                <div class="settings-card studio-card mt-3" style="background: rgba(15, 23, 42, 0.6); padding: 14px 16px;">
+                    <h4 style="margin: 0 0 10px 0; font-size: 13px; color: #FFF;">⚡ 2. Chọn quy luật phân bổ:</h4>
+                    <div class="distribution-mode-grid">
+                        <label class="dist-mode-card active" data-mode="sequential">
+                            <input type="radio" name="motion-dist-mode" value="sequential" checked hidden>
+                            <div class="dist-mode-icon">🔁</div>
+                            <div class="dist-mode-meta">
+                                <strong>Lần Lượt Theo Vòng Lặp (Round-Robin)</strong>
+                                <span>Ví dụ: Ảnh 1 Zoom In ➔ Ảnh 2 Zoom Out ➔ Ảnh 3 Zoom In...</span>
+                            </div>
+                        </label>
+                        <label class="dist-mode-card" data-mode="random_norepeat">
+                            <input type="radio" name="motion-dist-mode" value="random_norepeat" hidden>
+                            <div class="dist-mode-icon">🎲</div>
+                            <div class="dist-mode-meta">
+                                <strong>Xáo Trộn Ngẫu Nhiên (Không Lặp Liền Kề)</strong>
+                                <span>Xáo ngẫu nhiên từ các hiệu ứng đã chọn, tránh 2 cảnh liền nhau trùng nhau.</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Section: Live Preview of Sequence -->
+                <div class="mt-3">
+                    <div class="flex-between align-center mb-1">
+                        <span class="text-xs" style="font-weight: 600; color: #94A3B8;">👁️ Xem trước thứ tự sẽ áp dụng cho Timeline (<span id="motion-dist-count">0</span> ảnh):</span>
+                        <span id="motion-dist-pattern-badge" class="badge-accent" style="font-size: 10px;">Chu kỳ lặp</span>
+                    </div>
+                    <div id="motion-dist-preview-ribbon" class="motion-preview-ribbon custom-scrollbar">
+                        <!-- Dynamic scene motion pills -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer flex-between" style="padding: 14px 22px; background: rgba(15, 23, 42, 0.8);">
+                <button type="button" class="btn btn-secondary btn-small" onclick="closeCustomMotionModal()">Đóng</button>
+                <button type="button" id="btn-apply-custom-motion-dist" class="btn btn-primary btn-small">
+                    ⚡ Áp Dụng Lên Toàn Bộ Timeline
                 </button>
             </div>
         </div>

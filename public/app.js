@@ -1564,6 +1564,194 @@ if (btnRandomizeMotions) {
     });
 }
 
+// ==========================================
+// CUSTOM MOTION DISTRIBUTION MODAL LOGIC
+// ==========================================
+const btnOpenCustomMotionModal = document.getElementById('btn-open-custom-motion-modal');
+const customMotionModal = document.getElementById('custom-motion-modal');
+const btnMotionSelectAll = document.getElementById('btn-motion-select-all');
+const btnMotionSelectZoomOnly = document.getElementById('btn-motion-select-zoomonly');
+const btnMotionClearAll = document.getElementById('btn-motion-clear-all');
+const btnApplyCustomMotionDist = document.getElementById('btn-apply-custom-motion-dist');
+const motionDistPreviewRibbon = document.getElementById('motion-dist-preview-ribbon');
+const motionDistCount = document.getElementById('motion-dist-count');
+const motionDistPatternBadge = document.getElementById('motion-dist-pattern-badge');
+
+function getSelectedMotionsList() {
+    const checkboxes = document.querySelectorAll('input[name="selected-motion"]:checked');
+    return Array.from(checkboxes).map(cb => cb.value);
+}
+
+function getActiveMotionDistMode() {
+    const activeCard = document.querySelector('.dist-mode-card.active');
+    return activeCard ? activeCard.dataset.mode : 'sequential';
+}
+
+function updateMotionCheckboxClasses() {
+    document.querySelectorAll('.motion-check-item').forEach(item => {
+        const cb = item.querySelector('input[type="checkbox"]');
+        if (cb && cb.checked) {
+            item.classList.add('is-checked');
+        } else {
+            item.classList.remove('is-checked');
+        }
+    });
+}
+
+function renderMotionDistributionPreview() {
+    if (!motionDistPreviewRibbon) return;
+    const selectedMotions = getSelectedMotionsList();
+    const mode = getActiveMotionDistMode();
+    const imageItems = mediaItems.filter(i => i.type === 'image');
+    
+    if (motionDistCount) motionDistCount.innerText = imageItems.length;
+    if (motionDistPatternBadge) {
+        motionDistPatternBadge.innerText = mode === 'sequential' ? '🔁 Lần lượt chu kỳ' : '🎲 Xáo trộn ngẫu nhiên';
+    }
+
+    if (imageItems.length === 0) {
+        motionDistPreviewRibbon.innerHTML = '<span class="text-xs text-dim">Chưa có ảnh nào trên Timeline để xem trước.</span>';
+        return;
+    }
+
+    if (selectedMotions.length === 0) {
+        motionDistPreviewRibbon.innerHTML = '<span class="text-xs text-danger">⚠️ Vui lòng chọn ít nhất 1 hiệu ứng ở trên!</span>';
+        return;
+    }
+
+    let previewPlan = [];
+    if (mode === 'sequential') {
+        // Round-robin / Sequential loop: Scene 1 => selected[0], Scene 2 => selected[1]...
+        imageItems.forEach((_, idx) => {
+            const motion = selectedMotions[idx % selectedMotions.length];
+            previewPlan.push({ idx: idx + 1, motion });
+        });
+    } else {
+        // Random without direct repetition
+        let lastM = '';
+        imageItems.forEach((_, idx) => {
+            let pool = selectedMotions.filter(m => m !== lastM);
+            if (pool.length === 0) pool = selectedMotions;
+            const chosen = pool[Math.floor(Math.random() * pool.length)];
+            previewPlan.push({ idx: idx + 1, motion: chosen });
+            lastM = chosen;
+        });
+    }
+
+    motionDistPreviewRibbon.innerHTML = previewPlan.map(p => `
+        <div class="motion-pill-item">
+            <span class="motion-pill-idx">Cảnh #${p.idx}</span>
+            <span class="motion-pill-val">${getMotionShortName(p.motion)}</span>
+        </div>
+    `).join('');
+}
+
+function openCustomMotionModal() {
+    if (!customMotionModal) return;
+    customMotionModal.classList.remove('hidden');
+    updateMotionCheckboxClasses();
+    renderMotionDistributionPreview();
+}
+
+function closeCustomMotionModal() {
+    if (customMotionModal) customMotionModal.classList.add('hidden');
+}
+
+if (btnOpenCustomMotionModal) {
+    btnOpenCustomMotionModal.addEventListener('click', openCustomMotionModal);
+}
+
+// Checkbox change handlers
+document.querySelectorAll('input[name="selected-motion"]').forEach(cb => {
+    cb.addEventListener('change', () => {
+        updateMotionCheckboxClasses();
+        renderMotionDistributionPreview();
+    });
+});
+
+// Quick action buttons
+if (btnMotionSelectAll) {
+    btnMotionSelectAll.addEventListener('click', () => {
+        document.querySelectorAll('input[name="selected-motion"]').forEach(cb => cb.checked = true);
+        updateMotionCheckboxClasses();
+        renderMotionDistributionPreview();
+    });
+}
+
+if (btnMotionSelectZoomOnly) {
+    btnMotionSelectZoomOnly.addEventListener('click', () => {
+        document.querySelectorAll('input[name="selected-motion"]').forEach(cb => {
+            cb.checked = (cb.value === 'zoom_in' || cb.value === 'zoom_out');
+        });
+        updateMotionCheckboxClasses();
+        renderMotionDistributionPreview();
+    });
+}
+
+if (btnMotionClearAll) {
+    btnMotionClearAll.addEventListener('click', () => {
+        document.querySelectorAll('input[name="selected-motion"]').forEach(cb => cb.checked = false);
+        updateMotionCheckboxClasses();
+        renderMotionDistributionPreview();
+    });
+}
+
+// Distribution mode card selector
+document.querySelectorAll('.dist-mode-card').forEach(card => {
+    card.addEventListener('click', () => {
+        document.querySelectorAll('.dist-mode-card').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        const radio = card.querySelector('input[type="radio"]');
+        if (radio) radio.checked = true;
+        renderMotionDistributionPreview();
+    });
+});
+
+// Apply Button Handler
+if (btnApplyCustomMotionDist) {
+    btnApplyCustomMotionDist.addEventListener('click', () => {
+        const selectedMotions = getSelectedMotionsList();
+        if (selectedMotions.length === 0) {
+            alert('⚠️ Vui lòng tích chọn ít nhất 1 hiệu ứng!');
+            return;
+        }
+
+        const mode = getActiveMotionDistMode();
+        let imageCount = 0;
+        let lastMotion = '';
+
+        mediaItems.forEach(item => {
+            if (item.type === 'image') {
+                if (!item.settings) item.settings = {};
+                let chosen = selectedMotions[0];
+
+                if (mode === 'sequential') {
+                    // Round-robin sequential index
+                    chosen = selectedMotions[imageCount % selectedMotions.length];
+                } else {
+                    // Random without adjacent duplicate
+                    let pool = selectedMotions.filter(m => m !== lastMotion);
+                    if (pool.length === 0) pool = selectedMotions;
+                    chosen = pool[Math.floor(Math.random() * pool.length)];
+                    lastMotion = chosen;
+                }
+
+                item.settings.motion = chosen;
+                imageCount++;
+            }
+        });
+
+        if (imageCount > 0) {
+            renderMediaList();
+            closeCustomMotionModal();
+            const modeText = mode === 'sequential' ? 'lần lượt xoay vòng' : 'xáo trộn ngẫu nhiên';
+            alert(`✨ Đã áp dụng phân bổ ${modeText} cho toàn bộ ${imageCount} ảnh trên Timeline!`);
+        } else {
+            alert('⚠️ Chưa có ảnh nào trên Timeline để áp dụng!');
+        }
+    });
+}
+
 if (btnApplyFadeAll) {
     btnApplyFadeAll.addEventListener('click', () => {
         const fIn = parseFloat(batchFadeIn.value) || 0;

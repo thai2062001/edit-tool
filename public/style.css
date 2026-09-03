@@ -2804,4 +2804,154 @@ body {
     border-radius: 4px;
 }
 
+/* =========================================
+   Custom Motion Distribution Modal Styling
+   ========================================= */
+.motion-checkboxes-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px 12px;
+    margin-top: 6px;
+}
+
+@media (max-width: 540px) {
+    .motion-checkboxes-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.motion-check-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition);
+    user-select: none;
+}
+
+.motion-check-item:hover {
+    background: rgba(99, 102, 241, 0.12);
+    border-color: rgba(99, 102, 241, 0.4);
+}
+
+.motion-check-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #6366F1;
+    cursor: pointer;
+}
+
+.motion-check-item.is-checked {
+    background: rgba(99, 102, 241, 0.18);
+    border-color: #6366F1;
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+}
+
+.motion-label-text {
+    font-size: 12.5px;
+    color: #E2E8F0;
+}
+
+.distribution-mode-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+@media (max-width: 600px) {
+    .distribution-mode-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.dist-mode-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    background: rgba(30, 41, 59, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.dist-mode-card:hover {
+    border-color: rgba(99, 102, 241, 0.4);
+    background: rgba(30, 41, 59, 0.8);
+}
+
+.dist-mode-card.active {
+    border-color: #6366F1;
+    background: rgba(99, 102, 241, 0.15);
+    box-shadow: 0 0 16px rgba(99, 102, 241, 0.25);
+}
+
+.dist-mode-icon {
+    font-size: 22px;
+    line-height: 1;
+}
+
+.dist-mode-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.dist-mode-meta strong {
+    font-size: 13px;
+    color: #FFFFFF;
+}
+
+.dist-mode-meta span {
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.35;
+}
+
+.motion-preview-ribbon {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 10px 12px;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-md);
+    min-height: 60px;
+    align-items: center;
+}
+
+.motion-pill-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 90px;
+    padding: 6px 8px;
+    background: rgba(30, 41, 59, 0.9);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+    text-align: center;
+}
+
+.motion-pill-idx {
+    font-size: 9.5px;
+    font-weight: 700;
+    color: #94A3B8;
+    margin-bottom: 2px;
+}
+
+.motion-pill-val {
+    font-size: 11px;
+    font-weight: 600;
+    color: #38BDF8;
+    white-space: nowrap;
+}
+
+
 
