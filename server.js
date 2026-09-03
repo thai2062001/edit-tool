@@ -1631,11 +1631,11 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
                     yExpr = '(ih-ih/zoom)/2';
                 }
 
-                // High-resolution intermediate canvas (capped at 4K/4320px) to balance 100% subpixel smoothness with 5x-10x faster FFmpeg rendering
-                const targetIntermediate = Math.min(4320, Math.max(width, height) * 2);
-                const scaleFactor = Math.max(1, Math.round(targetIntermediate / Math.max(width, height)));
-                const highW = width * scaleFactor;
-                const highH = height * scaleFactor;
+                // High-resolution intermediate canvas (4K / 3840x2160 or 4x resolution)
+                // When zoompan outputs directly at target resolution, integer coordinate rounding causes frame jitter/lag.
+                // Outputting zoompan at high resolution and scaling down with lanczos guarantees buttery smooth subpixel movement!
+                const highW = width >= height ? 3840 : 2160;
+                const highH = width >= height ? 2160 : 3840;
 
                 let preScaleFilter = '';
                 if (reframeMode === 'contain_blur') {
@@ -1647,7 +1647,7 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
                 }
 
                 const transition = item.settings?.transition || (fadeIn > 0 ? 'fade_black' : 'none');
-                let vFilters = `${preScaleFilter},zoompan=z='${zExpr}':x='${xExpr}':y='${yExpr}':d=${frames}:s=${width}x${height}:fps=${fps},setpts=PTS-STARTPTS,fps=fps=${fps}:round=near,setsar=1,format=yuv420p`;
+                let vFilters = `${preScaleFilter},zoompan=z='${zExpr}':x='${xExpr}':y='${yExpr}':d=${frames}:s=${highW}x${highH}:fps=${fps},scale=${width}:${height}:flags=lanczos,setpts=PTS-STARTPTS,fps=fps=${fps}:round=near,setsar=1,format=yuv420p`;
 
                 // Multi-transition effect rendering
                 if (transition === 'flash_white' && fadeIn > 0) {
