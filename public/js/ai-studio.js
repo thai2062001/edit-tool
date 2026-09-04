@@ -504,6 +504,11 @@ function renderAiScenesResult(scenes, meta = {}) {
             ? `<div class="ai-scene-reason text-xs text-dim mt-1">💡 <em>${scene.reason}</em></div>`
             : '';
 
+        const hasTimestamp = (typeof scene.startTime === 'number' && typeof scene.endTime === 'number');
+        const timeBadgeHtml = hasTimestamp 
+            ? `<span class="badge-timestamp" style="background: rgba(56, 189, 248, 0.15); color: #38BDF8; font-size: 11px; padding: 2px 6px; border-radius: 4px; font-family: monospace;">🎙️ [${scene.startTime}s ➔ ${scene.endTime}s]</span>` 
+            : '';
+
         card.innerHTML = `
             ${thumbHtml}
             <div class="ai-scene-info">
@@ -514,6 +519,7 @@ function renderAiScenesResult(scenes, meta = {}) {
             <div class="ai-scene-meta">
                 <button type="button" class="btn-scene-upload" data-scene-idx="${index}">📤 ${hasImage ? 'Đổi ảnh' : 'Tải ảnh bù'}</button>
                 <span class="badge-motion">${(scene.suggestedMotion || 'zoom_in').replace(/_/g, ' ')}</span>
+                ${timeBadgeHtml}
                 <span class="ai-scene-dur">⏱️ ${scene.suggestedDuration || 4.0}s | Fade ${scene.fadeIn || 0.8}s</span>
             </div>
         `;
@@ -550,6 +556,8 @@ if (btnApplyAiTimeline) {
                 if (!cloned.settings) cloned.settings = {};
                 cloned.settings.motion = scene.suggestedMotion || 'zoom_in';
                 cloned.settings.duration = parseFloat(scene.suggestedDuration || 5.0);
+                cloned.settings.startTime = typeof scene.startTime === 'number' ? scene.startTime : undefined;
+                cloned.settings.endTime = typeof scene.endTime === 'number' ? scene.endTime : undefined;
                 cloned.settings.fadeIn = parseFloat(scene.fadeIn || 0.8);
                 cloned.settings.fadeOut = parseFloat(scene.fadeOut || 0.8);
                 if (scene.sceneText) {

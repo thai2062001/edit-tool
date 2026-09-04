@@ -432,11 +432,19 @@ app.post('/api/ai/match-script', upload.fields([{ name: 'audioFile', maxCount: 1
 
         const formattedScriptNumbered = scriptLines.map((line, idx) => `[SCENE ${idx + 1}]: ${line}`).join('\n\n');
 
-        // Advanced AI Director Prompt strictly preserving all script lines 1-to-1 without merging
+        // Advanced AI Director & Speech Alignment Prompt strictly preserving all script lines 1-to-1
         const promptText = `
-Bạn là một Đạo Diễn Dựng Phim & Biên Tập Video Chuyên Nghiệp (Senior Film Director & AI Video Editor).
+Bạn là một Đạo Diễn Dựng Phim & Chuyên Gia Căn Chỉnh Khớp Âm Thanh (Senior Film Director & AI Audio-Speech Alignment Specialist).
 Tác giả đã phân chia kịch bản thành CHÍNH XÁC ${scriptLines.length} PHÂN ĐOẠN / CÂU THOẠI (từ SCENE 1 đến SCENE ${scriptLines.length}).
-${audioDuration > 0 ? `ĐẶC BIỆT: Đính kèm tệp âm thanh giọng đọc có tổng thời lượng: ${audioDuration.toFixed(2)}s (khoảng nghỉ giữa các câu: ${pauseInterval}s). Hãy tính toán thời lượng từng câu khớp khít 100% với giọng đọc trong audio.` : ''}
+${audioDuration > 0 ? `🎯 ĐẶC BIỆT BẮT BUỘC VỀ ÂM THANH (AUDIO SPEECH ALIGNMENT):
+- Tệp âm thanh giọng đọc đính kèm có tổng thời lượng: ${audioDuration.toFixed(2)}s (khoảng nghỉ giữa các câu: ${pauseInterval}s).
+- Hãy LẮNG NGHE KỸ file âm thanh và tìm chính xác mốc thời gian phát âm của từng câu thoại kịch bản trong audio:
+  * "startTime": Mốc giây bắt đầu nói câu thoại đó trong audio (float, ví dụ: 0.0, 3.42).
+  * "endTime": Mốc giây kết thúc câu thoại đó trong audio (float, ví dụ: 3.40, 7.85).
+  * "suggestedDuration": Thời lượng hiển thị của phân cảnh (giây, bằng endTime - startTime hoặc bao gồm khoảng nghỉ tiếp theo).
+- Mốc "startTime" của [SCENE 1] bắt đầu lúc 0.0s (hoặc thời điểm giọng đọc cất lên).
+- Mốc "startTime" của câu sau [SCENE i+1] phải nối tiếp hoặc sau "endTime" của câu trước [SCENE i].
+- Mốc "endTime" của câu cuối cùng [SCENE ${scriptLines.length}] phải kết thúc xấp xỉ ${audioDuration.toFixed(2)}s.` : ''}
 
 --- NỘI DUNG KỊCH BẢN ĐÃ CHIA SẴN (${scriptLines.length} PHÂN ĐOẠN) ---
 ${formattedScriptNumbered}
@@ -459,9 +467,8 @@ ${formattedScriptNumbered}
 4. 🛑 NGUYÊN TẮC 4: GIỮ NGUYÊN 100% NGÔN NGỮ KỊCH BẢN CHO PHỤ ĐỀ (sceneText)
    - Trường "sceneText" của mỗi phân cảnh [SCENE i] PHẢI LÀ NGUYÊN VĂN câu thoại của [SCENE i] đó đúng 100% bằng ngôn ngữ gốc (English if English script, Vietnamese if Vietnamese script). TUYỆT ĐỐI KHÔNG TỰ Ý DỊCH!
 
-5. 🎬 CHỌN HIỆU ỨNG VÀ THỜI LƯỢNG TƯƠNG THÍCH:
+5. 🎬 CHỌN HIỆU ỨNG VÀ THỜI LƯỢNG:
    - suggestedMotion: 'zoom_in', 'zoom_out', 'pan_left', 'pan_right', 'pan_up', 'pan_down', 'zoom_pan', 'zoom_in_left', 'zoom_in_right', 'none'.
-   - suggestedDuration: thời lượng giây cho câu thoại đó (nếu có audio thì tính khớp theo audio và khoảng nghỉ ${pauseInterval}s).
    - fadeIn, fadeOut: 0.8s.
 
 === CẤU TRÚC JSON TRẢ VỀ ===
@@ -471,7 +478,9 @@ Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
     "imageIndex": 0, // Index ảnh từ 0 đến ${imageItems.length - 1}, HOẶC -1 NẾU ĐỂ TRỐNG
     "sceneText": "Nguyên văn câu thoại của SCENE tương ứng bằng ngôn ngữ gốc",
     "suggestedMotion": "zoom_in",
-    "suggestedDuration": 5.0,
+    "startTime": 0.0,
+    "endTime": 3.5,
+    "suggestedDuration": 3.5,
     "fadeIn": 0.8,
     "fadeOut": 0.8,
     "reason": "Giải thích ngắn lý do chọn ảnh hoặc lý do để trống"
@@ -511,9 +520,45 @@ Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
         // Strict deduplication tracker: ensure every imageIndex is used AT MOST ONCE
         const usedImageIndices = new Set();
 
-        // Calculate audio-driven natural pacing with silence pause snapping
+        // 1. Check if Gemini returned high-precision audio timestamps (Audio-First Alignment)
+        let hasAiTimestamps = false;
+        let aiAlignedDurations = [];
+        let aiStartTimes = [];
+        let aiEndTimes = [];
+
+        if (audioDuration > 0 && Array.isArray(rawScenes) && rawScenes.length === scriptLines.length) {
+            const validTimestamps = rawScenes.map((s, idx) => {
+                const st = parseFloat(s.startTime ?? s.start ?? s.st);
+                const et = parseFloat(s.endTime ?? s.end ?? s.et);
+                return { st, et, valid: !isNaN(st) && !isNaN(et) && et > st };
+            });
+
+            const allValid = validTimestamps.every(v => v.valid);
+            if (allValid) {
+                hasAiTimestamps = true;
+                let currentCursor = 0;
+                for (let i = 0; i < validTimestamps.length; i++) {
+                    let st = Math.max(currentCursor, validTimestamps[i].st);
+                    let et = Math.max(st + 1.0, validTimestamps[i].et);
+                    
+                    // If last scene, snap close to audioDuration
+                    if (i === validTimestamps.length - 1 && audioDuration > et) {
+                        et = audioDuration;
+                    }
+
+                    const dur = parseFloat((et - st).toFixed(2));
+                    aiStartTimes.push(parseFloat(st.toFixed(2)));
+                    aiEndTimes.push(parseFloat(et.toFixed(2)));
+                    aiAlignedDurations.push(dur);
+                    currentCursor = et;
+                }
+                console.log(`[AI Script Match] Successfully extracted ${aiAlignedDurations.length} speech timestamps directly from audio.`);
+            }
+        }
+
+        // 2. Fallback: Calculate audio-driven natural pacing with silence pause snapping if no AI timestamps
         let computedAudioDurations = null;
-        if (audioDuration > 0 && scriptLines.length > 0) {
+        if (!hasAiTimestamps && audioDuration > 0 && scriptLines.length > 0) {
             // Detect real silence pauses in audio if physical audio file exists
             let silences = [];
             if (audioPath && fs.existsSync(audioPath)) {
@@ -564,7 +609,7 @@ Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
                     prev = pt;
                     return Math.max(1.5, dur);
                 });
-                console.log(`[AI Script Match] Successfully snapped ${computedAudioDurations.length} scenes to real audio silence pauses.`);
+                console.log(`[AI Script Match] Fallback: Snapped ${computedAudioDurations.length} scenes to audio silence pauses.`);
             } else {
                 // Fallback: weight-proportional calculation
                 const totalPauseTime = Math.max(0, (scriptLines.length - 1) * pauseInterval);
@@ -617,9 +662,11 @@ Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
             const sceneText = Array.isArray(s) ? (s[1] || `Phân cảnh ${idx + 1}`) : (s.sceneText || s.t || `Phân cảnh ${idx + 1}`);
             const motion = Array.isArray(s) ? cleanMotion(s[2]) : cleanMotion(s.suggestedMotion || s.motion || s.m);
             
-            // Priority: batch audio per-scene -> computed Audio duration with pause -> AI returned duration -> default
+            // Priority: batch audio per-scene -> AI audio-aligned duration -> computed pause duration -> default
             let finalDuration = 5.0;
             let sceneVoiceAudio = null;
+            let sceneStartTime = null;
+            let sceneEndTime = null;
 
             if (batchAudioFiles.length > 0 && batchAudioFiles[idx]) {
                 const bAudio = batchAudioFiles[idx];
@@ -630,6 +677,10 @@ Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
                     url: bAudio.url,
                     duration: bAudio.duration
                 };
+            } else if (hasAiTimestamps && typeof aiAlignedDurations[idx] === 'number') {
+                finalDuration = aiAlignedDurations[idx];
+                sceneStartTime = aiStartTimes[idx];
+                sceneEndTime = aiEndTimes[idx];
             } else if (computedAudioDurations && typeof computedAudioDurations[idx] === 'number') {
                 finalDuration = computedAudioDurations[idx];
             } else {
@@ -647,6 +698,8 @@ Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
                 sceneText: sceneText.trim(),
                 suggestedMotion: motion,
                 suggestedDuration: Math.max(1.0, Math.min(60.0, finalDuration)),
+                startTime: sceneStartTime,
+                endTime: sceneEndTime,
                 fadeIn: Math.max(0, Math.min(3.0, isNaN(fadeIn) ? defaultTransitionDur : fadeIn)),
                 fadeOut: Math.max(0, Math.min(3.0, isNaN(fadeOut) ? defaultTransitionDur : fadeOut)),
                 voiceAudio: sceneVoiceAudio,
