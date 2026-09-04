@@ -585,6 +585,8 @@ if (btnApplyAiTimeline) {
                     settings: {
                         motion: scene.suggestedMotion || 'zoom_in',
                         duration: parseFloat(scene.suggestedDuration || 5.0),
+                        startTime: typeof scene.startTime === 'number' ? scene.startTime : undefined,
+                        endTime: typeof scene.endTime === 'number' ? scene.endTime : undefined,
                         fadeIn: parseFloat(scene.fadeIn || 0.8),
                         fadeOut: parseFloat(scene.fadeOut || 0.8),
                         voiceAudio: scene.voiceAudio || null,

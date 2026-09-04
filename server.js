@@ -533,26 +533,46 @@ Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
                 return { st, et, valid: !isNaN(st) && !isNaN(et) && et > st };
             });
 
-            const allValid = validTimestamps.every(v => v.valid);
-            if (allValid) {
-                hasAiTimestamps = true;
-                let currentCursor = 0;
-                for (let i = 0; i < validTimestamps.length; i++) {
-                    let st = Math.max(currentCursor, validTimestamps[i].st);
-                    let et = Math.max(st + 1.0, validTimestamps[i].et);
-                    
-                    // If last scene, snap close to audioDuration
-                    if (i === validTimestamps.length - 1 && audioDuration > et) {
-                        et = audioDuration;
-                    }
-
-                    const dur = parseFloat((et - st).toFixed(2));
-                    aiStartTimes.push(parseFloat(st.toFixed(2)));
-                    aiEndTimes.push(parseFloat(et.toFixed(2)));
-                    aiAlignedDurations.push(dur);
-                    currentCursor = et;
+            // Check if timestamps are valid and monotonically increasing
+            let strictlyMonotonic = validTimestamps.length > 0;
+            for (let i = 0; i < validTimestamps.length; i++) {
+                if (!validTimestamps[i].valid) {
+                    strictlyMonotonic = false;
+                    break;
                 }
-                console.log(`[AI Script Match] Successfully extracted ${aiAlignedDurations.length} speech timestamps directly from audio.`);
+                if (i > 0 && validTimestamps[i].st < validTimestamps[i - 1].st) {
+                    strictlyMonotonic = false;
+                    break;
+                }
+            }
+
+            if (strictlyMonotonic) {
+                hasAiTimestamps = true;
+                // Calculate continuous timeline cutpoints C[0...N]
+                // C[0] = 0.0 (video start)
+                // C[i] = natural scene transition point in the pause between scene i-1 and scene i
+                const cutpoints = [0.0];
+                for (let i = 1; i < validTimestamps.length; i++) {
+                    const prevEnd = validTimestamps[i - 1].et;
+                    const nextStart = validTimestamps[i].st;
+                    let cut = (nextStart >= prevEnd) 
+                        ? parseFloat(((prevEnd + nextStart) / 2).toFixed(2))
+                        : parseFloat(nextStart.toFixed(2));
+                    // Ensure each cutpoint is at least 1.0s after the previous one
+                    cut = Math.max(cutpoints[i - 1] + 1.0, cut);
+                    cutpoints.push(cut);
+                }
+                cutpoints.push(parseFloat(Math.max(cutpoints[cutpoints.length - 1] + 1.0, audioDuration).toFixed(2)));
+
+                for (let i = 0; i < validTimestamps.length; i++) {
+                    const sceneStart = cutpoints[i];
+                    const sceneEnd = cutpoints[i + 1];
+                    const dur = parseFloat((sceneEnd - sceneStart).toFixed(2));
+                    aiStartTimes.push(sceneStart);
+                    aiEndTimes.push(sceneEnd);
+                    aiAlignedDurations.push(dur);
+                }
+                console.log(`[AI Script Match] Successfully aligned ${aiAlignedDurations.length} scenes to continuous audio cutpoints.`);
             }
         }
 
