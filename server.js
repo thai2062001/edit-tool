@@ -1290,10 +1290,34 @@ YÊU CẦU:
             }
         }
 
-        // Map sentences to timeline items
+        const sceneMappingRatio = Math.max(1, parseInt(req.body.sceneMappingRatio) || 1);
+
+        // Group sentences according to sceneMappingRatio (e.g. 1:1, 1:2, 1:3, 1:N)
+        let groupedSentences = [];
+        if (sceneMappingRatio > 1 && sentences.length > 0) {
+            for (let i = 0; i < sentences.length; i += sceneMappingRatio) {
+                const chunk = sentences.slice(i, i + sceneMappingRatio);
+                const chunkStart = chunk[0].start;
+                const chunkEnd = chunk[chunk.length - 1].end;
+                const chunkDuration = parseFloat(Math.max(2.0, chunkEnd - chunkStart).toFixed(2));
+                const chunkText = chunk.map(c => (c.text || '').trim()).filter(Boolean).join(' ');
+                groupedSentences.push({
+                    id: Math.floor(i / sceneMappingRatio) + 1,
+                    start: chunkStart,
+                    end: chunkEnd,
+                    duration: chunkDuration,
+                    text: chunkText,
+                    subSentences: chunk
+                });
+            }
+        } else {
+            groupedSentences = sentences;
+        }
+
+        // Map grouped sentences to timeline items
         const updatedItems = [...items];
         
-        sentences.forEach((sent, idx) => {
+        groupedSentences.forEach((sent, idx) => {
             const sentenceDuration = Math.max(1.5, parseFloat((sent.duration || (sent.end - sent.start) || 4.0).toFixed(2)));
             const sentenceText = (sent.text || '').trim();
 
@@ -1302,11 +1326,13 @@ YÊU CẦU:
                 if (!updatedItems[idx].settings) updatedItems[idx].settings = {};
                 updatedItems[idx].settings.duration = sentenceDuration;
                 updatedItems[idx].settings.overlayText = sentenceText;
+                updatedItems[idx].settings.startTime = sent.start;
+                updatedItems[idx].settings.endTime = sent.end;
                 updatedItems[idx].settings.textPosition = updatedItems[idx].settings.textPosition || 'bottom';
                 updatedItems[idx].settings.textStyle = updatedItems[idx].settings.textStyle || 'banner';
                 updatedItems[idx].settings.fontSize = updatedItems[idx].settings.fontSize || 48;
             } else {
-                // If more sentences than images, duplicate last image or create placeholder
+                // If more scenes than images, duplicate last image or create placeholder
                 const baseItem = updatedItems.length > 0 ? updatedItems[updatedItems.length - 1] : null;
                 const newItem = {
                     id: `sync_${Date.now()}_${idx}`,
@@ -1321,6 +1347,8 @@ YÊU CẦU:
                         zoomIntensity: 1.25,
                         fadeIn: 0.5,
                         fadeOut: 0.5,
+                        startTime: sent.start,
+                        endTime: sent.end,
                         overlayText: sentenceText,
                         textPosition: 'bottom',
                         textStyle: 'banner',
@@ -1343,7 +1371,10 @@ YÊU CẦU:
             success: true,
             totalDuration: parseFloat(totalAudioDuration.toFixed(2)),
             totalSentences: sentences.length,
-            sentences: sentences,
+            totalScenes: groupedSentences.length,
+            sceneMappingRatio: sceneMappingRatio,
+            sentences: groupedSentences,
+            rawSentences: sentences,
             updatedItems: updatedItems,
             bgmTrack: bgmTrack
         });

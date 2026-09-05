@@ -1132,42 +1132,157 @@ const btnConfirmVoiceoverSync = document.getElementById('btn-confirm-voiceover-s
 const btnCloseVoiceoverModal = document.getElementById('btn-close-voiceover-modal');
 const btnCancelVoiceoverModal = document.getElementById('btn-cancel-voiceover-modal');
 
-if (btnAutoSyncVoiceover && inputVoiceoverFile) {
-    btnAutoSyncVoiceover.addEventListener('click', () => {
-        if (bgmTrack && bgmTrack.filename) {
-            executeVoiceoverSync(null, bgmTrack);
+// Voiceover Sync Modal interactive elements
+const voiceoverSyncConfig = document.getElementById('voiceover-sync-config');
+const btnStartVoiceoverSync = document.getElementById('btn-start-voiceover-sync');
+const btnBackVoiceoverConfig = document.getElementById('btn-back-voiceover-config');
+const btnChangeVoiceoverFile = document.getElementById('btn-change-voiceover-file');
+const voiceoverAudioLabel = document.getElementById('voiceover-audio-label');
+const voiceoverAudioSubdesc = document.getElementById('voiceover-audio-subdesc');
+const voiceoverRatioExplainText = document.getElementById('voiceover-ratio-explain-text');
+const voiceRatioCustomVal = document.getElementById('voice-ratio-custom-val');
+const voiceoverRefScript = document.getElementById('voiceover-ref-script');
+
+let pendingVoiceoverFile = null;
+let selectedVoiceRatio = 1;
+
+// Setup voice ratio cards selection
+document.querySelectorAll('.voice-ratio-card').forEach(card => {
+    card.addEventListener('click', () => {
+        document.querySelectorAll('.voice-ratio-card').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        const radio = card.querySelector('input[type="radio"]');
+        if (radio) radio.checked = true;
+
+        const val = card.dataset.ratio;
+        if (val === 'custom') {
+            selectedVoiceRatio = Math.max(2, parseInt(voiceRatioCustomVal ? voiceRatioCustomVal.value : 4) || 4);
         } else {
-            inputVoiceoverFile.click();
+            selectedVoiceRatio = parseInt(val) || 1;
         }
+        updateVoiceRatioExplain();
+    });
+});
+
+if (voiceRatioCustomVal) {
+    voiceRatioCustomVal.addEventListener('input', () => {
+        selectedVoiceRatio = Math.max(2, parseInt(voiceRatioCustomVal.value) || 4);
+        updateVoiceRatioExplain();
     });
 }
 
-if (btnBgmVoiceoverSync && inputVoiceoverFile) {
-    btnBgmVoiceoverSync.addEventListener('click', () => {
-        if (bgmTrack && bgmTrack.filename) {
-            executeVoiceoverSync(null, bgmTrack);
-        } else {
-            inputVoiceoverFile.click();
+function updateVoiceRatioExplain() {
+    if (!voiceoverRatioExplainText) return;
+    if (selectedVoiceRatio === 1) {
+        voiceoverRatioExplainText.innerHTML = '💡 <strong>Chế độ 1 Cảnh : 1 Voice:</strong> Giữ nguyên 100% logic hiện tại. Mỗi câu nói bóc tách được từ Audio sẽ là 1 phân cảnh riêng độc lập.';
+    } else {
+        voiceoverRatioExplainText.innerHTML = `💡 <strong>Chế độ 1 Cảnh : ${selectedVoiceRatio} Voice:</strong> Cứ mỗi <strong>${selectedVoiceRatio} câu thoại liên tiếp</strong> sẽ dùng chung 1 ảnh/phân cảnh. Thời lượng cảnh tự động bằng tổng ${selectedVoiceRatio} câu cộng lại, phụ đề nối liền mạch.`;
+    }
+}
+
+function openVoiceoverConfigModal(file = null) {
+    if (!voiceoverSyncModal) return;
+
+    if (file) {
+        pendingVoiceoverFile = file;
+    } else {
+        pendingVoiceoverFile = null;
+    }
+
+    // Update audio label UI
+    if (pendingVoiceoverFile) {
+        if (voiceoverAudioLabel) voiceoverAudioLabel.innerText = pendingVoiceoverFile.name;
+        if (voiceoverAudioSubdesc) voiceoverAudioSubdesc.innerText = `Tệp audio mới từ máy • ${(pendingVoiceoverFile.size / (1024 * 1024)).toFixed(2)} MB`;
+    } else if (bgmTrack && bgmTrack.filename) {
+        if (voiceoverAudioLabel) voiceoverAudioLabel.innerText = bgmTrack.originalName || bgmTrack.filename;
+        if (voiceoverAudioSubdesc) voiceoverAudioSubdesc.innerText = `Đang dùng Audio/BGM của Timeline • Thời lượng: ${(bgmTrack.duration || 0).toFixed(1)}s`;
+    } else {
+        if (voiceoverAudioLabel) voiceoverAudioLabel.innerText = 'Chưa chọn tệp audio nào';
+        if (voiceoverAudioSubdesc) voiceoverAudioSubdesc.innerText = 'Bấm "Đổi Tệp Audio Khác" để chọn file MP3/WAV giọng đọc từ máy tính';
+    }
+
+    // Fill script from other inputs if empty
+    if (voiceoverRefScript && !voiceoverRefScript.value) {
+        const otherScript = document.getElementById('ai-script-input') || document.getElementById('sub-script-textarea') || document.getElementById('script-textarea');
+        if (otherScript && otherScript.value) {
+            voiceoverRefScript.value = otherScript.value.trim();
         }
+    }
+
+    // Reset views
+    if (voiceoverSyncConfig) voiceoverSyncConfig.classList.remove('hidden');
+    if (voiceoverSyncLoading) voiceoverSyncLoading.classList.add('hidden');
+    if (voiceoverSyncResult) voiceoverSyncResult.classList.add('hidden');
+
+    if (btnStartVoiceoverSync) btnStartVoiceoverSync.classList.remove('hidden');
+    if (btnConfirmVoiceoverSync) btnConfirmVoiceoverSync.classList.add('hidden');
+    if (btnBackVoiceoverConfig) btnBackVoiceoverConfig.classList.add('hidden');
+
+    voiceoverSyncModal.classList.remove('hidden');
+}
+
+if (btnChangeVoiceoverFile && inputVoiceoverFile) {
+    btnChangeVoiceoverFile.addEventListener('click', () => {
+        inputVoiceoverFile.click();
+    });
+}
+
+if (btnBackVoiceoverConfig) {
+    btnBackVoiceoverConfig.addEventListener('click', () => {
+        if (voiceoverSyncConfig) voiceoverSyncConfig.classList.remove('hidden');
+        if (voiceoverSyncResult) voiceoverSyncResult.classList.add('hidden');
+        if (btnStartVoiceoverSync) btnStartVoiceoverSync.classList.remove('hidden');
+        if (btnConfirmVoiceoverSync) btnConfirmVoiceoverSync.classList.add('hidden');
+        if (btnBackVoiceoverConfig) btnBackVoiceoverConfig.classList.add('hidden');
+    });
+}
+
+if (btnAutoSyncVoiceover) {
+    btnAutoSyncVoiceover.addEventListener('click', () => {
+        openVoiceoverConfigModal();
+    });
+}
+
+if (btnBgmVoiceoverSync) {
+    btnBgmVoiceoverSync.addEventListener('click', () => {
+        openVoiceoverConfigModal();
     });
 }
 
 if (inputVoiceoverFile) {
-    inputVoiceoverFile.addEventListener('change', async (e) => {
+    inputVoiceoverFile.addEventListener('change', (e) => {
         if (!e.target.files || !e.target.files[0]) return;
         const file = e.target.files[0];
-        await executeVoiceoverSync(file);
+        pendingVoiceoverFile = file;
+        openVoiceoverConfigModal(file);
         inputVoiceoverFile.value = '';
+    });
+}
+
+if (btnStartVoiceoverSync) {
+    btnStartVoiceoverSync.addEventListener('click', async () => {
+        const activeFile = pendingVoiceoverFile;
+        const activeBgm = (!activeFile && bgmTrack && bgmTrack.filename) ? bgmTrack : null;
+
+        if (!activeFile && !activeBgm) {
+            alert('Vui lòng chọn hoặc nạp một file audio giọng đọc!');
+            if (inputVoiceoverFile) inputVoiceoverFile.click();
+            return;
+        }
+
+        await executeVoiceoverSync(activeFile, activeBgm);
     });
 }
 
 async function executeVoiceoverSync(file, existingBgm = null) {
     if (!voiceoverSyncModal) return;
 
-    voiceoverSyncModal.classList.remove('hidden');
+    if (voiceoverSyncConfig) voiceoverSyncConfig.classList.add('hidden');
     if (voiceoverSyncLoading) voiceoverSyncLoading.classList.remove('hidden');
     if (voiceoverSyncResult) voiceoverSyncResult.classList.add('hidden');
-    if (btnConfirmVoiceoverSync) btnConfirmVoiceoverSync.disabled = true;
+    if (btnStartVoiceoverSync) btnStartVoiceoverSync.classList.add('hidden');
+    if (btnConfirmVoiceoverSync) btnConfirmVoiceoverSync.classList.add('hidden');
+    if (btnBackVoiceoverConfig) btnBackVoiceoverConfig.classList.add('hidden');
 
     const formData = new FormData();
     let displayName = 'Audio giọng đọc';
@@ -1181,15 +1296,21 @@ async function executeVoiceoverSync(file, existingBgm = null) {
         displayName = existingBgm.originalName || existingBgm.filename;
     } else {
         alert('Vui lòng chọn hoặc nạp một file audio.');
-        voiceoverSyncModal.classList.add('hidden');
+        openVoiceoverConfigModal();
         return;
     }
 
     formData.append('items', JSON.stringify(mediaItems || []));
+    formData.append('sceneMappingRatio', selectedVoiceRatio.toString());
 
-    const scriptInput = document.getElementById('ai-script-input') || document.getElementById('sub-script-textarea') || document.getElementById('script-textarea');
-    if (scriptInput && scriptInput.value) {
-        formData.append('scriptText', scriptInput.value);
+    const refText = voiceoverRefScript ? voiceoverRefScript.value.trim() : '';
+    if (refText) {
+        formData.append('scriptText', refText);
+    } else {
+        const scriptInput = document.getElementById('ai-script-input') || document.getElementById('sub-script-textarea') || document.getElementById('script-textarea');
+        if (scriptInput && scriptInput.value) {
+            formData.append('scriptText', scriptInput.value.trim());
+        }
     }
 
     const keyInput = document.getElementById('input-gemini-key') || document.getElementById('sub-input-api-key');
@@ -1213,44 +1334,60 @@ async function executeVoiceoverSync(file, existingBgm = null) {
 
     } catch (err) {
         alert('❌ Lỗi đồng bộ giọng đọc: ' + err.message);
-        voiceoverSyncModal.classList.add('hidden');
+        if (voiceoverSyncConfig) voiceoverSyncConfig.classList.remove('hidden');
+        if (voiceoverSyncLoading) voiceoverSyncLoading.classList.add('hidden');
+        if (btnStartVoiceoverSync) btnStartVoiceoverSync.classList.remove('hidden');
     }
 }
 
 function renderVoiceoverSyncResults(data, originalFileName) {
     if (voiceoverSyncLoading) voiceoverSyncLoading.classList.add('hidden');
     if (voiceoverSyncResult) voiceoverSyncResult.classList.remove('hidden');
-    if (btnConfirmVoiceoverSync) btnConfirmVoiceoverSync.disabled = false;
+    if (btnConfirmVoiceoverSync) {
+        btnConfirmVoiceoverSync.classList.remove('hidden');
+        btnConfirmVoiceoverSync.disabled = false;
+    }
+    if (btnBackVoiceoverConfig) btnBackVoiceoverConfig.classList.remove('hidden');
 
-    if (voiceoverStatSentences) voiceoverStatSentences.innerText = data.totalSentences || 0;
-    if (voiceoverStatTitle) voiceoverStatTitle.innerText = `Đã phân tích thành công: ${originalFileName}`;
+    const ratio = data.sceneMappingRatio || selectedVoiceRatio || 1;
+    const totalScenes = data.totalScenes || (data.sentences ? data.sentences.length : 0);
+    const totalSentences = data.totalSentences || 0;
+
+    if (voiceoverStatSentences) voiceoverStatSentences.innerText = totalScenes;
+    if (voiceoverStatTitle) {
+        voiceoverStatTitle.innerText = `Đã phân bổ ${totalScenes} phân cảnh (Tỷ lệ 1 Cảnh : ${ratio} Voice)`;
+    }
     if (voiceoverStatDesc) {
-        voiceoverStatDesc.innerText = `Tổng thời lượng: ${data.totalDuration}s | Khớp chính xác ${data.totalSentences} câu thoại với từng phân cảnh.`;
+        voiceoverStatDesc.innerText = `Tổng thời lượng audio: ${data.totalDuration}s | Bóc tách từ ${totalSentences} câu thoại | Mỗi cảnh khớp ${ratio} câu thoại.`;
     }
 
     if (voiceoverSentencesList) {
         let html = '';
-        const sentences = data.sentences || [];
+        const scenes = data.sentences || [];
         const items = data.updatedItems || [];
 
-        sentences.forEach((sent, idx) => {
+        scenes.forEach((sc, idx) => {
             const item = items[idx];
-            const dur = sent.duration || (sent.end - sent.start);
+            const dur = sc.duration || (sc.end - sc.start);
             const thumbUrl = item?.url ? item.url : '';
+            const subSentences = sc.subSentences || [];
 
             html += `
-                <div class="alignment-scene-card is-perfect mb-2" style="padding: 12px; border-radius: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);">
+                <div class="alignment-scene-card is-perfect mb-2" style="padding: 12px 14px; border-radius: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);">
                     <div class="flex-row align-center gap-md flex-wrap">
-                        <div style="width: 80px; height: 50px; border-radius: 6px; overflow: hidden; background: #000; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <div style="width: 85px; height: 55px; border-radius: 6px; overflow: hidden; background: #000; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.1);">
                             ${thumbUrl ? `<img src="${thumbUrl}" style="width: 100%; height: 100%; object-fit: cover;">` : `<span style="font-size: 1.5rem;">🖼️</span>`}
                         </div>
-                        <div style="flex: 1; min-width: 200px;">
-                            <div class="flex-row align-center gap-xs">
-                                <span class="badge" style="background: var(--accent-cyan); color: #000; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 4px;">Cảnh #${idx + 1}</span>
-                                <span class="text-xs text-dim">⏱️ ${sent.start.toFixed(1)}s ➔ ${sent.end.toFixed(1)}s (${dur.toFixed(1)}s)</span>
+                        <div style="flex: 1; min-width: 220px;">
+                            <div class="flex-between align-center">
+                                <div class="flex-row align-center gap-xs">
+                                    <span class="badge" style="background: var(--accent-cyan); color: #000; font-size: 11px; font-weight: bold; padding: 2px 7px; border-radius: 4px;">Cảnh #${idx + 1}</span>
+                                    ${subSentences.length > 1 ? `<span class="badge" style="background: rgba(99, 102, 241, 0.2); color: #A5B4FC; font-size: 10px; padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(99, 102, 241, 0.4);">${subSentences.length} câu voice gộp</span>` : ''}
+                                </div>
+                                <span class="text-xs" style="color: #38BDF8; font-weight: 600;">⏱️ ${sc.start.toFixed(1)}s ➔ ${sc.end.toFixed(1)}s (Tổng: ${dur.toFixed(1)}s)</span>
                             </div>
-                            <div class="mt-1" style="font-size: 14px; font-weight: 500; color: #fff;">
-                                ✍️ "${escapeHtml(sent.text)}"
+                            <div class="mt-1" style="font-size: 13.5px; font-weight: 500; color: #F8FAFC; line-height: 1.4;">
+                                ✍️ "${escapeHtml(sc.text)}"
                             </div>
                         </div>
                     </div>
@@ -1282,7 +1419,7 @@ if (btnConfirmVoiceoverSync) {
         if (typeof triggerAutoSave === 'function') triggerAutoSave();
 
         if (voiceoverSyncModal) voiceoverSyncModal.classList.add('hidden');
-        alert(`🎉 Đã đồng bộ thành công ${currentVoiceoverSyncData.totalSentences} câu thoại từ Audio vào toàn bộ Timeline!`);
+        alert(`🎉 Đã đồng bộ thành công ${currentVoiceoverSyncData.totalScenes || currentVoiceoverSyncData.totalSentences} phân cảnh vào Timeline!`);
     });
 }
 
