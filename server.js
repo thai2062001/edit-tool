@@ -499,8 +499,44 @@ Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
         const rawText = response.text || '';
         let parsed;
         try {
-            const cleanJson = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-            parsed = JSON.parse(cleanJson);
+            let clean = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+            const startIdx = clean.search(/[\[\{]/);
+            const lastBracket = clean.lastIndexOf(']');
+            const lastBrace = clean.lastIndexOf('}');
+            const endIdx = Math.max(lastBracket, lastBrace);
+            if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+                clean = clean.substring(startIdx, endIdx + 1);
+            }
+            try {
+                parsed = JSON.parse(clean);
+            } catch (err1) {
+                // Auto-repair 1: Fix missing commas between properties (e.g. "val"\n  "nextKey": or 123\n  "nextKey":)
+                let fixed = clean.replace(/([0-9]|true|false|null|"[^"]*")\s*[\r\n]+\s*"([a-zA-Z0-9_]+)"\s*:/g, '$1,\n  "$2":');
+                // Auto-repair 2: Fix missing commas between objects (e.g. }\n {)
+                fixed = fixed.replace(/\}\s*[\r\n]+\s*\{/g, '},\n{');
+                // Auto-repair 3: Strip trailing commas
+                fixed = fixed.replace(/,\s*([\]\}])/g, '$1');
+
+                try {
+                    parsed = JSON.parse(fixed);
+                } catch (err2) {
+                    // Auto-repair 4: Resilient regex extraction of scene objects
+                    const objRegex = /\{[\s\S]*?"sceneText"[\s\S]*?\}(?=\s*,|\s*\])/g;
+                    const itemsList = [];
+                    let m;
+                    while ((m = objRegex.exec(clean)) !== null) {
+                        try {
+                            let objStr = m[0].replace(/([0-9]|true|false|null|"[^"]*")\s*[\r\n]+\s*"([a-zA-Z0-9_]+)"\s*:/g, '$1,\n  "$2":');
+                            itemsList.push(JSON.parse(objStr));
+                        } catch (e) {}
+                    }
+                    if (itemsList.length > 0) {
+                        parsed = itemsList;
+                    } else {
+                        throw err2;
+                    }
+                }
+            }
         } catch (parseErr) {
             console.error('Failed to parse Gemini JSON:', rawText);
             return res.status(500).json({ error: 'Không thể phân tích dữ liệu từ Gemini AI', raw: rawText });
