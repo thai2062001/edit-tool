@@ -1561,18 +1561,17 @@
 
                     <div class="flex-row align-center gap-md mt-2 pt-2" style="border-top: 1px dashed rgba(255, 255, 255, 0.1);">
                         <div class="flex-row align-center gap-xs">
-                            <label for="ai-modal-pause-interval" class="text-xs" title="Khoảng nghỉ giữa các câu thoại trong audio giọng đọc">
-                                ⏱️ <strong>Khoảng nghỉ giữa các câu (Pause):</strong>
+                            <label for="ai-modal-pause-interval" class="text-xs" title="Khoảng nghỉ giữa các câu thoại">
+                                ⏱️ <strong>Khoảng nghỉ cộng thêm:</strong>
                             </label>
-                            <select id="ai-modal-pause-interval" class="custom-select form-control-sm" style="width: 140px;">
-                                <option value="0.5" selected>0.5s (Khuyên dùng)</option>
-                                <option value="0.3">0.3s (Nói nhanh)</option>
-                                <option value="0.4">0.4s (Vừa phải)</option>
-                                <option value="0.8">0.8s (Nghỉ dài)</option>
-                                <option value="0.0">0.0s (Nói liền mạch)</option>
+                            <select id="ai-modal-pause-interval" class="custom-select form-control-sm" style="width: 155px;">
+                                <option value="0.0" selected>0.0s (Khớp 100% Audio Dài)</option>
+                                <option value="0.2">0.2s (Nghỉ rất ngắn)</option>
+                                <option value="0.3">0.3s (Nghỉ nhẹ)</option>
+                                <option value="0.5">0.5s (Chỉ dùng cho Audio rời)</option>
                             </select>
                         </div>
-                        <span class="text-xs text-dim">💡 Tự động cộng thêm khoảng nghỉ vào độ dài mỗi phân cảnh để tạo nhịp thở tự nhiên.</span>
+                        <span class="text-xs text-dim">💡 Khi nạp 1 file audio dài liên tục, đặt 0.0s để toàn bộ phân cảnh khớp chuẩn 100% không bị trôi tiếng.</span>
                     </div>
                 </div>
 
@@ -2234,28 +2233,28 @@
                         </p>
 
                         <div class="voice-ratio-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;">
-                            <label class="voice-ratio-card active" data-ratio="1" style="display: flex; flex-direction: column; align-items: center; padding: 12px 8px; border-radius: 8px; background: rgba(99, 102, 241, 0.12); border: 2px solid var(--primary); cursor: pointer; text-align: center; transition: all 0.2s;">
+                            <label class="voice-ratio-card active" data-ratio="1">
                                 <input type="radio" name="voice-ratio-option" value="1" checked hidden>
                                 <span style="font-size: 1.2rem; margin-bottom: 4px;">🎯</span>
                                 <strong style="font-size: 12px; color: #FFF;">1 Cảnh : 1 Voice</strong>
                                 <span class="text-xs text-dim" style="font-size: 10px; margin-top: 2px;">(Mỗi câu 1 ảnh riêng)</span>
                             </label>
 
-                            <label class="voice-ratio-card" data-ratio="2" style="display: flex; flex-direction: column; align-items: center; padding: 12px 8px; border-radius: 8px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); cursor: pointer; text-align: center; transition: all 0.2s;">
+                            <label class="voice-ratio-card" data-ratio="2">
                                 <input type="radio" name="voice-ratio-option" value="2" hidden>
                                 <span style="font-size: 1.2rem; margin-bottom: 4px;">✌️</span>
                                 <strong style="font-size: 12px; color: #FFF;">1 Cảnh : 2 Voice</strong>
                                 <span class="text-xs text-dim" style="font-size: 10px; margin-top: 2px;">(1 ảnh kèm 2 câu thoại)</span>
                             </label>
 
-                            <label class="voice-ratio-card" data-ratio="3" style="display: flex; flex-direction: column; align-items: center; padding: 12px 8px; border-radius: 8px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); cursor: pointer; text-align: center; transition: all 0.2s;">
+                            <label class="voice-ratio-card" data-ratio="3">
                                 <input type="radio" name="voice-ratio-option" value="3" hidden>
                                 <span style="font-size: 1.2rem; margin-bottom: 4px;">🎬</span>
                                 <strong style="font-size: 12px; color: #FFF;">1 Cảnh : 3 Voice</strong>
                                 <span class="text-xs text-dim" style="font-size: 10px; margin-top: 2px;">(1 ảnh kèm 3 câu thoại)</span>
                             </label>
 
-                            <label class="voice-ratio-card" data-ratio="custom" style="display: flex; flex-direction: column; align-items: center; padding: 12px 8px; border-radius: 8px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); cursor: pointer; text-align: center; transition: all 0.2s;">
+                            <label class="voice-ratio-card" data-ratio="custom">
                                 <input type="radio" name="voice-ratio-option" value="custom" hidden>
                                 <span style="font-size: 1.2rem; margin-bottom: 4px;">⚙️</span>
                                 <strong style="font-size: 12px; color: #FFF;">Tự Chọn (N Voice)</strong>

@@ -563,44 +563,56 @@ Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
         let aiEndTimes = [];
 
         if (audioDuration > 0 && Array.isArray(rawScenes) && rawScenes.length === scriptLines.length) {
-            const validTimestamps = rawScenes.map((s, idx) => {
-                const st = parseFloat(s.startTime ?? s.start ?? s.st);
-                const et = parseFloat(s.endTime ?? s.end ?? s.et);
+            // Auto-repair & sanitize timestamps: repair occasional typo or out-of-order timestamps
+            const parsedTimestamps = rawScenes.map((s, idx) => {
+                let st = parseFloat(s.startTime ?? s.start ?? s.st);
+                let et = parseFloat(s.endTime ?? s.end ?? s.et);
                 return { st, et, valid: !isNaN(st) && !isNaN(et) && et > st };
             });
 
-            // Check if timestamps are valid and monotonically increasing
-            let strictlyMonotonic = validTimestamps.length > 0;
-            for (let i = 0; i < validTimestamps.length; i++) {
-                if (!validTimestamps[i].valid) {
-                    strictlyMonotonic = false;
-                    break;
+            // Forward repair: ensure st >= prev.st and fix order glitches
+            let repaired = true;
+            let lastValidSt = 0.0;
+            for (let i = 0; i < parsedTimestamps.length; i++) {
+                let item = parsedTimestamps[i];
+                if (!item.valid || item.st < lastValidSt) {
+                    // Look ahead for the next valid monotonically increasing point
+                    let nextValidSt = audioDuration;
+                    for (let j = i + 1; j < parsedTimestamps.length; j++) {
+                        if (parsedTimestamps[j].valid && parsedTimestamps[j].st > lastValidSt) {
+                            nextValidSt = parsedTimestamps[j].st;
+                            break;
+                        }
+                    }
+                    // Interpolate between lastValidSt and nextValidSt
+                    const span = Math.max(1.0, nextValidSt - lastValidSt);
+                    item.st = parseFloat((lastValidSt + (span * 0.1)).toFixed(2));
+                    item.et = parseFloat((Math.min(audioDuration, item.st + (span * 0.9))).toFixed(2));
+                    item.valid = true;
+                    console.log(`[AI Audio Alignment] Auto-repaired non-monotonic timestamp at Scene #${i + 1}: st=${item.st}s, et=${item.et}s`);
                 }
-                if (i > 0 && validTimestamps[i].st < validTimestamps[i - 1].st) {
-                    strictlyMonotonic = false;
-                    break;
-                }
+                lastValidSt = item.st;
             }
 
-            if (strictlyMonotonic) {
+            if (parsedTimestamps.length > 0) {
                 hasAiTimestamps = true;
                 // Calculate continuous timeline cutpoints C[0...N]
                 // C[0] = 0.0 (video start)
                 // C[i] = natural scene transition point in the pause between scene i-1 and scene i
                 const cutpoints = [0.0];
-                for (let i = 1; i < validTimestamps.length; i++) {
-                    const prevEnd = validTimestamps[i - 1].et;
-                    const nextStart = validTimestamps[i].st;
+                for (let i = 1; i < parsedTimestamps.length; i++) {
+                    const prevEnd = parsedTimestamps[i - 1].et;
+                    const nextStart = parsedTimestamps[i].st;
                     let cut = (nextStart >= prevEnd) 
                         ? parseFloat(((prevEnd + nextStart) / 2).toFixed(2))
                         : parseFloat(nextStart.toFixed(2));
-                    // Ensure each cutpoint is at least 1.0s after the previous one
-                    cut = Math.max(cutpoints[i - 1] + 1.0, cut);
+                    // Ensure each cutpoint is at least 0.8s after the previous one
+                    cut = Math.max(cutpoints[i - 1] + 0.8, cut);
                     cutpoints.push(cut);
                 }
-                cutpoints.push(parseFloat(Math.max(cutpoints[cutpoints.length - 1] + 1.0, audioDuration).toFixed(2)));
+                cutpoints.push(parseFloat(Math.max(cutpoints[cutpoints.length - 1] + 0.8, audioDuration).toFixed(2)));
 
-                for (let i = 0; i < validTimestamps.length; i++) {
+                for (let i = 0; i < parsedTimestamps.length; i++) {
                     const sceneStart = cutpoints[i];
                     const sceneEnd = cutpoints[i + 1];
                     const dur = parseFloat((sceneEnd - sceneStart).toFixed(2));
@@ -608,11 +620,11 @@ Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
                     aiEndTimes.push(sceneEnd);
                     aiAlignedDurations.push(dur);
                 }
-                console.log(`[AI Script Match] Successfully aligned ${aiAlignedDurations.length} scenes to continuous audio cutpoints.`);
+                console.log(`[AI Script Match] Successfully aligned ${aiAlignedDurations.length} scenes to continuous audio cutpoints with exact duration match.`);
             }
         }
 
-        // 2. Fallback: Calculate audio-driven natural pacing with silence pause snapping if no AI timestamps
+        // 2. Fallback: Calculate audio-driven natural pacing if no AI timestamps (ZERO artificial pause added)
         let computedAudioDurations = null;
         if (!hasAiTimestamps && audioDuration > 0 && scriptLines.length > 0) {
             // Detect real silence pauses in audio if physical audio file exists
@@ -645,7 +657,7 @@ Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
                 const snappedCutpoints = [];
                 for (let i = 0; i < estCutpoints.length; i++) {
                     const est = estCutpoints[i];
-                    const minTime = lastSnap + 2.0; // At least 2.0s per scene
+                    const minTime = lastSnap + 1.5; // At least 1.5s per scene
                     const candidates = silences.filter(s => s.mid >= minTime && Math.abs(s.mid - est) <= 4.0);
                     if (candidates.length > 0) {
                         candidates.sort((a, b) => Math.abs(a.mid - est) - Math.abs(b.mid - est));
@@ -663,31 +675,19 @@ Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
                 computedAudioDurations = snappedCutpoints.map(pt => {
                     const dur = parseFloat((pt - prev).toFixed(2));
                     prev = pt;
-                    return Math.max(1.5, dur);
+                    return Math.max(1.0, dur);
                 });
                 console.log(`[AI Script Match] Fallback: Snapped ${computedAudioDurations.length} scenes to audio silence pauses.`);
             } else {
-                // Fallback: weight-proportional calculation
-                const totalPauseTime = Math.max(0, (scriptLines.length - 1) * pauseInterval);
-                const pureSpeechDuration = Math.max(scriptLines.length * 1.5, audioDuration - totalPauseTime);
-
-                const rawDurs = scriptLines.map((_, i) => {
-                    const speechPart = (sentenceWeights[i] / totalWeight) * pureSpeechDuration;
-                    return Math.max(1.5, parseFloat((speechPart + pauseInterval).toFixed(2)));
-                });
-
-                const rawSum = rawDurs.reduce((a, b) => a + b, 0);
-                const scaleRatio = audioDuration / (rawSum || 1);
+                // Fallback: Proportional allocation strictly filling exactly 100% of audioDuration (NO artificial pause padding)
                 let accumulated = 0;
-
-                computedAudioDurations = rawDurs.map((d, i) => {
-                    if (i === rawDurs.length - 1) {
-                        const remaining = parseFloat(Math.max(1.5, audioDuration - accumulated).toFixed(2));
-                        return remaining;
+                computedAudioDurations = scriptLines.map((_, i) => {
+                    if (i === scriptLines.length - 1) {
+                        return parseFloat(Math.max(1.0, audioDuration - accumulated).toFixed(2));
                     }
-                    const scaled = parseFloat(Math.max(1.5, d * scaleRatio).toFixed(2));
-                    accumulated += scaled;
-                    return scaled;
+                    const exactDur = parseFloat(((sentenceWeights[i] / totalWeight) * audioDuration).toFixed(2));
+                    accumulated += exactDur;
+                    return Math.max(1.0, exactDur);
                 });
             }
         }
