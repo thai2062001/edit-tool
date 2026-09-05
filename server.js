@@ -603,8 +603,9 @@ Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
                 for (let i = 1; i < parsedTimestamps.length; i++) {
                     const prevEnd = parsedTimestamps[i - 1].et;
                     const nextStart = parsedTimestamps[i].st;
+                    // Cut precisely when next sentence speech begins (nextStart) so image & subtitle change exactly as voice speaks
                     let cut = (nextStart >= prevEnd) 
-                        ? parseFloat(((prevEnd + nextStart) / 2).toFixed(2))
+                        ? parseFloat(nextStart.toFixed(2))
                         : parseFloat(nextStart.toFixed(2));
                     // Ensure each cutpoint is at least 0.8s after the previous one
                     cut = Math.max(cutpoints[i - 1] + 0.8, cut);
