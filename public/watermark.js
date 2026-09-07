@@ -83,11 +83,14 @@
         // Tab switching
         if (dom.tabBtnWatermark) {
             dom.tabBtnWatermark.addEventListener('click', () => {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-                dom.tabBtnWatermark.classList.add('active');
-                if (dom.tabPaneWatermark) dom.tabPaneWatermark.classList.add('active');
-
+                if (typeof window.switchMainTab === 'function') {
+                    window.switchMainTab('tab-btn-watermark');
+                } else {
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+                    dom.tabBtnWatermark.classList.add('active');
+                    if (dom.tabPaneWatermark) dom.tabPaneWatermark.classList.add('active');
+                }
                 if (!WmState.currentMedia) {
                     grabMediaFromEditor(true);
                 }

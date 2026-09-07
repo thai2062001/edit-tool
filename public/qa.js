@@ -22,11 +22,15 @@ const btnQaLoadRendered = document.getElementById('btn-qa-load-rendered');
 
 // Tab Navigation
 function activateQaTab() {
-    document.querySelectorAll('.main-tab-nav .tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+    if (typeof window.switchMainTab === 'function') {
+        window.switchMainTab('tab-btn-qa');
+    } else {
+        document.querySelectorAll('.main-tab-nav .tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
 
-    if (tabBtnQa) tabBtnQa.classList.add('active');
-    if (tabPaneQa) tabPaneQa.classList.add('active');
+        if (tabBtnQa) tabBtnQa.classList.add('active');
+        if (tabPaneQa) tabPaneQa.classList.add('active');
+    }
 }
 
 if (tabBtnQa) {

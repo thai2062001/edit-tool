@@ -817,10 +817,7 @@
 
     // Tab Switching Logic
     function setupTabSwitching() {
-        if (!dom.tabVideoEditor || !dom.tabSubtitles) return;
-
-        dom.tabVideoEditor.addEventListener('click', () => switchTab('editor'));
-        dom.tabSubtitles.addEventListener('click', () => switchTab('subtitles'));
+        // Global tab switcher is handled in app.js via switchMainTab
     }
 
     function switchTab(tabKey) {

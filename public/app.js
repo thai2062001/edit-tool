@@ -599,13 +599,27 @@ function switchMainTab(targetTabBtnId) {
     const tabMap = {
         'tab-btn-editor': 'tab-pane-editor',
         'tab-btn-subtitles': 'tab-pane-subtitles',
+        'tab-btn-audio-visual': 'tab-pane-audio-visual',
         'tab-btn-watermark': 'tab-pane-watermark',
         'tab-btn-qa': 'tab-pane-qa'
     };
 
+    const targetPaneId = tabMap[targetTabBtnId];
     document.querySelectorAll('.tab-pane').forEach(pane => {
-        pane.classList.toggle('active', pane.id === tabMap[targetTabBtnId]);
+        if (pane.id === targetPaneId) {
+            pane.classList.add('active');
+            pane.style.display = 'block';
+        } else {
+            pane.classList.remove('active');
+            pane.style.display = 'none';
+        }
     });
+
+    // Hide or show beginner workflow bar on non-editor tabs
+    const workflowBar = document.querySelector('.workflow-steps-bar');
+    if (workflowBar) {
+        workflowBar.style.display = (targetTabBtnId === 'tab-btn-editor') ? 'flex' : 'none';
+    }
 }
 window.switchMainTab = switchMainTab;
 

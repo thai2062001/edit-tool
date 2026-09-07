@@ -341,8 +341,8 @@ app.post('/api/ai/match-script', upload.fields([{ name: 'audioFile', maxCount: 1
             audioPath = req.file.path;
             audioFilename = req.file.filename;
             audioOriginalName = req.file.originalname;
-        } else if (req.body.bgmFilename) {
-            const safeBgm = path.basename(req.body.bgmFilename);
+        } else if (req.body.audioFileRef || req.body.bgmFilename) {
+            const safeBgm = path.basename(req.body.audioFileRef || req.body.bgmFilename);
             const candidate = path.join(UPLOADS_DIR, safeBgm);
             if (fs.existsSync(candidate)) {
                 audioPath = candidate;
@@ -2218,8 +2218,10 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
                 const transition = item.settings?.transition || (fadeIn > 0 ? 'fade_black' : 'none');
                 let vFilters = `${preScaleFilter},zoompan=z='${zExpr}':x='${xExpr}':y='${yExpr}':d=${frames}:s=${highW}x${highH}:fps=${fps},scale=${width}:${height}:flags=lanczos,setpts=PTS-STARTPTS,fps=fps=${fps}:round=near,setsar=1,format=yuv420p`;
 
-                // Multi-transition effect rendering
-                if (transition === 'flash_white' && fadeIn > 0) {
+                // Multi-transition effect rendering (if none: strictly hard cut without fade)
+                if (transition === 'none') {
+                    // No transition filter: clean hard cut between scenes
+                } else if (transition === 'flash_white' && fadeIn > 0) {
                     vFilters += `,fade=t=in:st=0:d=${fadeIn}:color=white`;
                 } else if (transition === 'fade_black' && fadeIn > 0) {
                     vFilters += `,fade=t=in:st=0:d=${fadeIn}:color=black`;
@@ -2272,7 +2274,9 @@ function renderChunk(job, chunkItems, chunkOutputPath, chunkIndex, totalChunks, 
 
                 let vFilters = `trim=start=${trimStart}:end=${trimEnd},setpts=PTS-STARTPTS,${reframeFilter},setsar=1,fps=fps=${fps}:round=near,setpts=PTS-STARTPTS,format=yuv420p`;
 
-                if (transition === 'flash_white' && fadeIn > 0) {
+                if (transition === 'none') {
+                    // No transition: clean hard cut
+                } else if (transition === 'flash_white' && fadeIn > 0) {
                     vFilters += `,fade=t=in:st=0:d=${fadeIn}:color=white`;
                 } else if (transition === 'fade_black' && fadeIn > 0) {
                     vFilters += `,fade=t=in:st=0:d=${fadeIn}:color=black`;

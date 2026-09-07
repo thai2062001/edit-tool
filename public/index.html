@@ -16,10 +16,11 @@
     <link rel="stylesheet" href="css/tab1-editor.css">
     <link rel="stylesheet" href="css/tab1-modals.css">
     
-    <!-- Tab 2, 3, 4 Extensions -->
+    <!-- Tab 2, 3, 4, 5 Extensions -->
     <link rel="stylesheet" href="css/tab2-subtitles.css">
     <link rel="stylesheet" href="css/tab3-watermark.css">
     <link rel="stylesheet" href="css/tab4-qa.css">
+    <link rel="stylesheet" href="css/tab5-audio-visual.css">
 </head>
 <body>
     <div class="app-container">
@@ -116,6 +117,10 @@
             </button>
             <button id="tab-btn-subtitles" class="tab-btn">
                 <span>💬 Auto Subtitle AI (Word-Level)</span>
+            </button>
+            <button id="tab-btn-audio-visual" class="tab-btn" style="border: 1px solid rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.08);">
+                <span>🎙️ Audio ➔ Ảnh (Không Phụ Đề)</span>
+                <span class="tab-badge" style="background: rgba(16, 185, 129, 0.3); color: #34D399;">MỚI</span>
             </button>
             <button id="tab-btn-watermark" class="tab-btn">
                 <span>🛡️ Logo & Watermark Studio</span>
@@ -1351,7 +1356,192 @@
 
             </div>
         </div>
+        <!-- End TAB 4 -->
 
+        <!-- TAB 5: AUDIO TO VISUAL (AUDIO ➔ ẢNH KHÔNG PHỤ ĐỀ) -->
+        <div id="tab-pane-audio-visual" class="tab-pane">
+            <div class="audio-visual-layout-grid">
+                <!-- Left Column: Media Inputs, AI Synchronizer & Visual Storyboard -->
+                <div class="av-left-col">
+                    <!-- Step 1: Voice / Audio Source -->
+                    <div class="av-card">
+                        <div class="av-card-header">
+                            <h4>🎙️ 1. Tải Lên Giọng Đọc (Voice Audio)</h4>
+                            <span class="av-badge">Bắt buộc</span>
+                        </div>
+                        <input type="file" id="av-audio-input" accept="audio/*" hidden>
+                        
+                        <!-- Big Visual Audio Dropzone -->
+                        <div id="av-audio-dropzone" class="av-dropzone" onclick="document.getElementById('av-audio-input').click()" style="padding: 24px 16px; margin-bottom: 12px; cursor: pointer;">
+                            <div class="av-dropzone-icon" style="font-size: 38px;">🎧</div>
+                            <h4 style="color: #38BDF8; margin: 4px 0; font-size: 15px;">Bấm Vào Đây Hoặc Kéo Thả Tệp Audio Giọng Đọc</h4>
+                            <p class="text-xs text-dim" style="margin-top: 4px;">Hỗ trợ định dạng: .MP3, .WAV, .M4A, .AAC</p>
+                            <div style="margin-top: 10px;">
+                                <button type="button" id="btn-av-load-audio" class="btn btn-primary" style="pointer-events: none; padding: 6px 18px; font-size: 13px;">
+                                    📁 Chọn File Audio Từ Máy
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex-row gap-xs">
+                            <button type="button" id="btn-av-use-timeline-bgm" class="btn btn-small btn-secondary w-100" title="Dùng BGM hoặc Voice hiện tại trên Timeline Tab 1">
+                                🎶 Hoặc Dùng Voice / BGM Đang Có Trên Tab 1
+                            </button>
+                        </div>
+
+                        <!-- Audio File Indicator Banner -->
+                        <div id="av-audio-banner" class="av-audio-banner hidden" style="margin-top: 12px;">
+                            <div class="flex-row align-center gap-xs">
+                                <span style="font-size: 24px;">🎵</span>
+                                <div>
+                                    <strong id="av-audio-name" style="color: #38BDF8; font-size: 14px;">audio.mp3</strong>
+                                    <div class="text-xs text-dim">Thời lượng tệp: <span id="av-audio-dur" style="color: #34D399; font-weight: 700;">0.0s</span></div>
+                                </div>
+                            </div>
+                            <span class="av-badge" style="background: rgba(16, 185, 129, 0.2); color: #34D399; font-size: 12px; padding: 4px 10px;">✅ Sẵn Sàng Ghép</span>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Image Gallery Pool -->
+                    <div class="av-card">
+                        <div class="av-card-header">
+                            <h4>🖼️ 2. Kho Hình Ảnh Kể Chuyện (Images)</h4>
+                            <span id="av-images-count" class="av-badge" style="font-size: 12px;">0 ảnh đã nạp</span>
+                        </div>
+                        <input type="file" id="av-images-input" accept="image/*" multiple hidden>
+                        
+                        <!-- Big Visual Images Dropzone -->
+                        <div id="av-images-dropzone" class="av-dropzone" onclick="document.getElementById('av-images-input').click()" style="padding: 24px 16px; margin-bottom: 12px; cursor: pointer;">
+                            <div class="av-dropzone-icon" style="font-size: 38px;">🖼️</div>
+                            <h4 style="color: #A78BFA; margin: 4px 0; font-size: 15px;">Bấm Vào Đây Hoặc Kéo Thả Loạt Ảnh Minh Họa</h4>
+                            <p class="text-xs text-dim" style="margin-top: 4px;">Tải lên nhiều ảnh cùng lúc (.JPG, .PNG, .WEBP) để AI tự khớp theo câu thoại</p>
+                            <div style="margin-top: 10px;">
+                                <button type="button" id="btn-av-load-images" class="btn btn-ai" style="pointer-events: none; padding: 6px 18px; font-size: 13px;">
+                                    📂 Chọn Loạt Ảnh Từ Máy
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex-row gap-xs mb-2">
+                            <button type="button" id="btn-av-use-timeline-images" class="btn btn-small btn-outline w-100">
+                                📥 Hoặc Lấy Toàn Bộ Ảnh Đang Có Ở Tab 1
+                            </button>
+                        </div>
+                        <!-- Images Grid Preview -->
+                        <div id="av-images-grid" class="av-images-grid custom-scrollbar"></div>
+                    </div>
+
+                    <!-- Step 3: Script & Matching Settings -->
+                    <div class="av-card">
+                        <div class="av-card-header">
+                            <h4>⚙️ 3. Kịch Bản & Cài Đặt Nhịp Điệu (Không Phụ Đề)</h4>
+                        </div>
+                        <div class="form-group mb-2">
+                            <div class="flex-between align-center mb-1">
+                                <label class="form-label-xs">📜 Nội dung Kịch Bản / Lời thoại từng câu:</label>
+                                <button type="button" id="btn-av-clean-script" class="btn btn-xs btn-ghost text-cyan">
+                                    🧹 Chuẩn Hóa Câu
+                                </button>
+                            </div>
+                            <textarea id="av-script-textarea" class="custom-textarea" rows="4" placeholder="Dán nội dung kịch bản tương ứng với giọng đọc vào đây để AI so khớp ảnh chuẩn xác 100% từng câu..."></textarea>
+                        </div>
+
+                        <div class="settings-grid-2col gap-sm">
+                            <div class="form-group">
+                                <label class="form-label-xs">✨ Chuyển cảnh (Transitions):</label>
+                                <select id="av-transition-select" class="custom-select form-control-sm">
+                                    <option value="none" selected>⏹️ Cắt Thẳng (Cut - Nối tiếp tự nhiên, không hiệu ứng)</option>
+                                    <option value="crossfade">🌫️ Mờ Chồng Nhẹ (Crossfade)</option>
+                                    <option value="fade_black">🌑 Fade Đen</option>
+                                    <option value="flash_white">⚡ Flash Trắng</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label-xs">🌊 Chuyển động ảnh (Motion):</label>
+                                <select id="av-motion-select" class="custom-select form-control-sm">
+                                    <option value="zoom_in" selected>🔍 Zoom In (Phóng to nhẹ - Kiểu Kurzgesagt/Aperture)</option>
+                                    <option value="zoom_out">🔎 Zoom Out (Thu nhỏ nhẹ)</option>
+                                    <option value="pan_left">⬅️ Pan Trái</option>
+                                    <option value="pan_right">➡️ Pan Phải</option>
+                                    <option value="none">⏹️ Tĩnh (Ảnh đứng yên hoàn toàn)</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label class="form-label-xs">⏱️ Khoảng nghỉ giữa các câu thoại:</label>
+                                <select id="av-pause-select" class="custom-select form-control-sm">
+                                    <option value="0.0" selected>0.0s (Khớp 100% Audio Dài Không Lệch Tiếng)</option>
+                                    <option value="0.2">0.2s (Nghỉ nhẹ giữa câu)</option>
+                                    <option value="0.5">0.5s (Chỉ dùng cho Audio rời)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="button" id="btn-av-run-match" class="btn btn-primary w-100 mt-3" style="padding: 12px; font-weight: 700; font-size: 14px;">
+                            ✨ Bắt Đầu Tự Động Khớp Voice ➔ Ảnh (Không Phụ Đề)
+                        </button>
+                    </div>
+
+                    <!-- Step 4: Visual Storyboard Scenes Result -->
+                    <div class="av-card">
+                        <div class="av-card-header">
+                            <h4>🎞️ 4. Danh Sách Phân Cảnh Đã Khớp Chuẩn Voice</h4>
+                            <span id="av-scenes-count-badge" class="av-badge">0 cảnh</span>
+                        </div>
+                        <p class="text-xs text-dim mb-2">Bấm vào từng cảnh để nghe thử hoặc bấm vào ảnh thu nhỏ để tự chọn đổi sang bức ảnh khác.</p>
+                        <div id="av-scenes-list" class="av-scenes-list custom-scrollbar">
+                            <div class="text-dim text-xs text-center py-4">Chưa có phân cảnh. Hãy nạp Voice + Ảnh và bấm nút Khớp ở trên.</div>
+                        </div>
+
+                        <div class="flex-row gap-xs mt-3">
+                            <button type="button" id="btn-av-apply-timeline" class="btn btn-primary" style="flex: 1;">
+                                🚀 Đưa Toàn Bộ Vào Timeline Dựng Video
+                            </button>
+                            <button type="button" id="btn-av-export-direct" class="btn btn-ai" title="Áp dụng và mở hộp thoại xuất video ngay">
+                                ⚡ Xuất Video Luôn (Render)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Live Clean Canvas Player (No Subtitles) -->
+                <div class="av-right-col">
+                    <div class="av-card" style="position: sticky; top: 15px;">
+                        <div class="av-card-header">
+                            <h4>👁️ Trình Chiếu Trực Tiếp (Thuần Audio + Visual)</h4>
+                            <div class="aspect-ratio-btn-group">
+                                <button type="button" class="btn-aspect-chip btn-av-aspect-chip active" data-ratio="16:9">🖥️ 16:9</button>
+                                <button type="button" class="btn-aspect-chip btn-av-aspect-chip" data-ratio="9:16">📱 9:16</button>
+                                <button type="button" class="btn-aspect-chip btn-av-aspect-chip" data-ratio="1:1">⏹️ 1:1</button>
+                            </div>
+                        </div>
+
+                        <!-- Live Clean Canvas Display -->
+                        <div id="av-player-container" class="av-player-container">
+                            <canvas id="av-live-canvas" class="av-live-canvas" width="1280" height="720"></canvas>
+                            <div class="av-clean-badge">
+                                <span>🛡️</span> Thuần Ảnh & Audio (Zero Phụ Đề)
+                            </div>
+                        </div>
+
+                        <!-- Controls Bar -->
+                        <div class="av-controls-bar">
+                            <button type="button" id="btn-av-play-pause" class="btn btn-primary btn-small">▶ Phát</button>
+                            <input type="range" id="av-scrubber" class="custom-range sub-scrubber" min="0" max="10" step="0.05" value="0">
+                            <span id="av-time-label" class="sub-time-label">0:00.0 / 0:00.0</span>
+                        </div>
+
+                        <div class="mt-3 p-2" style="background: rgba(15, 23, 42, 0.4); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05);">
+                            <div class="text-xs" style="color: #38BDF8; font-weight: 600; margin-bottom: 4px;">💡 Chế độ Audio ➔ Visual Storyteller:</div>
+                            <ul class="text-xs text-dim" style="padding-left: 18px; margin: 0; line-height: 1.6;">
+                                <li>Mọi khung hình chuyển tiếp nối dứt khoát hoặc mờ nhẹ theo từng ý của lời kể.</li>
+                                <li>Không hiển thị chữ phụ đề đè lên ảnh, giữ trọn vẹn chất lượng điện ảnh của tư liệu.</li>
+                                <li>Đồng bộ thời lượng 100% theo nhịp nói, không bị trôi tiếng hay lệch câu.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
     </div>
 
@@ -2462,9 +2652,10 @@
     <script src="js/export-render.js"></script>
     <script src="app.js"></script>
     
-    <!-- Tab 2, 3, 4 Extensions -->
+    <!-- Tab 2, 3, 4, 5 Extensions -->
     <script src="subtitles.js"></script>
     <script src="watermark.js"></script>
     <script src="qa.js"></script>
+    <script src="js/audio-visual.js"></script>
 </body>
 </html>
