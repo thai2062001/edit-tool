@@ -533,13 +533,19 @@
         }
     }
 
-    function highlightActiveSceneCard(idx) {
+    function highlightActiveSceneCard(idx, shouldScroll = false) {
         if (!dom.scenesList) return;
         const cards = dom.scenesList.querySelectorAll('.av-scene-card');
         cards.forEach((c, i) => {
             c.classList.toggle('playing', i === idx);
-            if (i === idx) {
-                c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            if (i === idx && shouldScroll) {
+                // Cuộn mượt mà chỉ bên trong khung danh sách scenesList, KHÔNG cuộn cả trang web
+                const containerRect = dom.scenesList.getBoundingClientRect();
+                const cardRect = c.getBoundingClientRect();
+                const offsetTop = cardRect.top - containerRect.top;
+                if (offsetTop < 0 || offsetTop > (containerRect.height - cardRect.height)) {
+                    dom.scenesList.scrollTop += offsetTop - (containerRect.height / 2) + (cardRect.height / 2);
+                }
             }
         });
     }

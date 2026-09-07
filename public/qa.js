@@ -256,7 +256,6 @@ function renderQaResults(audit) {
                     if (qaVideoPlayer && typeof item.startTime === 'number') {
                         qaVideoPlayer.currentTime = item.startTime;
                         qaVideoPlayer.play();
-                        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                     }
                 });
 
