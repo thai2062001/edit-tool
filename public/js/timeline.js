@@ -345,8 +345,8 @@ function updateQuickInspector(index) {
             if (inspDuration) inspDuration.value = item.settings?.duration || 5.0;
             if (inspLoopCount) inspLoopCount.value = item.settings?.loopCount || 1;
             if (inspIntensity) inspIntensity.value = item.settings?.zoomIntensity || 1.25;
-            if (inspFadeIn) inspFadeIn.value = item.settings?.fadeIn ?? 0.8;
-            if (inspFadeOut) inspFadeOut.value = item.settings?.fadeOut ?? 0.8;
+            if (inspFadeIn) inspFadeIn.value = item.settings?.fadeIn ?? 0.25;
+            if (inspFadeOut) inspFadeOut.value = item.settings?.fadeOut ?? 0.25;
         } else {
             if (inspTrimStart) {
                 inspTrimStart.max = item.duration || 10;

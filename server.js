@@ -469,7 +469,7 @@ ${formattedScriptNumbered}
 
 5. 🎬 CHỌN HIỆU ỨNG VÀ THỜI LƯỢNG:
    - suggestedMotion: 'zoom_in', 'zoom_out', 'pan_left', 'pan_right', 'pan_up', 'pan_down', 'zoom_pan', 'zoom_in_left', 'zoom_in_right', 'none'.
-   - fadeIn, fadeOut: 0.8s.
+   - fadeIn, fadeOut: 0.25s (chuyển cảnh nhanh gọn, dứt khoát khớp nhịp nói, không bị kéo dài dây dưa).
 
 === CẤU TRÚC JSON TRẢ VỀ ===
 Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
@@ -481,8 +481,8 @@ Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
     "startTime": 0.0,
     "endTime": 3.5,
     "suggestedDuration": 3.5,
-    "fadeIn": 0.8,
-    "fadeOut": 0.8,
+    "fadeIn": 0.25,
+    "fadeOut": 0.25,
     "reason": "Giải thích ngắn lý do chọn ảnh hoặc lý do để trống"
   }
 ]
@@ -745,7 +745,7 @@ Trả về JSON mảng đúng chính xác ${scriptLines.length} phân cảnh:
                 finalDuration = isNaN(durFromAi) ? 5.0 : durFromAi;
             }
 
-            const defaultTransitionDur = Math.min(pauseInterval > 0 ? pauseInterval : 0.5, 0.8);
+            const defaultTransitionDur = Math.min(pauseInterval > 0 ? pauseInterval : 0.25, 0.25);
             const fadeIn = Array.isArray(s) ? parseFloat(s[4] || defaultTransitionDur) : parseFloat(s.fadeIn || s.fi || defaultTransitionDur);
             const fadeOut = Array.isArray(s) ? parseFloat(s[5] || defaultTransitionDur) : parseFloat(s.fadeOut || s.fo || defaultTransitionDur);
             const reason = Array.isArray(s) ? (s[6] || '') : (s.reason || s.matchReason || '');

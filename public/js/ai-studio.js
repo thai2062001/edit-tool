@@ -520,7 +520,7 @@ function renderAiScenesResult(scenes, meta = {}) {
                 <button type="button" class="btn-scene-upload" data-scene-idx="${index}">📤 ${hasImage ? 'Đổi ảnh' : 'Tải ảnh bù'}</button>
                 <span class="badge-motion">${(scene.suggestedMotion || 'zoom_in').replace(/_/g, ' ')}</span>
                 ${timeBadgeHtml}
-                <span class="ai-scene-dur">⏱️ ${scene.suggestedDuration || 4.0}s | Fade ${scene.fadeIn || 0.8}s</span>
+                <span class="ai-scene-dur">⏱️ ${scene.suggestedDuration || 4.0}s | Fade ${scene.fadeIn ?? 0.25}s</span>
             </div>
         `;
         aiScenesList.appendChild(card);
@@ -558,8 +558,8 @@ if (btnApplyAiTimeline) {
                 cloned.settings.duration = parseFloat(scene.suggestedDuration || 5.0);
                 cloned.settings.startTime = typeof scene.startTime === 'number' ? scene.startTime : undefined;
                 cloned.settings.endTime = typeof scene.endTime === 'number' ? scene.endTime : undefined;
-                cloned.settings.fadeIn = parseFloat(scene.fadeIn || 0.8);
-                cloned.settings.fadeOut = parseFloat(scene.fadeOut || 0.8);
+                cloned.settings.fadeIn = parseFloat(scene.fadeIn ?? 0.25);
+                cloned.settings.fadeOut = parseFloat(scene.fadeOut ?? 0.25);
                 if (scene.sceneText) {
                     cloned.settings.overlayText = scene.sceneText;
                 }
@@ -587,8 +587,8 @@ if (btnApplyAiTimeline) {
                         duration: parseFloat(scene.suggestedDuration || 5.0),
                         startTime: typeof scene.startTime === 'number' ? scene.startTime : undefined,
                         endTime: typeof scene.endTime === 'number' ? scene.endTime : undefined,
-                        fadeIn: parseFloat(scene.fadeIn || 0.8),
-                        fadeOut: parseFloat(scene.fadeOut || 0.8),
+                        fadeIn: parseFloat(scene.fadeIn ?? 0.25),
+                        fadeOut: parseFloat(scene.fadeOut ?? 0.25),
                         voiceAudio: scene.voiceAudio || null,
                         overlayText: scene.sceneText || '',
                         textPosition: 'bottom',
