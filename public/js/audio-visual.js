@@ -424,14 +424,34 @@
             if (data.error) throw new Error(data.error);
 
             if (data.result && data.result.scenes) {
-                // Ensure no subtitles/overlayText is injected & default to user's transition/motion choice
-                AVState.scenes = data.result.scenes.map((s, idx) => {
+                // Đảm bảo không phụ đề và các phân cảnh nối tiếp nhau chuẩn xác 100%
+                const rawList = data.result.scenes;
+                let currentCursor = 0.0;
+                
+                AVState.scenes = rawList.map((s, idx) => {
+                    const dur = (typeof s.suggestedDuration === 'number' && s.suggestedDuration > 0)
+                        ? s.suggestedDuration
+                        : (AVState.audioDuration > 0 ? (AVState.audioDuration / rawList.length) : 4.0);
+
+                    // Ưu tiên startTime từ AI nếu hợp lệ và tăng dần, nếu không dùng con trỏ thời gian liên tục
+                    let st = (typeof s.startTime === 'number' && s.startTime >= currentCursor) ? s.startTime : currentCursor;
+                    let et = (typeof s.endTime === 'number' && s.endTime > st) ? s.endTime : (st + dur);
+                    
+                    // Với cảnh cuối cùng, chốt chính xác ở audioDuration
+                    if (idx === rawList.length - 1 && AVState.audioDuration > 0) {
+                        et = Math.max(st + 0.5, AVState.audioDuration);
+                    }
+
+                    st = parseFloat(st.toFixed(2));
+                    et = parseFloat(et.toFixed(2));
+                    currentCursor = et;
+
                     return {
                         id: idx + 1,
                         imageIndex: (typeof s.imageIndex === 'number' && s.imageIndex >= 0) ? s.imageIndex : (idx % AVState.images.length),
-                        startTime: typeof s.startTime === 'number' ? s.startTime : (idx * (AVState.audioDuration / data.result.scenes.length)),
-                        endTime: typeof s.endTime === 'number' ? s.endTime : ((idx + 1) * (AVState.audioDuration / data.result.scenes.length)),
-                        duration: typeof s.suggestedDuration === 'number' ? s.suggestedDuration : 4.0,
+                        startTime: st,
+                        endTime: et,
+                        duration: parseFloat((et - st).toFixed(2)),
                         sceneText: s.sceneText || `Ý thoại đoạn #${idx + 1}`,
                         reason: s.reason || 'Mô tả trực quan chuẩn theo giọng đọc',
                         transition: selectedTrans,
@@ -442,7 +462,7 @@
                 });
 
                 renderScenesList();
-                showToast(`🎉 Đã phân tích xong ${AVState.scenes.length} phân cảnh khớp 100% với giọng đọc!`);
+                showToast(`🎉 Đã phân tích xong ${AVState.scenes.length} phân cảnh khớp chuẩn 100% với giọng đọc!`);
                 drawCanvasAtTime(0);
             } else {
                 throw new Error('Dữ liệu AI trả về không đúng cấu trúc.');
