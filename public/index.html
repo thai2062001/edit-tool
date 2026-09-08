@@ -1423,8 +1423,14 @@
                         </div>
 
                         <div class="flex-row gap-xs mb-2">
-                            <button type="button" id="btn-av-use-timeline-images" class="btn btn-small btn-outline w-100">
-                                📥 Hoặc Lấy Toàn Bộ Ảnh Đang Có Ở Tab 1
+                            <button type="button" id="btn-av-use-timeline-images" class="btn btn-small btn-outline" style="flex: 1;">
+                                📥 Lấy Toàn Bộ Ảnh Từ Tab 1
+                            </button>
+                            <button type="button" id="btn-av-sort-images" class="btn btn-small btn-secondary" title="Sắp xếp ảnh theo số thứ tự tên file tự nhiên (01.png, 02.png... hoặc scene_1, scene_2)">
+                                🔢 Xếp Theo Tên (1 ➔ N)
+                            </button>
+                            <button type="button" id="btn-av-clear-images" class="btn btn-small btn-ghost text-dim" title="Xóa toàn bộ ảnh đang nạp">
+                                🗑️ Xóa hết
                             </button>
                         </div>
                         <!-- Images Grid Preview -->
@@ -1450,7 +1456,7 @@
                             <div class="form-group">
                                 <label class="form-label-xs">✨ Chuyển cảnh (Transitions):</label>
                                 <select id="av-transition-select" class="custom-select form-control-sm">
-                                    <option value="none" selected>⏹️ Cắt Thẳng (Cut - Nối tiếp tự nhiên, không hiệu ứng)</option>
+                                    <option value="none" selected>⏹️ Cắt Thẳng (Cut - Mặc định thuần tài liệu, không hiệu ứng)</option>
                                     <option value="crossfade">🌫️ Mờ Chồng Nhẹ (Crossfade)</option>
                                     <option value="fade_black">🌑 Fade Đen</option>
                                     <option value="flash_white">⚡ Flash Trắng</option>
@@ -1459,11 +1465,18 @@
                             <div class="form-group">
                                 <label class="form-label-xs">🌊 Chuyển động ảnh (Motion):</label>
                                 <select id="av-motion-select" class="custom-select form-control-sm">
-                                    <option value="zoom_in" selected>🔍 Zoom In (Phóng to nhẹ - Kiểu Kurzgesagt/Aperture)</option>
+                                    <option value="none" selected>⏹️ Tĩnh (Mặc định - Ảnh đứng yên sắc nét, không zoom/pan)</option>
+                                    <option value="zoom_in">🔍 Zoom In (Phóng to nhẹ)</option>
                                     <option value="zoom_out">🔎 Zoom Out (Thu nhỏ nhẹ)</option>
                                     <option value="pan_left">⬅️ Pan Trái</option>
                                     <option value="pan_right">➡️ Pan Phải</option>
-                                    <option value="none">⏹️ Tĩnh (Ảnh đứng yên hoàn toàn)</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label class="form-label-xs">🎯 Cơ chế gán ảnh vào phân cảnh (Matching Strategy):</label>
+                                <select id="av-match-mode-select" class="custom-select form-control-sm" style="border: 1px solid #10B981; background: rgba(16, 185, 129, 0.08);">
+                                    <option value="sequential" selected>🔢 Theo đúng số thứ tự tên ảnh (Ảnh 1 ➔ Câu 1, Ảnh 2 ➔ Câu 2...)</option>
+                                    <option value="ai_vision">🤖 Dùng Gemini AI phân tích ngữ cảnh (Khớp theo nội dung ảnh)</option>
                                 </select>
                             </div>
                             <div class="form-group" style="grid-column: span 2;">
@@ -1482,6 +1495,10 @@
                                     <option value="0.5">0.5s (Chỉ dùng cho Audio rời)</option>
                                 </select>
                             </div>
+                        <!-- Smart Validation & Image Count vs Script Lines Indicator -->
+                        <div id="av-match-validation-banner" class="av-match-validation-banner hidden" style="margin-top: 10px; padding: 8px 12px; border-radius: 6px; font-size: 12px; display: flex; align-items: center; justify-content: space-between;">
+                            <span id="av-validation-text"></span>
+                            <span id="av-validation-status" class="av-badge"></span>
                         </div>
 
                         <button type="button" id="btn-av-run-match" class="btn btn-primary w-100 mt-3" style="padding: 12px; font-weight: 700; font-size: 14px;">
