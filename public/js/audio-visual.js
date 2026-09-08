@@ -56,6 +56,7 @@
             transitionSelect: document.getElementById('av-transition-select'),
             motionSelect: document.getElementById('av-motion-select'),
             pauseSelect: document.getElementById('av-pause-select'),
+            densitySelect: document.getElementById('av-density-select'),
             btnRunMatch: document.getElementById('btn-av-run-match'),
 
             // Player & Canvas
@@ -396,6 +397,7 @@
         const pauseInterval = dom.pauseSelect ? parseFloat(dom.pauseSelect.value) : 0.0;
         const selectedTrans = dom.transitionSelect ? dom.transitionSelect.value : 'none';
         const selectedMotion = dom.motionSelect ? dom.motionSelect.value : 'none';
+        const densityMode = dom.densitySelect ? dom.densitySelect.value : '1_per_scene'; // '1_per_scene' | '2_per_scene' | 'smart_split'
 
         // Prepare request
         const formData = new FormData();
@@ -424,20 +426,18 @@
             if (data.error) throw new Error(data.error);
 
             if (data.result && data.result.scenes) {
-                // Đảm bảo không phụ đề và các phân cảnh nối tiếp nhau chuẩn xác 100%
                 const rawList = data.result.scenes;
                 let currentCursor = 0.0;
                 
-                AVState.scenes = rawList.map((s, idx) => {
+                // Base 1-to-1 parsing
+                const baseScenes = rawList.map((s, idx) => {
                     const dur = (typeof s.suggestedDuration === 'number' && s.suggestedDuration > 0)
                         ? s.suggestedDuration
                         : (AVState.audioDuration > 0 ? (AVState.audioDuration / rawList.length) : 4.0);
 
-                    // Ưu tiên startTime từ AI nếu hợp lệ và tăng dần, nếu không dùng con trỏ thời gian liên tục
                     let st = (typeof s.startTime === 'number' && s.startTime >= currentCursor) ? s.startTime : currentCursor;
                     let et = (typeof s.endTime === 'number' && s.endTime > st) ? s.endTime : (st + dur);
                     
-                    // Với cảnh cuối cùng, chốt chính xác ở audioDuration
                     if (idx === rawList.length - 1 && AVState.audioDuration > 0) {
                         et = Math.max(st + 0.5, AVState.audioDuration);
                     }
@@ -447,7 +447,6 @@
                     currentCursor = et;
 
                     return {
-                        id: idx + 1,
                         imageIndex: (typeof s.imageIndex === 'number' && s.imageIndex >= 0) ? s.imageIndex : (idx % AVState.images.length),
                         startTime: st,
                         endTime: et,
@@ -461,8 +460,59 @@
                     };
                 });
 
+                // Apply Pacing Mode (1_per_scene | 2_per_scene | smart_split) linh hoạt
+                let expandedScenes = [];
+                let nextAvailableImgIdx = baseScenes.length % (AVState.images.length || 1);
+
+                baseScenes.forEach((bs, bIdx) => {
+                    const sceneDur = bs.duration;
+                    const shouldSplit = (densityMode === '2_per_scene') || (densityMode === 'smart_split' && sceneDur >= 4.0);
+
+                    if (shouldSplit && sceneDur >= 1.5) {
+                        // Chia câu thành 2 phân cảnh ảnh liên tiếp
+                        const midTime = parseFloat((bs.startTime + (sceneDur / 2)).toFixed(2));
+                        
+                        // Ảnh 1: Ảnh gốc do AI chọn
+                        expandedScenes.push({
+                            ...bs,
+                            endTime: midTime,
+                            duration: parseFloat((midTime - bs.startTime).toFixed(2)),
+                            sceneText: bs.sceneText,
+                            subPart: '1/2',
+                            reason: `${bs.reason} (Nửa đầu câu)`
+                        });
+
+                        // Ảnh 2: Ảnh tiếp theo trong kho ảnh để tạo nhịp đổi cảnh
+                        let secondImgIdx = (bs.imageIndex + 1) % AVState.images.length;
+                        if (secondImgIdx === bs.imageIndex && AVState.images.length > 1) {
+                            secondImgIdx = (secondImgIdx + 1) % AVState.images.length;
+                        }
+
+                        expandedScenes.push({
+                            ...bs,
+                            imageIndex: secondImgIdx,
+                            startTime: midTime,
+                            endTime: bs.endTime,
+                            duration: parseFloat((bs.endTime - midTime).toFixed(2)),
+                            sceneText: bs.sceneText,
+                            subPart: '2/2',
+                            reason: `Đổi ảnh tạo nhịp kể chuyện (Nửa sau câu)`
+                        });
+                    } else {
+                        // Giữ nguyên 1 câu = 1 ảnh
+                        expandedScenes.push({
+                            ...bs,
+                            subPart: null
+                        });
+                    }
+                });
+
+                // Gán ID lại tuần tự
+                AVState.scenes = expandedScenes.map((s, idx) => ({ ...s, id: idx + 1 }));
+
                 renderScenesList();
-                showToast(`🎉 Đã phân tích xong ${AVState.scenes.length} phân cảnh khớp chuẩn 100% với giọng đọc!`);
+                const modeLabel = densityMode === '2_per_scene' ? '1 câu 2 ảnh' : (densityMode === 'smart_split' ? 'Tự động tách câu dài' : '1 câu 1 ảnh');
+                showToast(`🎉 Đã khớp xong ${AVState.scenes.length} phân cảnh (${modeLabel})!`);
                 drawCanvasAtTime(0);
             } else {
                 throw new Error('Dữ liệu AI trả về không đúng cấu trúc.');
@@ -472,12 +522,12 @@
         } finally {
             if (dom.btnRunMatch) {
                 dom.btnRunMatch.disabled = false;
-                dom.btnRunMatch.innerHTML = '✨ Bắt Đầu Tự Động Khớp Voice ➔ Ảnh';
+                dom.btnRunMatch.innerHTML = '✨ Bắt Đầu Tự Động Khớp Voice ➔ Ảnh (Không Phụ Đề)';
             }
         }
     }
 
-    // Render Matched Storyboard Scenes
+    // Render Matched Storyboard Scenes with Quick Split/Merge & Swap Tools
     function renderScenesList() {
         if (!dom.scenesList) return;
         dom.scenesList.innerHTML = '';
@@ -491,33 +541,86 @@
             card.className = `av-scene-card ${sIdx === AVState.activeSceneIndex ? 'playing' : ''}`;
             card.dataset.sceneIdx = sIdx;
 
+            const partBadge = scene.subPart ? `<span class="av-badge" style="background: rgba(167, 139, 250, 0.2); color: #C084FC; margin-left: 6px; font-size: 11px;">Phần ${scene.subPart}</span>` : '';
+
             card.innerHTML = `
                 <div class="av-scene-thumb" title="Bấm để đổi ảnh cho phân cảnh này">
                     <img src="${img ? img.url : ''}" alt="Cảnh ${sIdx + 1}">
                     <div class="av-thumb-hover-edit">🔄 Đổi ảnh</div>
                 </div>
                 <div class="av-scene-content">
-                    <div class="av-scene-top-meta">
-                        <strong style="color: #FFF; font-size: 13px;">Cảnh #${sIdx + 1}: ${img ? img.originalName : 'Ảnh'}</strong>
-                        <span class="av-scene-timebadge">⏱️ [${scene.startTime.toFixed(1)}s ➔ ${scene.endTime.toFixed(1)}s]</span>
+                    <div class="av-scene-top-meta flex-between align-center">
+                        <div class="flex-row align-center">
+                            <strong style="color: #FFF; font-size: 13px;">Cảnh #${sIdx + 1}: ${img ? img.originalName : 'Ảnh'}</strong>
+                            ${partBadge}
+                        </div>
+                        <div class="flex-row align-center gap-xs">
+                            <span class="av-scene-timebadge">⏱️ [${scene.startTime.toFixed(1)}s ➔ ${scene.endTime.toFixed(1)}s] (${scene.duration.toFixed(1)}s)</span>
+                            <button type="button" class="btn btn-xs btn-ghost btn-split-scene" title="Tách cảnh này thành 2 ảnh (Chia đôi thời lượng)" style="padding: 2px 6px; font-size: 11px; border: 1px solid rgba(255,255,255,0.15); color: #38BDF8;">
+                                ✂️ Tách 2 ảnh
+                            </button>
+                        </div>
                     </div>
                     <div class="av-scene-script-text">🎙️ "${scene.sceneText}"</div>
                     <div class="av-scene-reason">💡 ${scene.reason}</div>
                 </div>
             `;
 
+            // Action: Split this specific scene into 2 images on-demand
+            const btnSplit = card.querySelector('.btn-split-scene');
+            if (btnSplit) {
+                btnSplit.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    splitSpecificScene(sIdx);
+                });
+            }
+
             // Click scene card to seek
             card.addEventListener('click', (e) => {
                 if (e.target.closest('.av-scene-thumb')) {
-                    // Open single-scene image selector
                     pickImageForScene(sIdx);
-                } else {
+                } else if (!e.target.closest('.btn-split-scene')) {
                     seekToScene(sIdx);
                 }
             });
 
             dom.scenesList.appendChild(card);
         });
+    }
+
+    // On-demand split a single scene into 2 images
+    function splitSpecificScene(sceneIdx) {
+        const target = AVState.scenes[sceneIdx];
+        if (!target || target.duration < 1.0) {
+            alert('Cảnh này quá ngắn (< 1s), không thể tách thêm!');
+            return;
+        }
+
+        const mid = parseFloat((target.startTime + (target.duration / 2)).toFixed(2));
+        const originalEnd = target.endTime;
+
+        // Cảnh 1
+        target.endTime = mid;
+        target.duration = parseFloat((mid - target.startTime).toFixed(2));
+        target.subPart = '1/2';
+
+        // Cảnh 2
+        let nextImg = (target.imageIndex + 1) % AVState.images.length;
+        const newScene = {
+            ...target,
+            imageIndex: nextImg,
+            startTime: mid,
+            endTime: originalEnd,
+            duration: parseFloat((originalEnd - mid).toFixed(2)),
+            subPart: '2/2',
+            reason: 'Tách bổ sung trực tiếp từ cảnh #' + (sceneIdx + 1)
+        };
+
+        AVState.scenes.splice(sceneIdx + 1, 0, newScene);
+        AVState.scenes.forEach((s, i) => s.id = i + 1);
+
+        renderScenesList();
+        showToast(`✂️ Đã tách Cảnh #${sceneIdx + 1} thành 2 phân cảnh ảnh liên tiếp!`);
     }
 
     // Pick a different image for a specific scene

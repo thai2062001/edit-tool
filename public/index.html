@@ -1467,6 +1467,14 @@
                                 </select>
                             </div>
                             <div class="form-group" style="grid-column: span 2;">
+                                <label class="form-label-xs">🖼️ Mật độ phân bổ ảnh theo câu thoại (Pacing Mode):</label>
+                                <select id="av-density-select" class="custom-select form-control-sm" style="border: 1px solid #38BDF8; background: rgba(56, 189, 248, 0.08);">
+                                    <option value="1_per_scene" selected>🎯 1 Câu = 1 Ảnh (Mặc định - Chuẩn phân cảnh 1:1)</option>
+                                    <option value="2_per_scene">⚡ 1 Câu = 2 Ảnh (Đổi cảnh nhanh - 2 ảnh liên tiếp/câu)</option>
+                                    <option value="smart_split">🧠 Tự động (Câu dài &gt;4s tự tách 2 ảnh, câu ngắn 1 ảnh)</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
                                 <label class="form-label-xs">⏱️ Khoảng nghỉ giữa các câu thoại:</label>
                                 <select id="av-pause-select" class="custom-select form-control-sm">
                                     <option value="0.0" selected>0.0s (Khớp 100% Audio Dài Không Lệch Tiếng)</option>
