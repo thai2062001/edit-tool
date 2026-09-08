@@ -319,6 +319,19 @@
             if (ratio === '9:16') dom.playerContainer.classList.add('ratio-9-16');
             else if (ratio === '1:1') dom.playerContainer.classList.add('ratio-1-1');
         }
+        if (dom.canvas) {
+            if (ratio === '9:16') {
+                dom.canvas.width = 720;
+                dom.canvas.height = 1280;
+            } else if (ratio === '1:1') {
+                dom.canvas.width = 1080;
+                dom.canvas.height = 1080;
+            } else {
+                dom.canvas.width = 1280;
+                dom.canvas.height = 720;
+            }
+        }
+        drawCanvasAtTime(AVState.audioElement ? (AVState.audioElement.currentTime || 0) : 0);
         showToast(`📐 Đã đổi tỉ lệ: ${ratio}`);
     }
 
@@ -991,6 +1004,20 @@
                     duration: AVState.audioDuration
                 };
                 if (typeof window.updateBgmUI === 'function') window.updateBgmUI();
+            }
+
+            // Sync Aspect Ratio to Tab 1 Settings Modal if available
+            if (AVState.aspectRatio) {
+                const ratioRadio = document.querySelector(`input[name="aspect-ratio"][value="${AVState.aspectRatio}"]`);
+                if (ratioRadio) {
+                    ratioRadio.checked = true;
+                    ratioRadio.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                const ratioChip = document.querySelector(`.ratio-option[data-ratio="${AVState.aspectRatio}"]`);
+                if (ratioChip) {
+                    document.querySelectorAll('.ratio-option').forEach(o => o.classList.remove('active'));
+                    ratioChip.classList.add('active');
+                }
             }
 
             if (typeof window.renderMediaList === 'function') window.renderMediaList();
