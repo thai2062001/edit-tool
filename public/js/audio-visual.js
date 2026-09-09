@@ -21,7 +21,7 @@
         animationFrameId: null,
         aspectRatio: '16:9',
         transition: 'none', // Mặc định cắt thẳng (Cut)
-        motion: 'zoom_in',  // Mặc định zoom nhẹ hoặc tĩnh
+        motion: 'none',      // Mặc định ảnh tĩnh hoàn toàn, không zoom/pan
         isRendering: false
     };
 
@@ -47,6 +47,8 @@
             imagesDropzone: document.getElementById('av-images-dropzone'),
             btnLoadImages: document.getElementById('btn-av-load-images'),
             btnUseTimelineImages: document.getElementById('btn-av-use-timeline-images'),
+            btnSortImages: document.getElementById('btn-av-sort-images'),
+            btnClearImages: document.getElementById('btn-av-clear-images'),
             imagesGrid: document.getElementById('av-images-grid'),
             imagesCountBadge: document.getElementById('av-images-count'),
 
@@ -56,6 +58,11 @@
             transitionSelect: document.getElementById('av-transition-select'),
             motionSelect: document.getElementById('av-motion-select'),
             pauseSelect: document.getElementById('av-pause-select'),
+            matchModeSelect: document.getElementById('av-match-mode-select'),
+            densitySelect: document.getElementById('av-density-select'),
+            validationBanner: document.getElementById('av-match-validation-banner'),
+            validationText: document.getElementById('av-validation-text'),
+            validationStatus: document.getElementById('av-validation-status'),
             btnRunMatch: document.getElementById('btn-av-run-match'),
 
             // Player & Canvas
@@ -178,8 +185,9 @@
                     const imgs = window.mediaItems.filter(i => i.type === 'image' && !i.isPlaceholder && i.url);
                     if (imgs.length > 0) {
                         AVState.images = JSON.parse(JSON.stringify(imgs));
+                        sortImagesNaturally();
                         renderImagesGrid();
-                        showToast(`🖼️ Đã lấy ${imgs.length} ảnh từ Timeline Tab 1!`);
+                        showToast(`🖼️ Đã lấy và xếp tự nhiên ${imgs.length} ảnh từ Timeline Tab 1!`);
                     } else {
                         alert('Timeline hiện chưa có bức ảnh nào hợp lệ!');
                     }
@@ -189,13 +197,41 @@
             });
         }
 
-        // Clean Script Button
+        // Sort Images by Name (1 -> N natural sorting)
+        if (dom.btnSortImages) {
+            dom.btnSortImages.addEventListener('click', () => {
+                if (!AVState.images || AVState.images.length === 0) {
+                    alert('Chưa có ảnh nào để sắp xếp!');
+                    return;
+                }
+                sortImagesNaturally();
+                renderImagesGrid();
+                showToast(`🔢 Đã sắp xếp ${AVState.images.length} ảnh theo đúng thứ tự tên file (1 ➔ N)!`);
+            });
+        }
+
+        // Clear Images Pool
+        if (dom.btnClearImages) {
+            dom.btnClearImages.addEventListener('click', () => {
+                if (confirm('Bạn có chắc muốn xóa toàn bộ ảnh trong kho của Tab này không?')) {
+                    AVState.images = [];
+                    renderImagesGrid();
+                    showToast('🗑️ Đã xóa sạch kho ảnh!');
+                }
+            });
+        }
+
+        // Clean Script Button & Textarea Input Listener
+        if (dom.scriptTextarea) {
+            dom.scriptTextarea.addEventListener('input', updateValidationIndicator);
+        }
         if (dom.btnCleanScript && dom.scriptTextarea) {
             dom.btnCleanScript.addEventListener('click', () => {
                 const raw = dom.scriptTextarea.value.trim();
                 if (!raw) return;
                 const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith('---') && !l.startsWith('==='));
                 dom.scriptTextarea.value = lines.join('\n');
+                updateValidationIndicator();
                 showToast(`🧹 Đã chuẩn hóa ${lines.length} câu thoại kịch bản!`);
             });
         }
@@ -283,6 +319,19 @@
             if (ratio === '9:16') dom.playerContainer.classList.add('ratio-9-16');
             else if (ratio === '1:1') dom.playerContainer.classList.add('ratio-1-1');
         }
+        if (dom.canvas) {
+            if (ratio === '9:16') {
+                dom.canvas.width = 720;
+                dom.canvas.height = 1280;
+            } else if (ratio === '1:1') {
+                dom.canvas.width = 1080;
+                dom.canvas.height = 1080;
+            } else {
+                dom.canvas.width = 1280;
+                dom.canvas.height = 720;
+            }
+        }
+        drawCanvasAtTime(AVState.audioElement ? (AVState.audioElement.currentTime || 0) : 0);
         showToast(`📐 Đã đổi tỉ lệ: ${ratio}`);
     }
 
@@ -331,10 +380,23 @@
         }
     }
 
+    // Natural sort helper (e.g. scene_1, scene_2, 01.png, 2.png, 10.png)
+    function sortImagesNaturally() {
+        if (!AVState.images || AVState.images.length === 0) return;
+        AVState.images.sort((a, b) => {
+            const nameA = a.originalName || a.filename || '';
+            const nameB = b.originalName || b.filename || '';
+            return nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: 'base' });
+        });
+    }
+
     // Images Upload Handler
     async function handleImagesUpload(e) {
         const files = Array.from(e.target.files || []);
         if (files.length === 0) return;
+
+        // Sort selected files before upload
+        files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
 
         const formData = new FormData();
         files.forEach(f => formData.append('files', f));
@@ -347,8 +409,9 @@
             const data = await res.json();
             if (data.success && data.files) {
                 AVState.images = [...AVState.images, ...data.files];
+                sortImagesNaturally();
                 renderImagesGrid();
-                showToast(`🖼️ Đã nạp thêm ${data.files.length} ảnh!`);
+                showToast(`🖼️ Đã nạp và tự động sắp xếp ${data.files.length} ảnh theo thứ tự tên file!`);
             } else {
                 alert('Tải ảnh thất bại');
             }
@@ -365,12 +428,65 @@
         AVState.images.forEach((img, idx) => {
             const pill = document.createElement('div');
             pill.className = 'av-img-pill';
+            pill.title = `#${idx + 1}: ${img.originalName || img.filename}`;
             pill.innerHTML = `
                 <img src="${img.url}" alt="${img.originalName}" loading="lazy">
                 <span class="av-pill-idx">#${idx + 1}</span>
             `;
             dom.imagesGrid.appendChild(pill);
         });
+
+        updateValidationIndicator();
+    }
+
+    // Smart Validation: Check Images Count vs Script Lines Count
+    function updateValidationIndicator() {
+        if (!dom.validationBanner || !dom.validationText || !dom.validationStatus) return;
+
+        const raw = dom.scriptTextarea ? dom.scriptTextarea.value.trim() : '';
+        const scriptLines = raw ? raw.split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith('---') && !l.startsWith('===')).length : 0;
+        const imgCount = AVState.images ? AVState.images.length : 0;
+
+        if (scriptLines === 0 && imgCount === 0) {
+            dom.validationBanner.classList.add('hidden');
+            return;
+        }
+
+        dom.validationBanner.classList.remove('hidden');
+
+        if (scriptLines > 0 && imgCount > 0) {
+            if (scriptLines === imgCount) {
+                dom.validationBanner.style.background = 'rgba(16, 185, 129, 0.15)';
+                dom.validationBanner.style.border = '1px solid #10B981';
+                dom.validationText.innerHTML = `✅ <strong>Khớp hoàn hảo:</strong> Kịch bản có <b>${scriptLines} câu</b> = Kho ảnh có đúng <b>${imgCount} ảnh</b> (Tỉ lệ 1:1 chuẩn xác)`;
+                dom.validationStatus.style.background = '#10B981';
+                dom.validationStatus.textContent = 'Khớp 100%';
+            } else if (imgCount < scriptLines) {
+                const diff = scriptLines - imgCount;
+                dom.validationBanner.style.background = 'rgba(245, 158, 11, 0.15)';
+                dom.validationBanner.style.border = '1px solid #F59E0B';
+                dom.validationText.innerHTML = `⚠️ <strong>Thiếu ${diff} ảnh:</strong> Kịch bản có <b>${scriptLines} câu</b> nhưng mới có <b>${imgCount} ảnh</b> (AI sẽ lặp lại hoặc để trống chờ bù)`;
+                dom.validationStatus.style.background = '#F59E0B';
+                dom.validationStatus.textContent = `Thiếu ${diff} ảnh`;
+            } else {
+                const diff = imgCount - scriptLines;
+                dom.validationBanner.style.background = 'rgba(56, 189, 248, 0.15)';
+                dom.validationBanner.style.border = '1px solid #38BDF8';
+                dom.validationText.innerHTML = `ℹ️ <strong>Dư ${diff} ảnh:</strong> Kịch bản có <b>${scriptLines} câu</b> trong khi kho có <b>${imgCount} ảnh</b> (Sẽ ưu tiên lấy đúng ${scriptLines} ảnh đầu tiên)`;
+                dom.validationStatus.style.background = '#38BDF8';
+                dom.validationStatus.textContent = `Dư ${diff} ảnh`;
+            }
+        } else if (scriptLines > 0) {
+            dom.validationBanner.style.background = 'rgba(255, 255, 255, 0.05)';
+            dom.validationBanner.style.border = '1px solid rgba(255,255,255,0.1)';
+            dom.validationText.innerHTML = `📜 Đã nhận diện <b>${scriptLines} câu thoại</b> kịch bản (Chưa nạp kho ảnh)`;
+            dom.validationStatus.textContent = 'Chờ nạp ảnh';
+        } else {
+            dom.validationBanner.style.background = 'rgba(255, 255, 255, 0.05)';
+            dom.validationBanner.style.border = '1px solid rgba(255,255,255,0.1)';
+            dom.validationText.innerHTML = `🖼️ Đã nạp <b>${imgCount} ảnh</b> vào kho (Chưa dán kịch bản)`;
+            dom.validationStatus.textContent = 'Chờ kịch bản';
+        }
     }
 
     // Format Seconds to MM:SS.S
@@ -396,6 +512,11 @@
         const pauseInterval = dom.pauseSelect ? parseFloat(dom.pauseSelect.value) : 0.0;
         const selectedTrans = dom.transitionSelect ? dom.transitionSelect.value : 'none';
         const selectedMotion = dom.motionSelect ? dom.motionSelect.value : 'none';
+        const matchMode = dom.matchModeSelect ? dom.matchModeSelect.value : 'sequential'; // 'sequential' | 'ai_vision'
+        const densityMode = dom.densitySelect ? dom.densitySelect.value : '1_per_scene'; // '1_per_scene' | '2_per_scene' | 'smart_split'
+
+        // Đảm bảo ảnh luôn xếp theo số thứ tự tên file tự nhiên
+        sortImagesNaturally();
 
         // Prepare request
         const formData = new FormData();
@@ -412,7 +533,9 @@
 
         if (dom.btnRunMatch) {
             dom.btnRunMatch.disabled = true;
-            dom.btnRunMatch.innerHTML = '🤖 Đang phân tích Voice & khớp ảnh không phụ đề...';
+            dom.btnRunMatch.innerHTML = matchMode === 'sequential' 
+                ? '⚡ Đang căn nhịp Voice & gán ảnh theo đúng số thứ tự (1 ➔ N)...' 
+                : '🤖 Đang phân tích Voice & khớp ảnh theo AI Vision...';
         }
 
         try {
@@ -424,20 +547,18 @@
             if (data.error) throw new Error(data.error);
 
             if (data.result && data.result.scenes) {
-                // Đảm bảo không phụ đề và các phân cảnh nối tiếp nhau chuẩn xác 100%
                 const rawList = data.result.scenes;
                 let currentCursor = 0.0;
                 
-                AVState.scenes = rawList.map((s, idx) => {
+                // Base 1-to-1 parsing
+                const baseScenes = rawList.map((s, idx) => {
                     const dur = (typeof s.suggestedDuration === 'number' && s.suggestedDuration > 0)
                         ? s.suggestedDuration
                         : (AVState.audioDuration > 0 ? (AVState.audioDuration / rawList.length) : 4.0);
 
-                    // Ưu tiên startTime từ AI nếu hợp lệ và tăng dần, nếu không dùng con trỏ thời gian liên tục
                     let st = (typeof s.startTime === 'number' && s.startTime >= currentCursor) ? s.startTime : currentCursor;
                     let et = (typeof s.endTime === 'number' && s.endTime > st) ? s.endTime : (st + dur);
                     
-                    // Với cảnh cuối cùng, chốt chính xác ở audioDuration
                     if (idx === rawList.length - 1 && AVState.audioDuration > 0) {
                         et = Math.max(st + 0.5, AVState.audioDuration);
                     }
@@ -446,14 +567,21 @@
                     et = parseFloat(et.toFixed(2));
                     currentCursor = et;
 
+                    // Quyết định gán ảnh: Nếu chọn 'sequential' -> Gán tuần tự 0, 1, 2, 3... tương ứng theo tên file đã sắp xếp
+                    let assignedImageIdx = 0;
+                    if (matchMode === 'sequential') {
+                        assignedImageIdx = idx < AVState.images.length ? idx : (idx % AVState.images.length);
+                    } else {
+                        assignedImageIdx = (typeof s.imageIndex === 'number' && s.imageIndex >= 0) ? s.imageIndex : (idx % AVState.images.length);
+                    }
+
                     return {
-                        id: idx + 1,
-                        imageIndex: (typeof s.imageIndex === 'number' && s.imageIndex >= 0) ? s.imageIndex : (idx % AVState.images.length),
+                        imageIndex: assignedImageIdx,
                         startTime: st,
                         endTime: et,
                         duration: parseFloat((et - st).toFixed(2)),
                         sceneText: s.sceneText || `Ý thoại đoạn #${idx + 1}`,
-                        reason: s.reason || 'Mô tả trực quan chuẩn theo giọng đọc',
+                        reason: matchMode === 'sequential' ? `Ảnh #${assignedImageIdx + 1} khớp theo thứ tự tên file` : (s.reason || 'Mô tả trực quan chuẩn theo giọng đọc'),
                         transition: selectedTrans,
                         motion: selectedMotion,
                         fadeIn: (selectedTrans === 'none') ? 0.0 : 0.25,
@@ -461,8 +589,59 @@
                     };
                 });
 
+                // Apply Pacing Mode (1_per_scene | 2_per_scene | smart_split) linh hoạt
+                let expandedScenes = [];
+                let nextAvailableImgIdx = baseScenes.length % (AVState.images.length || 1);
+
+                baseScenes.forEach((bs, bIdx) => {
+                    const sceneDur = bs.duration;
+                    const shouldSplit = (densityMode === '2_per_scene') || (densityMode === 'smart_split' && sceneDur >= 4.0);
+
+                    if (shouldSplit && sceneDur >= 1.5) {
+                        // Chia câu thành 2 phân cảnh ảnh liên tiếp
+                        const midTime = parseFloat((bs.startTime + (sceneDur / 2)).toFixed(2));
+                        
+                        // Ảnh 1: Ảnh gốc do AI chọn
+                        expandedScenes.push({
+                            ...bs,
+                            endTime: midTime,
+                            duration: parseFloat((midTime - bs.startTime).toFixed(2)),
+                            sceneText: bs.sceneText,
+                            subPart: '1/2',
+                            reason: `${bs.reason} (Nửa đầu câu)`
+                        });
+
+                        // Ảnh 2: Ảnh tiếp theo trong kho ảnh để tạo nhịp đổi cảnh
+                        let secondImgIdx = (bs.imageIndex + 1) % AVState.images.length;
+                        if (secondImgIdx === bs.imageIndex && AVState.images.length > 1) {
+                            secondImgIdx = (secondImgIdx + 1) % AVState.images.length;
+                        }
+
+                        expandedScenes.push({
+                            ...bs,
+                            imageIndex: secondImgIdx,
+                            startTime: midTime,
+                            endTime: bs.endTime,
+                            duration: parseFloat((bs.endTime - midTime).toFixed(2)),
+                            sceneText: bs.sceneText,
+                            subPart: '2/2',
+                            reason: `Đổi ảnh tạo nhịp kể chuyện (Nửa sau câu)`
+                        });
+                    } else {
+                        // Giữ nguyên 1 câu = 1 ảnh
+                        expandedScenes.push({
+                            ...bs,
+                            subPart: null
+                        });
+                    }
+                });
+
+                // Gán ID lại tuần tự
+                AVState.scenes = expandedScenes.map((s, idx) => ({ ...s, id: idx + 1 }));
+
                 renderScenesList();
-                showToast(`🎉 Đã phân tích xong ${AVState.scenes.length} phân cảnh khớp chuẩn 100% với giọng đọc!`);
+                const modeLabel = densityMode === '2_per_scene' ? '1 câu 2 ảnh' : (densityMode === 'smart_split' ? 'Tự động tách câu dài' : '1 câu 1 ảnh');
+                showToast(`🎉 Đã khớp xong ${AVState.scenes.length} phân cảnh (${modeLabel})!`);
                 drawCanvasAtTime(0);
             } else {
                 throw new Error('Dữ liệu AI trả về không đúng cấu trúc.');
@@ -472,12 +651,12 @@
         } finally {
             if (dom.btnRunMatch) {
                 dom.btnRunMatch.disabled = false;
-                dom.btnRunMatch.innerHTML = '✨ Bắt Đầu Tự Động Khớp Voice ➔ Ảnh';
+                dom.btnRunMatch.innerHTML = '✨ Bắt Đầu Tự Động Khớp Voice ➔ Ảnh (Không Phụ Đề)';
             }
         }
     }
 
-    // Render Matched Storyboard Scenes
+    // Render Matched Storyboard Scenes with Quick Split/Merge & Swap Tools
     function renderScenesList() {
         if (!dom.scenesList) return;
         dom.scenesList.innerHTML = '';
@@ -491,33 +670,120 @@
             card.className = `av-scene-card ${sIdx === AVState.activeSceneIndex ? 'playing' : ''}`;
             card.dataset.sceneIdx = sIdx;
 
+            const partBadge = scene.subPart ? `<span class="av-badge" style="background: rgba(167, 139, 250, 0.2); color: #C084FC; margin-left: 6px; font-size: 11px;">Phần ${scene.subPart}</span>` : '';
+            const canMerge = sIdx < AVState.scenes.length - 1;
+
             card.innerHTML = `
                 <div class="av-scene-thumb" title="Bấm để đổi ảnh cho phân cảnh này">
                     <img src="${img ? img.url : ''}" alt="Cảnh ${sIdx + 1}">
                     <div class="av-thumb-hover-edit">🔄 Đổi ảnh</div>
                 </div>
                 <div class="av-scene-content">
-                    <div class="av-scene-top-meta">
-                        <strong style="color: #FFF; font-size: 13px;">Cảnh #${sIdx + 1}: ${img ? img.originalName : 'Ảnh'}</strong>
-                        <span class="av-scene-timebadge">⏱️ [${scene.startTime.toFixed(1)}s ➔ ${scene.endTime.toFixed(1)}s]</span>
+                    <div class="av-scene-top-meta flex-between align-center">
+                        <div class="flex-row align-center">
+                            <strong style="color: #FFF; font-size: 13px;">Cảnh #${sIdx + 1}: ${img ? img.originalName : 'Ảnh'}</strong>
+                            ${partBadge}
+                        </div>
+                        <div class="flex-row align-center gap-xs">
+                            <span class="av-scene-timebadge">⏱️ [${scene.startTime.toFixed(1)}s ➔ ${scene.endTime.toFixed(1)}s] (${scene.duration.toFixed(1)}s)</span>
+                            <button type="button" class="btn btn-xs btn-ghost btn-split-scene" title="Tách cảnh này thành 2 ảnh (Chia đôi thời lượng)" style="padding: 2px 6px; font-size: 11px; border: 1px solid rgba(56, 189, 248, 0.3); color: #38BDF8;">
+                                ✂️ Tách
+                            </button>
+                            ${canMerge ? `
+                            <button type="button" class="btn btn-xs btn-ghost btn-merge-scene" title="Gộp cảnh này với cảnh tiếp theo thành 1 ảnh" style="padding: 2px 6px; font-size: 11px; border: 1px solid rgba(167, 139, 250, 0.3); color: #C084FC;">
+                                🔗 Gộp sau
+                            </button>` : ''}
+                        </div>
                     </div>
                     <div class="av-scene-script-text">🎙️ "${scene.sceneText}"</div>
                     <div class="av-scene-reason">💡 ${scene.reason}</div>
                 </div>
             `;
 
+            // Action: Split this specific scene into 2 images on-demand
+            const btnSplit = card.querySelector('.btn-split-scene');
+            if (btnSplit) {
+                btnSplit.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    splitSpecificScene(sIdx);
+                });
+            }
+
+            // Action: Merge this specific scene with next scene on-demand
+            const btnMerge = card.querySelector('.btn-merge-scene');
+            if (btnMerge) {
+                btnMerge.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    mergeWithNextScene(sIdx);
+                });
+            }
+
             // Click scene card to seek
             card.addEventListener('click', (e) => {
                 if (e.target.closest('.av-scene-thumb')) {
-                    // Open single-scene image selector
                     pickImageForScene(sIdx);
-                } else {
+                } else if (!e.target.closest('.btn-split-scene') && !e.target.closest('.btn-merge-scene')) {
                     seekToScene(sIdx);
                 }
             });
 
             dom.scenesList.appendChild(card);
         });
+    }
+
+    // On-demand merge scene with next scene
+    function mergeWithNextScene(sceneIdx) {
+        if (sceneIdx >= AVState.scenes.length - 1) return;
+        const cur = AVState.scenes[sceneIdx];
+        const next = AVState.scenes[sceneIdx + 1];
+        if (!cur || !next) return;
+
+        cur.endTime = next.endTime;
+        cur.duration = parseFloat((cur.endTime - cur.startTime).toFixed(2));
+        cur.sceneText = `${cur.sceneText} / ${next.sceneText}`;
+        cur.reason = `Đã gộp câu (Giữ ảnh #${cur.imageIndex + 1})`;
+        cur.subPart = null;
+
+        AVState.scenes.splice(sceneIdx + 1, 1);
+        AVState.scenes.forEach((s, i) => s.id = i + 1);
+
+        renderScenesList();
+        showToast(`🔗 Đã gộp Cảnh #${sceneIdx + 1} và Cảnh #${sceneIdx + 2} thành 1 ảnh!`);
+    }
+
+    // On-demand split a single scene into 2 images
+    function splitSpecificScene(sceneIdx) {
+        const target = AVState.scenes[sceneIdx];
+        if (!target || target.duration < 1.0) {
+            alert('Cảnh này quá ngắn (< 1s), không thể tách thêm!');
+            return;
+        }
+
+        const mid = parseFloat((target.startTime + (target.duration / 2)).toFixed(2));
+        const originalEnd = target.endTime;
+
+        // Cảnh 1
+        target.endTime = mid;
+        target.duration = parseFloat((mid - target.startTime).toFixed(2));
+        target.subPart = '1/2';
+
+        // Cảnh 2
+        let nextImg = (target.imageIndex + 1) % AVState.images.length;
+        const newScene = {
+            ...target,
+            imageIndex: nextImg,
+            startTime: mid,
+            endTime: originalEnd,
+            duration: parseFloat((originalEnd - mid).toFixed(2)),
+            subPart: '2/2',
+            reason: 'Tách bổ sung trực tiếp từ cảnh #' + (sceneIdx + 1)
+        };
+
+        AVState.scenes.splice(sceneIdx + 1, 0, newScene);
+        AVState.scenes.forEach((s, i) => s.id = i + 1);
+
+        renderScenesList();
+        showToast(`✂️ Đã tách Cảnh #${sceneIdx + 1} thành 2 phân cảnh ảnh liên tiếp!`);
     }
 
     // Pick a different image for a specific scene
@@ -738,6 +1004,20 @@
                     duration: AVState.audioDuration
                 };
                 if (typeof window.updateBgmUI === 'function') window.updateBgmUI();
+            }
+
+            // Sync Aspect Ratio to Tab 1 Settings Modal if available
+            if (AVState.aspectRatio) {
+                const ratioRadio = document.querySelector(`input[name="aspect-ratio"][value="${AVState.aspectRatio}"]`);
+                if (ratioRadio) {
+                    ratioRadio.checked = true;
+                    ratioRadio.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                const ratioChip = document.querySelector(`.ratio-option[data-ratio="${AVState.aspectRatio}"]`);
+                if (ratioChip) {
+                    document.querySelectorAll('.ratio-option').forEach(o => o.classList.remove('active'));
+                    ratioChip.classList.add('active');
+                }
             }
 
             if (typeof window.renderMediaList === 'function') window.renderMediaList();
