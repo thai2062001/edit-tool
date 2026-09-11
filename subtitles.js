@@ -24,6 +24,36 @@ function setupSubtitlesRoutes(app, config) {
     // Track active subtitle burn jobs
     const activeSubJobs = new Map();
 
+    // Resilient Gemini Generator with automatic model fallback & retry for 503 high demand
+    async function generateWithSubtitleFallback(ai, params) {
+        const candidateModels = ['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash'];
+        let lastError = null;
+
+        for (const modelName of candidateModels) {
+            for (let attempt = 1; attempt <= 2; attempt++) {
+                try {
+                    const response = await ai.models.generateContent({
+                        ...params,
+                        model: modelName
+                    });
+                    console.log(`[Subtitle AI] Success with model: ${modelName} (attempt ${attempt})`);
+                    return response;
+                } catch (err) {
+                    lastError = err;
+                    const errStr = (err.message || '') + (err.status || '');
+                    const isOverloaded = errStr.includes('503') || errStr.includes('high demand') || errStr.includes('UNAVAILABLE') || errStr.includes('429');
+                    console.warn(`[Subtitle AI Fallback] Model ${modelName} (attempt ${attempt}/2) failed: ${err.message}`);
+                    if (isOverloaded) {
+                        await new Promise(r => setTimeout(r, attempt * 1200));
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+        throw lastError || new Error('Tất cả các mô hình Gemini hiện đang bận, vui lòng thử lại sau.');
+    }
+
     // 1. Upload media specifically for subtitle analysis
     app.post('/api/subtitles/upload', subUpload.single('file'), async (req, res) => {
         try {
@@ -154,8 +184,7 @@ YÊU CẦU ĐỊNH DẠNG:
 
             contents.push({ text: promptText });
 
-            const response = await ai.models.generateContent({
-                model: 'gemini-3.7-flash',
+            const response = await generateWithSubtitleFallback(ai, {
                 contents: contents,
                 config: {
                     responseMimeType: 'application/json'
@@ -359,8 +388,7 @@ Trả về DUY NHẤT một JSON hợp lệ có cấu trúc:
 
             let alignedCues = [];
             try {
-                const response = await ai.models.generateContent({
-                    model: 'gemini-3.7-flash',
+                const response = await generateWithSubtitleFallback(ai, {
                     contents: contents,
                     config: {
                         responseMimeType: 'application/json'
