@@ -25,7 +25,9 @@ const UPLOADS_DIR = path.join(__dirname, 'uploads');
 const OUTPUTS_DIR = path.join(__dirname, 'outputs');
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
-[UPLOADS_DIR, OUTPUTS_DIR, PUBLIC_DIR].forEach(dir => {
+const VIDEO_DIR = path.join(__dirname, 'video');
+
+[UPLOADS_DIR, OUTPUTS_DIR, PUBLIC_DIR, VIDEO_DIR].forEach(dir => {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
 
@@ -35,11 +37,12 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(PUBLIC_DIR));
 app.use('/uploads', express.static(UPLOADS_DIR));
 app.use('/outputs', express.static(OUTPUTS_DIR));
+app.use('/video', express.static(VIDEO_DIR));
 
 // Modular Subtitle / Word-Level Captions Extension
 try {
     const { setupSubtitlesRoutes } = require('./subtitles');
-    setupSubtitlesRoutes(app, { UPLOADS_DIR, OUTPUTS_DIR, DEFAULT_GEMINI_API_KEY });
+    setupSubtitlesRoutes(app, { UPLOADS_DIR, OUTPUTS_DIR, VIDEO_DIR, DEFAULT_GEMINI_API_KEY });
 } catch (subErr) {
     console.error('Subtitle module load notice:', subErr.message);
 }

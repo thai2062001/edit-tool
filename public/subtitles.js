@@ -295,6 +295,10 @@
             syncBtnSampleDemo: document.getElementById('sync-btn-sample-demo'),
             syncBtnRunAi: document.getElementById('sync-btn-run-ai'),
             syncTimelineImgCount: document.getElementById('sync-timeline-img-count'),
+            btnQuickLoadVideoOutput: document.getElementById('btn-quick-load-video-output'),
+            syncQuickVideoStatus: document.getElementById('sync-quick-video-status'),
+            subScriptStatsBadge: document.getElementById('sub-script-stats-badge'),
+            btnParseScriptLines: document.getElementById('btn-parse-script-lines'),
 
             // AI Panel
             subAiApiKey: document.getElementById('sub-input-api-key'),
@@ -431,6 +435,19 @@
                     dom.subVideoPlayer.currentTime = targetTime;
                 }
             });
+        }
+
+        // Quick load video_output.mp4 button
+        if (dom.btnQuickLoadVideoOutput) {
+            dom.btnQuickLoadVideoOutput.addEventListener('click', quickLoadVideoOutput);
+        }
+
+        // Script Textarea line counter & parse button
+        if (dom.subScriptTextarea) {
+            dom.subScriptTextarea.addEventListener('input', updateScriptStats);
+        }
+        if (dom.btnParseScriptLines) {
+            dom.btnParseScriptLines.addEventListener('click', parseScriptLinesDirectly);
         }
 
         // Mode Switching
@@ -686,7 +703,122 @@
         }
     }
 
-    // SRT File upload for Sync Mode
+    // Quick load video_output.mp4 directly without manual upload
+    async function quickLoadVideoOutput() {
+        if (dom.btnQuickLoadVideoOutput) {
+            dom.btnQuickLoadVideoOutput.disabled = true;
+            dom.btnQuickLoadVideoOutput.innerHTML = '⏳ Đang nạp video...';
+        }
+        try {
+            const res = await fetch('/api/subtitles/video-output');
+            const data = await res.json();
+            if (data.success && data.file) {
+                SubState.syncAudio = data.file;
+                setSubMedia(data.file);
+
+                if (dom.syncAudioName) {
+                    dom.syncAudioName.textContent = `🎬 ${data.file.originalName} (${(data.file.duration / 60).toFixed(1)} phút)`;
+                    dom.syncAudioName.style.color = 'var(--accent-cyan)';
+                }
+                if (dom.syncQuickVideoStatus) {
+                    dom.syncQuickVideoStatus.innerHTML = `✅ Đã kết nối video: <strong style="color:var(--accent-cyan);">${data.file.filename}</strong> (${data.file.duration.toFixed(1)}s - ${(data.file.size / (1024*1024)).toFixed(1)} MB)`;
+                }
+                showToast(`🎬 Đã nạp thành công video: ${data.file.originalName}`);
+            } else {
+                alert('Không tìm thấy file video: ' + (data.error || 'Vui lòng kiểm tra thư mục video/'));
+            }
+        } catch (err) {
+            console.error('Quick load video error:', err);
+            alert('Lỗi kết nối khi nạp video_output.mp4: ' + err.message);
+        } finally {
+            if (dom.btnQuickLoadVideoOutput) {
+                dom.btnQuickLoadVideoOutput.disabled = false;
+                dom.btnQuickLoadVideoOutput.innerHTML = '⚡ Lấy video_output.mp4 (16m13s)';
+            }
+        }
+    }
+
+    // Auto calculate line count and Japanese script stats
+    function updateScriptStats() {
+        if (!dom.subScriptTextarea) return;
+        const text = dom.subScriptTextarea.value || '';
+        const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0 && !l.startsWith('#'));
+        const totalLines = lines.length;
+
+        if (dom.subScriptStatsBadge) {
+            if (totalLines === 0) {
+                dom.subScriptStatsBadge.textContent = '';
+            } else {
+                const isJapanese = lines.some(l => /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(l));
+                dom.subScriptStatsBadge.textContent = `📝 Phát hiện: ${totalLines} câu thoại ${isJapanese ? '(🇯🇵 Tiếng Nhật)' : ''}`;
+            }
+        }
+    }
+
+    // Direct script parser: converts each line into a discrete cue segment with distributed timestamps
+    function parseScriptLinesDirectly() {
+        if (!dom.subScriptTextarea) return;
+        const text = dom.subScriptTextarea.value.trim();
+        if (!text) {
+            alert('Vui lòng dán nội dung kịch bản vào ô trước!');
+            return;
+        }
+
+        const lines = text.split('\n')
+            .map(l => l.trim())
+            .filter(l => l.length > 0 && !l.startsWith('#') && !l.startsWith('---'));
+
+        if (lines.length === 0) {
+            alert('Không tìm thấy câu thoại hợp lệ trong kịch bản!');
+            return;
+        }
+
+        const targetMedia = SubState.syncAudio || SubState.currentMedia;
+        const totalDuration = (targetMedia && targetMedia.duration) ? targetMedia.duration : 973.44;
+        const avgDur = totalDuration / lines.length;
+
+        const newSegments = [];
+        let curStart = 0;
+
+        lines.forEach((line, idx) => {
+            const curEnd = idx === lines.length - 1 ? totalDuration : parseFloat((curStart + avgDur).toFixed(2));
+            const dur = parseFloat(Math.max(0.5, curEnd - curStart).toFixed(2));
+
+            // Breakdown into bunsetsu / words
+            const words = line.split(/([、。！？\s]+)/).filter(Boolean).map((w, wIdx, arr) => {
+                const wDur = dur / Math.max(1, arr.length);
+                return {
+                    word: w,
+                    start: parseFloat((curStart + wIdx * wDur).toFixed(2)),
+                    end: parseFloat((curStart + (wIdx + 1) * wDur).toFixed(2))
+                };
+            });
+
+            newSegments.push({
+                id: idx + 1,
+                start: parseFloat(curStart.toFixed(2)),
+                end: parseFloat(curEnd.toFixed(2)),
+                duration: dur,
+                text: line,
+                imageIndex: idx,
+                imageOriginalName: `Cảnh ${idx + 1}`,
+                matchScore: 95,
+                matchReason: `Dòng kịch bản #${idx + 1}`,
+                words: words.length > 0 ? words : [{ word: line, start: curStart, end: curEnd }]
+            });
+
+            curStart = curEnd;
+        });
+
+        SubState.segments = newSegments;
+        renderCuesList();
+        showToast(`✨ Đã tự động phân tách ${newSegments.length} câu kịch bản tương ứng vào video (${totalDuration.toFixed(1)}s)!`);
+        if (dom.subAiStatus) {
+            dom.subAiStatus.innerHTML = `✅ Đã phân tách xong <strong>${newSegments.length} câu phụ đề</strong>. Bấm Play bên trái để xem thử hoặc bấm "AI Đồng Bộ" để tinh chỉnh từng giây!`;
+        }
+    }
+
+    // SRT / Markdown File upload for Sync Mode
     function handleSyncSrtUpload(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -696,6 +828,7 @@
             const content = evt.target.result;
             if (dom.subScriptTextarea) {
                 dom.subScriptTextarea.value = content;
+                updateScriptStats();
             }
             showToast(`Đã đọc nội dung file: ${file.name}`);
         };
@@ -709,11 +842,11 @@
         const audioFile = SubState.syncAudio || SubState.currentMedia;
 
         if (!audioFile || !audioFile.filename) {
-            alert('Vui lòng chọn hoặc tải lên file Audio giọng đọc trước!');
+            alert('Vui lòng chọn hoặc bấm "Lấy video_output.mp4" hoặc nạp file Media trước!');
             return;
         }
         if (!srtText) {
-            alert('Vui lòng nhập hoặc nạp file kịch bản / phụ đề SRT!');
+            alert('Vui lòng nhập hoặc dán nội dung kịch bản / file phụ đề!');
             return;
         }
 
@@ -919,11 +1052,42 @@
         }
     }
 
-    // Toggle Play/Pause
+    // Toggle Play/Pause with robust fallback
     function togglePlayPause() {
         if (!dom.subVideoPlayer) return;
+        
+        // If src is empty or not matching current media, assign source
+        if ((!dom.subVideoPlayer.src || dom.subVideoPlayer.src === window.location.href) && SubState.currentMedia && SubState.currentMedia.url) {
+            dom.subVideoPlayer.src = SubState.currentMedia.url;
+            dom.subVideoPlayer.load();
+        }
+
+        if (!dom.subVideoPlayer.src || dom.subVideoPlayer.src === window.location.href) {
+            // Check if quick load can find video_output
+            quickLoadVideoOutput().then(() => {
+                if (dom.subVideoPlayer.src) {
+                    dom.subVideoPlayer.play().catch(e => console.warn('Play error:', e));
+                }
+            });
+            return;
+        }
+
         if (dom.subVideoPlayer.paused) {
-            dom.subVideoPlayer.play().catch(() => {});
+            const playPromise = dom.subVideoPlayer.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(err => {
+                    console.warn('Video play was prevented or failed:', err);
+                    // If autoplay/unmute policy blocked it, try muted
+                    if (err.name === 'NotAllowedError') {
+                        dom.subVideoPlayer.muted = true;
+                        dom.subVideoPlayer.play().then(() => {
+                            showToast('💡 Đã phát video ở chế độ tắt tiếng do chính sách trình duyệt. Bạn có thể bật lại âm thanh!');
+                        }).catch(() => {});
+                    } else {
+                        showToast('⚠️ Không thể phát video: ' + err.message);
+                    }
+                });
+            }
         } else {
             dom.subVideoPlayer.pause();
         }
@@ -2044,32 +2208,25 @@
         if (dom.subBurnVideoPlayer) dom.subBurnVideoPlayer.pause();
     };
 
-    // Sample Demo Loader (SRT + Audio Voiceover)
+    // Sample Demo Loader (Japanese Submarine script demo)
     function loadSampleSrtDemo() {
         if (dom.subScriptTextarea) {
-            dom.subScriptTextarea.value = `1
-00:00:00,000 --> 00:00:03,800
-Mùa đông Seoul tuyết rơi phủ trắng xóa khắp mọi nẻo đường.
+            dom.subScriptTextarea.value = `想像してみてください。あなたは今、数千トンもの巨大な鋼鉄の塊の中にいて、深海の永遠の暗闇の中を漂っています。
 
-2
-00:00:03,800 --> 00:00:07,500
-Dừng chân tại một quán cà phê nhỏ ven phố cổ Bukchon.
+周囲には何百万トンもの冷たく濁った海水が取り囲み、あらゆるものを粉々に押し潰そうと、常に待ち構えています。
 
-3
-00:00:07,500 --> 00:00:11,200
-Hương cà phê thơm lừng xua tan đi cái lạnh buốt giá mùa đông.`;
-            showToast('Đã nạp mẫu file phụ đề SRT tiếng Việt!');
+その時突然、耳をつんざくような乾いた金属の裂ける音が静寂を切り裂き、激しい揺れが艦内の機材すべてを大きく揺さぶります。
+
+主機関はかすかなうなり声を上げて完全に停止し、艦内のまばゆい照明は一瞬にして消え去ります。
+
+周囲は息をのむほどの静寂に包まれ、残されたのは凄まじい水圧に軋む金属の音と、あなたの胸の鼓動だけ。`;
+            updateScriptStats();
+            showToast('Đã nạp mẫu 5 câu kịch bản tiếng Nhật Voicevox!');
         }
     }
 
     function loadSampleScript() {
-        if (dom.subScriptTextarea) {
-            dom.subScriptTextarea.value = `Mùa đông Seoul phủ đầy tuyết trắng xóa.
-Những bông tuyết nhẹ nhàng rơi trên phố cổ Bukchon.
-Cảm giác bình yên giữa lòng thủ đô hiện đại.
-Hương thơm cà phê nóng hổi xua tan giá lạnh.`;
-            showToast('Đã nạp mẫu kịch bản tiếng Việt!');
-        }
+        loadSampleSrtDemo();
     }
 
     function loadSampleDataIfEmpty() {

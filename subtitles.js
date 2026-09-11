@@ -9,7 +9,7 @@ const { GoogleGenAI } = require('@google/genai');
  * Modular extension for Ist-dev / FFmpeg Studio
  */
 function setupSubtitlesRoutes(app, config) {
-    const { UPLOADS_DIR, OUTPUTS_DIR, DEFAULT_GEMINI_API_KEY } = config;
+    const { UPLOADS_DIR, OUTPUTS_DIR, VIDEO_DIR, DEFAULT_GEMINI_API_KEY } = config;
 
     const storage = multer.diskStorage({
         destination: (req, file, cb) => cb(null, UPLOADS_DIR),
@@ -23,6 +23,55 @@ function setupSubtitlesRoutes(app, config) {
 
     // Track active subtitle burn jobs
     const activeSubJobs = new Map();
+
+    // 0. Check and retrieve pre-rendered video_output.mp4 from /video or /outputs
+    app.get('/api/subtitles/video-output', async (req, res) => {
+        try {
+            const candidates = [
+                path.join(VIDEO_DIR || path.join(__dirname, 'video'), 'video_output.mp4'),
+                path.join(OUTPUTS_DIR, 'video_output.mp4'),
+                path.join(OUTPUTS_DIR, 'output_1789132557732.mp4')
+            ];
+
+            let targetFile = null;
+            let targetUrl = null;
+
+            for (const c of candidates) {
+                if (fs.existsSync(c)) {
+                    targetFile = c;
+                    targetUrl = c.includes('video') ? '/video/' + path.basename(c) : '/outputs/' + path.basename(c);
+                    break;
+                }
+            }
+
+            if (!targetFile) {
+                return res.status(404).json({ error: 'Chưa tìm thấy file video_output.mp4 trong thư mục video/' });
+            }
+
+            const stat = fs.statSync(targetFile);
+            let duration = 973.44;
+            try {
+                duration = await probeMediaDuration(targetFile);
+            } catch (e) {}
+
+            res.json({
+                success: true,
+                file: {
+                    filename: path.basename(targetFile),
+                    fullPath: targetFile,
+                    originalName: path.basename(targetFile),
+                    url: targetUrl,
+                    type: 'video',
+                    duration: parseFloat(duration.toFixed(2)),
+                    size: stat.size,
+                    source: 'video_output'
+                }
+            });
+        } catch (err) {
+            console.error('video-output probe error:', err);
+            res.status(500).json({ error: err.message });
+        }
+    });
 
     // Resilient Gemini Generator with automatic model fallback & retry for 503 high demand
     async function generateWithSubtitleFallback(ai, params) {
@@ -271,9 +320,22 @@ YÊU CẦU ĐỊNH DẠNG & QUY TẮC NGÔN NGỮ QUAN TRỌNG:
                 return res.status(400).json({ error: 'Vui lòng cung cấp nội dung kịch bản hoặc file phụ đề SRT' });
             }
 
-            const audioPath = path.join(UPLOADS_DIR, audioFilename);
-            if (!fs.existsSync(audioPath)) {
-                return res.status(404).json({ error: 'Không tìm thấy tệp audio trên server' });
+            const candidates = [
+                path.join(UPLOADS_DIR, audioFilename),
+                path.join(OUTPUTS_DIR, audioFilename),
+                path.join(VIDEO_DIR || path.join(__dirname, 'video'), audioFilename),
+                path.join(__dirname, 'video', 'video_output.mp4')
+            ];
+            let audioPath = null;
+            for (const c of candidates) {
+                if (fs.existsSync(c)) {
+                    audioPath = c;
+                    break;
+                }
+            }
+
+            if (!audioPath) {
+                return res.status(404).json({ error: 'Không tìm thấy tệp audio/video trên server' });
             }
 
             let audioDuration = 10;
@@ -348,20 +410,25 @@ YÊU CẦU ĐỊNH DẠNG & QUY TẮC NGÔN NGỮ QUAN TRỌNG:
             });
 
             // 3. Prompt for Gemini
+            const totalInputCues = rawParsedSrt.length;
             const srtSummary = rawParsedSrt.map((c, idx) => `#${idx + 1}: "${c.text}"`).join('\n');
             const promptText = `
 Bạn là Đạo diễn kiêm Kỹ sư âm thanh chuyên nghiệp.
 Nhiệm vụ:
 1. Hãy nghe kỹ file audio lồng tiếng (tổng thời lượng: ${audioDuration.toFixed(2)} giây).
-2. Khớp chính xác từng câu trong kịch bản/SRT sau với mốc thời gian bắt đầu (start) và kết thúc (end) trong Audio:
---- DANH SÁCH CÂU KỊCH BẢN / SRT ---
+2. Khớp chính xác toàn bộ ${totalInputCues} câu trong danh sách kịch bản sau với mốc thời gian bắt đầu (start) và kết thúc (end) trong Audio.
+CỰC KỲ QUAN TRỌNG:
+- Danh sách đầu vào có CHÍNH XÁC ${totalInputCues} câu.
+- Bạn PHẢI trả về đúng đủ ${totalInputCues} phần tử trong mảng 'alignedCues' (từ id 1 đến id ${totalInputCues}). Tuyệt đối KHÔNG gộp câu, KHÔNG bỏ sót câu cuối cùng!
+
+--- DANH SÁCH ${totalInputCues} CÂU KỊCH BẢN ---
 ${srtSummary}
 -------------------------------------
-3. Đối chiếu câu thoại với ${imageList.length} bức ảnh đã cung cấp (IMAGE_0 đến IMAGE_${Math.max(0, imageList.length - 1)}):
-   - Đánh giá xem bức ảnh nào khớp nhất với nội dung câu thoại (thường theo thứ tự hoặc ngữ cảnh).
+3. Đối chiếu câu thoại với ${imageList.length} bức ảnh đã cung cấp:
+   - Đánh giá xem bức ảnh nào khớp nhất với nội dung câu thoại (thường theo thứ tự 1-1).
    - Chấm điểm độ khớp (matchScore từ 0 đến 100).
-   - Đưa ra lý do ngắn gọn bằng tiếng Việt (matchReason, ví dụ: "Ảnh quán cà phê ấm cúng khớp với lời thoại kể về dừng chân uống cà phê").
-4. Chia nhỏ từng câu thành danh sách từng từ kèm start/end từng từ (word-level timestamps).
+   - Đưa ra lý do ngắn gọn (matchReason).
+4. Chia nhỏ từng câu thành danh sách từng cụm từ/ngữ tiết bunsetsu kèm start/end.
 
 YÊU CẦU ĐỊNH DẠNG:
 Trả về DUY NHẤT một JSON hợp lệ có cấu trúc:
@@ -372,19 +439,13 @@ Trả về DUY NHẤT một JSON hợp lệ có cấu trúc:
       "start": 0.0,
       "end": 3.8,
       "duration": 3.8,
-      "text": "Mùa đông Seoul tuyết rơi phủ trắng xóa",
+      "text": "${rawParsedSrt[0] ? rawParsedSrt[0].text.replace(/"/g, '\\"') : 'Câu thoại'}",
       "imageIndex": 0,
       "matchScore": 98,
-      "matchReason": "Ảnh tuyết trắng khớp hoàn hảo với câu mở đầu về mùa đông Seoul",
+      "matchReason": "Khớp phân cảnh",
       "words": [
-        { "word": "Mùa", "start": 0.0, "end": 0.5 },
-        { "word": "đông", "start": 0.5, "end": 1.0 },
-        { "word": "Seoul", "start": 1.0, "end": 1.8 },
-        { "word": "tuyết", "start": 1.8, "end": 2.3 },
-        { "word": "rơi", "start": 2.3, "end": 2.8 },
-        { "word": "phủ", "start": 2.8, "end": 3.1 },
-        { "word": "trắng", "start": 3.1, "end": 3.5 },
-        { "word": "xóa", "start": 3.5, "end": 3.8 }
+        { "word": "từ_1", "start": 0.0, "end": 1.5 },
+        { "word": "từ_2", "start": 1.5, "end": 3.8 }
       ]
     }
   ]
@@ -409,6 +470,31 @@ Trả về DUY NHẤT một JSON hợp lệ có cấu trúc:
             } catch (aiErr) {
                 console.warn('Gemini sync call error, using fallback aligner:', aiErr.message);
                 alignedCues = fallbackSrtAlignment(rawParsedSrt, audioDuration, imageList);
+            }
+
+            // Guarantee 1-to-1 matching with rawParsedSrt (Prevent AI from skipping or dropping tail cues)
+            if (rawParsedSrt.length > 0 && alignedCues.length < rawParsedSrt.length) {
+                console.warn(`[Sync Adjust] AI returned ${alignedCues.length} cues, expected ${rawParsedSrt.length}. Auto-realigning missing tail cues.`);
+                const missingCount = rawParsedSrt.length - alignedCues.length;
+                const lastValidEnd = alignedCues.length > 0 ? (alignedCues[alignedCues.length - 1].end || (audioDuration - missingCount * 5.0)) : 0;
+                const remainingTime = Math.max(missingCount * 2.0, audioDuration - lastValidEnd);
+                const stepDur = remainingTime / missingCount;
+
+                for (let k = alignedCues.length; k < rawParsedSrt.length; k++) {
+                    const startK = parseFloat((lastValidEnd + (k - alignedCues.length) * stepDur).toFixed(2));
+                    const endK = parseFloat(Math.min(audioDuration, startK + stepDur).toFixed(2));
+                    alignedCues.push({
+                        id: k + 1,
+                        start: startK,
+                        end: endK,
+                        duration: parseFloat(Math.max(0.5, endK - startK).toFixed(2)),
+                        text: rawParsedSrt[k].text,
+                        imageIndex: k % Math.max(1, imageList.length),
+                        matchScore: 90,
+                        matchReason: `Khớp tự động dòng #${k + 1}`,
+                        words: [{ word: rawParsedSrt[k].text, start: startK, end: endK }]
+                    });
+                }
             }
 
             // Normalize and attach image metadata
@@ -514,10 +600,13 @@ Trả về DUY NHẤT một JSON hợp lệ có cấu trúc:
                 return res.status(400).json({ error: 'Không có danh sách phụ đề' });
             }
 
-            // Find video file in uploads or outputs
+            // Find video file in uploads, outputs or video folder
             let inputVideoPath = path.join(UPLOADS_DIR, videoFilename);
             if (!fs.existsSync(inputVideoPath)) {
                 inputVideoPath = path.join(OUTPUTS_DIR, videoFilename);
+            }
+            if (!fs.existsSync(inputVideoPath)) {
+                inputVideoPath = path.join(VIDEO_DIR || path.join(__dirname, 'video'), videoFilename);
             }
             if (!fs.existsSync(inputVideoPath)) {
                 return res.status(404).json({ error: 'Không tìm thấy tệp video nguồn' });

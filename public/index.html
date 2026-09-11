@@ -119,8 +119,8 @@
                 <span>💬 Auto Subtitle AI (Word-Level)</span>
             </button>
             <button id="tab-btn-audio-visual" class="tab-btn" style="border: 1px solid rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.08);">
-                <span>🎙️ Audio ➔ Ảnh (Không Phụ Đề)</span>
-                <span class="tab-badge" style="background: rgba(16, 185, 129, 0.3); color: #34D399;">MỚI</span>
+                <span>🎙️ Audio ➔ Ảnh ➔ Phụ Đề (1:1)</span>
+                <span class="tab-badge" style="background: rgba(16, 185, 129, 0.3); color: #34D399;">KHỚP 100%</span>
             </button>
             <button id="tab-btn-watermark" class="tab-btn">
                 <span>🛡️ Logo & Watermark Studio</span>
@@ -743,7 +743,7 @@
 
                     <!-- Video Container with Live Word-Level Overlay -->
                     <div id="sub-video-container" class="sub-video-container">
-                        <video id="sub-video-player" class="sub-video-player" playsinline preload="auto"></video>
+                        <video id="sub-video-player" class="sub-video-player" playsinline controls preload="auto"></video>
                         <div id="sub-word-overlay" class="sub-word-overlay pos-bottom">
                             <div id="sub-caption-box" class="sub-caption-box">
                                 <!-- Word pills rendered in real-time -->
@@ -877,42 +877,66 @@
                             <input type="password" id="sub-input-api-key" class="form-control font-mono" value="AQ.Ab8RN6L9WwF4De3rEa4B08uhBkkzhc6Kf59yMn2ew0-GeG9fHQ" placeholder="Nhập API Key...">
                         </div>
 
-                        <!-- Mode: Audio-SRT-Image Sync Panel -->
+                        <!-- Mode: Audio/Video-SRT-Image Sync Panel -->
                         <div id="sub-panel-sync-mode" class="sub-sync-panel-wrap mt-2">
+                            <!-- Quick Media Bar -->
+                            <div class="sync-quick-video-bar flex-between align-center p-2 mb-2" style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px;">
+                                <div class="flex-row align-center gap-xs">
+                                    <span style="font-size: 1.1rem;">🎬</span>
+                                    <div>
+                                        <div class="text-xs" style="font-weight: 700; color: var(--accent-cyan);">Đã có sẵn video dựng?</div>
+                                        <div class="text-xs text-dim" id="sync-quick-video-status">Sử dụng trực tiếp file video mà không cần tách audio lẻ.</div>
+                                    </div>
+                                </div>
+                                <div class="flex-row align-center gap-xs">
+                                    <button type="button" id="btn-quick-load-video-output" class="btn btn-xs btn-ai" title="Tải nhanh video video_output.mp4 vừa dựng xong">
+                                        ⚡ Lấy video_output.mp4 (16m13s)
+                                    </button>
+                                </div>
+                            </div>
+
                             <div class="sync-upload-row">
                                 <div class="sync-file-card">
-                                    <div class="sync-card-label">🔊 File Audio Giọng Đọc:</div>
+                                    <div class="sync-card-label">🎬 Media Nguồn (Video hoặc Audio):</div>
                                     <input type="file" id="sync-audio-file-input" accept="audio/*,video/*" hidden>
                                     <div class="sync-card-action">
                                         <button type="button" class="btn btn-xs btn-outline" onclick="document.getElementById('sync-audio-file-input').click()">
-                                            📁 Chọn Audio (.MP3/.WAV)
+                                            📁 Chọn Video/Audio (.MP4/.WAV)
                                         </button>
-                                        <span id="sync-audio-name" class="sync-filename-tag">Chưa chọn audio</span>
+                                        <span id="sync-audio-name" class="sync-filename-tag">Chưa chọn media</span>
                                     </div>
                                 </div>
                                 <div class="sync-file-card">
-                                    <div class="sync-card-label">📜 File Phụ Đề / Kịch Bản:</div>
+                                    <div class="sync-card-label">📜 Kịch Bản / Phụ Đề:</div>
                                     <input type="file" id="sync-srt-file-input" accept=".srt,.vtt,.txt,.md" hidden>
                                     <div class="sync-card-action">
                                         <button type="button" class="btn btn-xs btn-outline" onclick="document.getElementById('sync-srt-file-input').click()">
-                                            📁 Nạp File (.SRT / .VTT)
+                                            📁 Nạp File (.MD / .SRT)
                                         </button>
-                                        <button type="button" id="sync-btn-sample-demo" class="btn btn-xs btn-ghost" title="Nạp mẫu SRT & Audio Seoul thử nghiệm">
-                                            📑 Nạp Mẫu Demo
+                                        <button type="button" id="sync-btn-sample-demo" class="btn btn-xs btn-ghost" title="Nạp mẫu kịch bản tiếng Nhật">
+                                            📑 Nạp Mẫu Script Nhật
                                         </button>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="setting-row mt-2">
-                                <label for="sub-script-textarea" class="text-xs">Nội dung Kịch bản / SRT:</label>
-                                <textarea id="sub-script-textarea" class="custom-textarea mt-1" rows="4" placeholder="Dán nội dung SRT hoặc tải file .srt/.vtt lên..."></textarea>
+                                <div class="flex-between align-center mb-1">
+                                    <label for="sub-script-textarea" class="text-xs">Nội dung Kịch bản (Mỗi dòng 1 câu thoại / Markdown / SRT):</label>
+                                    <div class="flex-row align-center gap-xs">
+                                        <span id="sub-script-stats-badge" class="text-xs" style="color: var(--accent-emerald); font-weight: 600;"></span>
+                                        <button type="button" id="btn-parse-script-lines" class="btn btn-xs btn-outline" title="Tự động chia tách mỗi dòng thành 1 câu phụ đề độc lập hiển thị trước">
+                                            ⚡ Tách Dòng Thành Câu Ngay
+                                        </button>
+                                    </div>
+                                </div>
+                                <textarea id="sub-script-textarea" class="custom-textarea mt-1" rows="5" placeholder="Dán nội dung từ file kịch bản (mỗi dòng một câu) hoặc dán file phụ đề .srt..."></textarea>
                             </div>
 
-                            <div class="flex-between align-center mt-2">
-                                <span class="text-xs text-dim">🖼️ Ảnh Timeline: <strong id="sync-timeline-img-count">0 ảnh</strong></span>
+                            <div class="flex-between align-center mt-2 flex-wrap gap-xs">
+                                <span class="text-xs text-dim">⚙️ Tự động nhận diện dòng & giọng nói trong video để gắn Timestamp.</span>
                                 <button id="sync-btn-run-ai" class="btn btn-ai-action">
-                                    ⚡ AI Đồng Bộ Audio ➔ SRT ➔ Ảnh
+                                    ⚡ AI Đồng Bộ Lời Thoại Vào Video
                                 </button>
                             </div>
                         </div>
@@ -1493,26 +1517,81 @@
                         <div id="av-images-grid" class="av-images-grid custom-scrollbar"></div>
                     </div>
 
-                    <!-- Step 3: Script & Matching Settings -->
+                    <!-- Step 3: Script & Subtitle & Matching Settings -->
                     <div class="av-card">
                         <div class="av-card-header">
-                            <h4>⚙️ 3. Kịch Bản & Cài Đặt Nhịp Điệu (Không Phụ Đề)</h4>
+                            <h4>⚙️ 3. Kịch Bản, Phụ Đề & Cài Đặt Nhịp Điệu</h4>
+                            <span class="av-badge" style="background: rgba(56, 189, 248, 0.2); color: #38BDF8;">Đồng Bộ 1:1</span>
                         </div>
                         <div class="form-group mb-2">
                             <div class="flex-between align-center mb-1">
                                 <label class="form-label-xs">📜 Nội dung Kịch Bản / Lời thoại từng câu:</label>
-                                <button type="button" id="btn-av-clean-script" class="btn btn-xs btn-ghost text-cyan">
-                                    🧹 Chuẩn Hóa Câu
-                                </button>
+                                <div class="flex-row gap-xs">
+                                    <input type="file" id="av-script-file-input" accept=".md,.txt,.srt" hidden>
+                                    <button type="button" id="btn-av-load-script-file" class="btn btn-xs btn-outline text-cyan" onclick="document.getElementById('av-script-file-input').click()">
+                                        📁 Nạp File Kịch Bản (.md / .txt / .srt)
+                                    </button>
+                                    <button type="button" id="btn-av-clean-script" class="btn btn-xs btn-ghost text-cyan">
+                                        🧹 Chuẩn Hóa Câu
+                                    </button>
+                                </div>
                             </div>
-                            <textarea id="av-script-textarea" class="custom-textarea" rows="4" placeholder="Dán nội dung kịch bản tương ứng với giọng đọc vào đây để AI so khớp ảnh chuẩn xác 100% từng câu..."></textarea>
+                            <textarea id="av-script-textarea" class="custom-textarea" rows="4" placeholder="Dán nội dung kịch bản hoặc bấm 'Nạp File Kịch Bản' để tự động tách đúng 91 câu tương ứng với 91 file audio..."></textarea>
+                        </div>
+
+                        <!-- Subtitle Customization Section -->
+                        <div class="p-2 mb-2" style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 8px;">
+                            <div class="flex-between align-center mb-2">
+                                <label class="flex-row align-center gap-xs cursor-pointer" style="margin: 0; font-weight: 700; color: var(--accent-cyan);">
+                                    <input type="checkbox" id="av-enable-subtitles" checked style="width: 16px; height: 16px; accent-color: var(--accent-cyan);">
+                                    <span>💬 Bật hiển thị Phụ Đề (Khớp từng mili-giây với Voice & Ảnh)</span>
+                                </label>
+                                <span class="text-xs text-dim">Zero Lag 0.0s</span>
+                            </div>
+                            <div id="av-subtitle-options" class="settings-grid-2col gap-sm mt-2">
+                                <div class="form-group">
+                                    <label class="form-label-xs">Kiểu dáng phụ đề (Style):</label>
+                                    <select id="av-sub-style" class="custom-select form-control-sm">
+                                        <option value="banner" selected>⬛ Banner Đen Mờ (Rõ nét, dễ đọc nhất)</option>
+                                        <option value="outline">✨ Viền Nổi (Outline Stroke)</option>
+                                        <option value="glow">🌟 Phát Sáng (Glow Neon)</option>
+                                        <option value="plain">⏹️ Tối Giản (Không viền)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label-xs">Vị trí hiển thị:</label>
+                                    <select id="av-sub-position" class="custom-select form-control-sm">
+                                        <option value="bottom" selected>⬇️ Dưới đáy (Chuẩn điện ảnh)</option>
+                                        <option value="center">🎯 Chính giữa</option>
+                                        <option value="top">⬆️ Trên cùng</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label-xs">Cỡ chữ phụ đề:</label>
+                                    <select id="av-sub-fontsize" class="custom-select form-control-sm">
+                                        <option value="42">Nhỏ (42px)</option>
+                                        <option value="48" selected>Vừa chuẩn (48px)</option>
+                                        <option value="56">Lớn nổi bật (56px)</option>
+                                        <option value="64">Rất lớn (64px)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label-xs">Màu chữ & Màu viền:</label>
+                                    <div class="flex-row gap-xs align-center">
+                                        <input type="color" id="av-sub-color" value="#FFFFFF" title="Màu chữ chính" style="width: 38px; height: 28px; border: none; border-radius: 4px; cursor: pointer; background: transparent;">
+                                        <span class="text-xs text-dim">Chữ</span>
+                                        <input type="color" id="av-sub-accent" value="#06B6D4" title="Màu viền / điểm nhấn" style="width: 38px; height: 28px; border: none; border-radius: 4px; cursor: pointer; background: transparent;">
+                                        <span class="text-xs text-dim">Viền/Box</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="settings-grid-2col gap-sm">
                             <div class="form-group">
                                 <label class="form-label-xs">✨ Chuyển cảnh (Transitions):</label>
                                 <select id="av-transition-select" class="custom-select form-control-sm">
-                                    <option value="none" selected>⏹️ Cắt Thẳng (Cut - Mặc định thuần tài liệu, không hiệu ứng)</option>
+                                    <option value="none" selected>⏹️ Cắt Thẳng (Cut - Chuẩn tài liệu, 0 độ trễ)</option>
                                     <option value="crossfade">🌫️ Mờ Chồng Nhẹ (Crossfade)</option>
                                     <option value="fade_black">🌑 Fade Đen</option>
                                     <option value="flash_white">⚡ Flash Trắng</option>
@@ -1521,7 +1600,7 @@
                             <div class="form-group">
                                 <label class="form-label-xs">🌊 Chuyển động ảnh (Motion):</label>
                                 <select id="av-motion-select" class="custom-select form-control-sm">
-                                    <option value="none" selected>⏹️ Tĩnh (Mặc định - Ảnh đứng yên sắc nét, không zoom/pan)</option>
+                                    <option value="none" selected>⏹️ Tĩnh (Ảnh đứng yên sắc nét 100%)</option>
                                     <option value="zoom_in">🔍 Zoom In (Phóng to nhẹ)</option>
                                     <option value="zoom_out">🔎 Zoom Out (Thu nhỏ nhẹ)</option>
                                     <option value="pan_left">⬅️ Pan Trái</option>
@@ -1531,7 +1610,7 @@
                             <div class="form-group" style="grid-column: span 2;">
                                 <label class="form-label-xs">🎯 Cơ chế gán ảnh vào phân cảnh (Matching Strategy):</label>
                                 <select id="av-match-mode-select" class="custom-select form-control-sm" style="border: 1px solid #10B981; background: rgba(16, 185, 129, 0.08);">
-                                    <option value="sequential" selected>🔢 Theo đúng số thứ tự tên ảnh (Ảnh 1 ➔ Câu 1, Ảnh 2 ➔ Câu 2...)</option>
+                                    <option value="sequential" selected>🔢 Theo đúng số thứ tự tự nhiên (Ảnh 1 ➔ Câu 1, Ảnh 2 ➔ Câu 2...)</option>
                                     <option value="ai_vision">🤖 Dùng Gemini AI phân tích ngữ cảnh (Khớp theo nội dung ảnh)</option>
                                 </select>
                             </div>
@@ -1546,11 +1625,13 @@
                             <div class="form-group" style="grid-column: span 2;">
                                 <label class="form-label-xs">⏱️ Khoảng nghỉ giữa các câu thoại:</label>
                                 <select id="av-pause-select" class="custom-select form-control-sm">
-                                    <option value="0.0" selected>0.0s (Khớp 100% Audio Dài Không Lệch Tiếng)</option>
+                                    <option value="0.0" selected>0.0s (Khớp 100% Tuyệt Đối Không Lệch Tiếng)</option>
                                     <option value="0.2">0.2s (Nghỉ nhẹ giữa câu)</option>
                                     <option value="0.5">0.5s (Chỉ dùng cho Audio rời)</option>
                                 </select>
                             </div>
+                        </div>
+
                         <!-- Smart Validation & Image Count vs Script Lines Indicator -->
                         <div id="av-match-validation-banner" class="av-match-validation-banner hidden" style="margin-top: 10px; padding: 8px 12px; border-radius: 6px; font-size: 12px; display: flex; align-items: center; justify-content: space-between;">
                             <span id="av-validation-text"></span>
@@ -1558,14 +1639,14 @@
                         </div>
 
                         <button type="button" id="btn-av-run-match" class="btn btn-primary w-100 mt-3" style="padding: 12px; font-weight: 700; font-size: 14px;">
-                            ✨ Bắt Đầu Tự Động Khớp Voice ➔ Ảnh (Không Phụ Đề)
+                            ✨ Bắt Đầu Tự Động Khớp Audio ➔ Ảnh ➔ Phụ Đề (1:1)
                         </button>
                     </div>
 
                     <!-- Step 4: Visual Storyboard Scenes Result -->
                     <div class="av-card">
                         <div class="av-card-header">
-                            <h4>🎞️ 4. Danh Sách Phân Cảnh Đã Khớp Chuẩn Voice</h4>
+                            <h4>🎞️ 4. Danh Sách Phân Cảnh Khớp Chuẩn (Audio + Ảnh + Phụ Đề)</h4>
                             <span id="av-scenes-count-badge" class="av-badge">0 cảnh</span>
                         </div>
                         <p class="text-xs text-dim mb-2">Bấm vào từng cảnh để nghe thử hoặc bấm vào ảnh thu nhỏ để tự chọn đổi sang bức ảnh khác.</p>
@@ -1573,7 +1654,17 @@
                             <div class="text-dim text-xs text-center py-4">Chưa có phân cảnh. Hãy nạp Voice + Ảnh và bấm nút Khớp ở trên.</div>
                         </div>
 
+                        <!-- Subtitle Export Buttons -->
                         <div class="flex-row gap-xs mt-3">
+                            <button type="button" id="btn-av-export-srt" class="btn btn-small btn-outline" style="flex: 1;" title="Xuất file phụ đề SRT chuẩn khớp mili-giây">
+                                📥 Xuất File .SRT
+                            </button>
+                            <button type="button" id="btn-av-export-ass" class="btn btn-small btn-outline text-cyan" style="flex: 1;" title="Xuất file phụ đề ASS có styling">
+                                📥 Xuất File .ASS
+                            </button>
+                        </div>
+
+                        <div class="flex-row gap-xs mt-2">
                             <button type="button" id="btn-av-apply-timeline" class="btn btn-primary" style="flex: 1;">
                                 🚀 Đưa Toàn Bộ Vào Timeline Dựng Video
                             </button>
@@ -1599,8 +1690,8 @@
                         <!-- Live Clean Canvas Display -->
                         <div id="av-player-container" class="av-player-container">
                             <canvas id="av-live-canvas" class="av-live-canvas" width="1280" height="720"></canvas>
-                            <div class="av-clean-badge">
-                                <span>🛡️</span> Thuần Ảnh & Audio (Zero Phụ Đề)
+                            <div id="av-player-badge" class="av-clean-badge">
+                                <span>⚡</span> Đồng Bộ 1:1 (Audio + Ảnh + Phụ Đề)
                             </div>
                         </div>
 

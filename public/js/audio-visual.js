@@ -24,7 +24,16 @@
         aspectRatio: '16:9',
         transition: 'none', // Mặc định cắt thẳng (Cut)
         motion: 'none',      // Mặc định ảnh tĩnh hoàn toàn, không zoom/pan
-        isRendering: false
+        isRendering: false,
+        // Subtitle Sync 1-to-1 State
+        enableSubtitles: true,
+        subtitleStyle: {
+            style: 'banner',       // 'banner' | 'outline' | 'glow' | 'plain'
+            position: 'bottom',    // 'bottom' | 'center' | 'top'
+            fontSize: 48,
+            textColor: '#FFFFFF',
+            textAccent: '#06B6D4'
+        }
     };
 
     // DOM Elements Cache
@@ -72,8 +81,18 @@
             imagesCountBadge: document.getElementById('av-images-count'),
 
             // Script/Text Input & Settings
+            scriptFileInput: document.getElementById('av-script-file-input'),
+            btnLoadScriptFile: document.getElementById('btn-av-load-script-file'),
             scriptTextarea: document.getElementById('av-script-textarea'),
             btnCleanScript: document.getElementById('btn-av-clean-script'),
+            enableSubtitlesCheck: document.getElementById('av-enable-subtitles'),
+            subStyleSelect: document.getElementById('av-sub-style'),
+            subPositionSelect: document.getElementById('av-sub-position'),
+            subFontSizeSelect: document.getElementById('av-sub-fontsize'),
+            subColorInput: document.getElementById('av-sub-color'),
+            subAccentInput: document.getElementById('av-sub-accent'),
+            subtitleOptionsBox: document.getElementById('av-subtitle-options'),
+
             transitionSelect: document.getElementById('av-transition-select'),
             motionSelect: document.getElementById('av-motion-select'),
             pauseSelect: document.getElementById('av-pause-select'),
@@ -87,6 +106,7 @@
             // Player & Canvas
             canvas: document.getElementById('av-live-canvas'),
             playerContainer: document.getElementById('av-player-container'),
+            playerBadge: document.getElementById('av-player-badge'),
             btnPlayPause: document.getElementById('btn-av-play-pause'),
             scrubber: document.getElementById('av-scrubber'),
             timeLabel: document.getElementById('av-time-label'),
@@ -95,6 +115,8 @@
             // Scenes List & Results
             scenesList: document.getElementById('av-scenes-list'),
             scenesCountBadge: document.getElementById('av-scenes-count-badge'),
+            btnExportSrt: document.getElementById('btn-av-export-srt'),
+            btnExportAss: document.getElementById('btn-av-export-ass'),
             btnApplyToTimeline: document.getElementById('btn-av-apply-timeline'),
             btnExportDirect: document.getElementById('btn-av-export-direct')
         };
@@ -316,6 +338,12 @@
             });
         }
 
+        // Script File Loader (.md / .txt / .srt)
+        if (dom.btnLoadScriptFile && dom.scriptFileInput) {
+            dom.btnLoadScriptFile.addEventListener('click', () => dom.scriptFileInput.click());
+            dom.scriptFileInput.addEventListener('change', handleScriptFileUpload);
+        }
+
         // Clean Script Button & Textarea Input Listener
         if (dom.scriptTextarea) {
             dom.scriptTextarea.addEventListener('input', updateValidationIndicator);
@@ -324,10 +352,53 @@
             dom.btnCleanScript.addEventListener('click', () => {
                 const raw = dom.scriptTextarea.value.trim();
                 if (!raw) return;
-                const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith('---') && !l.startsWith('==='));
+                const lines = parseScriptLinesSmart(raw);
                 dom.scriptTextarea.value = lines.join('\n');
                 updateValidationIndicator();
                 showToast(`🧹 Đã chuẩn hóa ${lines.length} câu thoại kịch bản!`);
+            });
+        }
+
+        // Subtitle Style Customization Listeners
+        if (dom.enableSubtitlesCheck) {
+            dom.enableSubtitlesCheck.addEventListener('change', (e) => {
+                AVState.enableSubtitles = e.target.checked;
+                if (dom.subtitleOptionsBox) {
+                    dom.subtitleOptionsBox.style.opacity = e.target.checked ? '1' : '0.4';
+                    dom.subtitleOptionsBox.style.pointerEvents = e.target.checked ? 'auto' : 'none';
+                }
+                drawCanvasAtTime(AVState.audioElement.currentTime || 0);
+            });
+        }
+
+        if (dom.subStyleSelect) {
+            dom.subStyleSelect.addEventListener('change', (e) => {
+                AVState.subtitleStyle.style = e.target.value;
+                drawCanvasAtTime(AVState.audioElement.currentTime || 0);
+            });
+        }
+        if (dom.subPositionSelect) {
+            dom.subPositionSelect.addEventListener('change', (e) => {
+                AVState.subtitleStyle.position = e.target.value;
+                drawCanvasAtTime(AVState.audioElement.currentTime || 0);
+            });
+        }
+        if (dom.subFontSizeSelect) {
+            dom.subFontSizeSelect.addEventListener('change', (e) => {
+                AVState.subtitleStyle.fontSize = parseInt(e.target.value) || 48;
+                drawCanvasAtTime(AVState.audioElement.currentTime || 0);
+            });
+        }
+        if (dom.subColorInput) {
+            dom.subColorInput.addEventListener('input', (e) => {
+                AVState.subtitleStyle.textColor = e.target.value;
+                drawCanvasAtTime(AVState.audioElement.currentTime || 0);
+            });
+        }
+        if (dom.subAccentInput) {
+            dom.subAccentInput.addEventListener('input', (e) => {
+                AVState.subtitleStyle.textAccent = e.target.value;
+                drawCanvasAtTime(AVState.audioElement.currentTime || 0);
             });
         }
 
@@ -389,6 +460,14 @@
                 AVState.motion = e.target.value;
                 applySettingsToCurrentScenes();
             });
+        }
+
+        // Subtitle Export Handlers (.SRT & .ASS)
+        if (dom.btnExportSrt) {
+            dom.btnExportSrt.addEventListener('click', handleExportSrt);
+        }
+        if (dom.btnExportAss) {
+            dom.btnExportAss.addEventListener('click', handleExportAss);
         }
 
         // Apply to Timeline
@@ -510,6 +589,91 @@
         if (dom.timeLabel) {
             dom.timeLabel.textContent = `0:00.0 / ${formatTime(AVState.audioDuration)}`;
         }
+    }
+
+    // Smart parser for script text (.md Voicevox, .srt, .txt)
+    function parseScriptLinesSmart(rawContent) {
+        if (!rawContent || !rawContent.trim()) return [];
+
+        const lines = rawContent.split(/\r?\n/);
+        const result = [];
+
+        // Check if file is SRT format
+        const isSrt = /-->\s*\d{2}:\d{2}/.test(rawContent);
+        if (isSrt) {
+            let currentText = [];
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) {
+                    if (currentText.length > 0) {
+                        result.push(currentText.join(' '));
+                        currentText = [];
+                    }
+                } else if (/^\d+$/.test(line)) {
+                    // index number, skip
+                } else if (line.includes('-->')) {
+                    // timestamp line, skip
+                } else {
+                    currentText.push(line);
+                }
+            }
+            if (currentText.length > 0) result.push(currentText.join(' '));
+            return result.filter(Boolean);
+        }
+
+        // Check if file is Markdown (Voicevox Script)
+        // Typically structured with lines or Japanese/Vietnamese sentences
+        for (let i = 0; i < lines.length; i++) {
+            let line = lines[i].trim();
+            if (!line) continue;
+
+            // Skip Markdown headers (# Title, ## Scene)
+            if (line.startsWith('#')) continue;
+            // Skip dividers (---, ===)
+            if (/^[-=_*]{3,}$/.test(line)) continue;
+            // Skip blockquotes or meta tags
+            if (line.startsWith('> [!') || line.startsWith('<!--')) continue;
+
+            // If line is format: **Scene 01**: "Text" or Scene 01: Text
+            const sceneMatch = line.match(/^(?:(?:\*\*|__)?Scene\s*\d+(?:\*\*|__)?\s*[:\-\.]\s*)(.*)$/i);
+            if (sceneMatch && sceneMatch[1]) {
+                line = sceneMatch[1].trim();
+            }
+
+            // Strip enclosing quotes if any
+            if ((line.startsWith('"') && line.endsWith('"')) || (line.startsWith('「') && line.endsWith('」'))) {
+                line = line.slice(1, -1).trim();
+            }
+
+            if (line) {
+                result.push(line);
+            }
+        }
+
+        return result;
+    }
+
+    // Handle Script File Upload (.md, .txt, .srt)
+    function handleScriptFileUpload(e) {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const rawText = event.target.result;
+            const parsedLines = parseScriptLinesSmart(rawText);
+            if (parsedLines.length === 0) {
+                alert('Không trích xuất được câu thoại nào từ file kịch bản!');
+                return;
+            }
+
+            if (dom.scriptTextarea) {
+                dom.scriptTextarea.value = parsedLines.join('\n');
+            }
+            updateValidationIndicator();
+            showToast(`📜 Đã nạp thành công ${parsedLines.length} câu thoại từ tệp ${file.name}!`);
+        };
+        reader.readAsText(file, 'utf-8');
     }
 
     // Sort batch audio files naturally by filename (e.g., segment_0001.wav, segment_0002.wav... segment_0091.wav)
@@ -1336,6 +1500,98 @@
 
         ctx.drawImage(img, dx, dy, dw, dh);
         ctx.restore();
+
+        // RENDER LIVE SUBTITLE OVERLAY ON CANVAS (If enabled and scene has text)
+        if (AVState.enableSubtitles && scene.sceneText && scene.sceneText.trim()) {
+            drawLiveSubtitleOnCanvas(ctx, scene.sceneText.trim(), w, h, AVState.subtitleStyle);
+        }
+    }
+
+    // Helper: Draw Live Subtitle with High-Res Wrap, Box/Outline/Glow styling
+    function drawLiveSubtitleOnCanvas(ctx, text, w, h, styleConf) {
+        ctx.save();
+
+        const baseFontSize = styleConf.fontSize || 48;
+        const fontSize = Math.round(baseFontSize * (h / 1080));
+        ctx.font = `bold ${fontSize}px "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Auto wrap text to fit within canvas margins
+        const maxTextWidth = w * 0.84;
+        const words = text.split(/\s+/);
+        const lines = [];
+        let currentLine = '';
+
+        words.forEach(word => {
+            const testLine = currentLine ? `${currentLine} ${word}` : word;
+            const metrics = ctx.measureText(testLine);
+            if (metrics.width > maxTextWidth && currentLine) {
+                lines.push(currentLine);
+                currentLine = word;
+            } else {
+                currentLine = testLine;
+            }
+        });
+        if (currentLine) lines.push(currentLine);
+
+        const lineHeight = fontSize * 1.35;
+        const totalBlockHeight = lines.length * lineHeight;
+
+        // Position Y calculation
+        let startY = h - (totalBlockHeight / 2) - Math.round(h * 0.08); // default bottom
+        if (styleConf.position === 'top') {
+            startY = (totalBlockHeight / 2) + Math.round(h * 0.10);
+        } else if (styleConf.position === 'center') {
+            startY = (h / 2) - (totalBlockHeight / 2) + (lineHeight / 2);
+        }
+
+        const textColor = styleConf.textColor || '#FFFFFF';
+        const textAccent = styleConf.textAccent || '#06B6D4';
+        const subStyle = styleConf.style || 'banner';
+
+        lines.forEach((lineText, lIdx) => {
+            const lineY = startY + (lIdx * lineHeight);
+            const lineMetrics = ctx.measureText(lineText);
+            const lineW = lineMetrics.width;
+
+            if (subStyle === 'banner') {
+                // Semi-transparent rounded backdrop banner
+                const padX = 22;
+                const padY = 8;
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.78)';
+                ctx.beginPath();
+                ctx.roundRect((w / 2) - (lineW / 2) - padX, lineY - (fontSize / 2) - padY, lineW + (padX * 2), fontSize + (padY * 2), 8);
+                ctx.fill();
+
+                ctx.fillStyle = textColor;
+                ctx.fillText(lineText, w / 2, lineY);
+            } else if (subStyle === 'outline') {
+                ctx.lineWidth = Math.max(4, Math.round(fontSize * 0.12));
+                ctx.strokeStyle = textAccent;
+                ctx.strokeText(lineText, w / 2, lineY);
+
+                ctx.fillStyle = textColor;
+                ctx.fillText(lineText, w / 2, lineY);
+            } else if (subStyle === 'glow') {
+                ctx.shadowColor = textAccent;
+                ctx.shadowBlur = 18;
+                ctx.fillStyle = textColor;
+                ctx.fillText(lineText, w / 2, lineY);
+
+                // Re-draw text clean on top
+                ctx.shadowBlur = 0;
+                ctx.fillText(lineText, w / 2, lineY);
+            } else {
+                // Plain
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+                ctx.shadowBlur = 6;
+                ctx.fillStyle = textColor;
+                ctx.fillText(lineText, w / 2, lineY);
+            }
+        });
+
+        ctx.restore();
     }
 
     // Play audio for a specific scene in batch mode
@@ -1429,8 +1685,18 @@
             cloned.settings.endTime = scene.endTime;
             cloned.settings.fadeIn = (scene.transition === 'none') ? 0.0 : 0.25;
             cloned.settings.fadeOut = (scene.transition === 'none') ? 0.0 : 0.25;
-            // CRITICAL: NO SUBTITLES / NO OVERLAY TEXT
-            cloned.settings.overlayText = '';
+            // ATTACH SUBTITLES & OVERLAY TEXT (If enabled)
+            if (AVState.enableSubtitles && scene.sceneText && scene.sceneText.trim()) {
+                cloned.settings.overlayText = scene.sceneText.trim();
+                cloned.settings.textStyle = AVState.subtitleStyle.style || 'banner';
+                cloned.settings.textPosition = AVState.subtitleStyle.position || 'bottom';
+                cloned.settings.fontSize = AVState.subtitleStyle.fontSize || 48;
+                cloned.settings.textColor = AVState.subtitleStyle.textColor || '#FFFFFF';
+                cloned.settings.textAccent = AVState.subtitleStyle.textAccent || '#06B6D4';
+                cloned.settings.textAlign = 'center';
+            } else {
+                cloned.settings.overlayText = '';
+            }
             cloned.isPlaceholder = false;
 
             // Discrete per-scene voice audio (nếu dùng chế độ loạt Audio Phân Cảnh)
@@ -1486,7 +1752,8 @@
                 window.switchMainTab('tab-btn-editor');
             }
 
-            showToast(`🎉 Đã đưa thành công ${newTimeline.length} phân cảnh sạch (Không phụ đề) vào Timeline!`);
+            const subNotice = AVState.enableSubtitles ? 'kèm Phụ Đề Chuẩn 1:1' : 'Thuần Visual (Không phụ đề)';
+            showToast(`🎉 Đã đưa thành công ${newTimeline.length} phân cảnh (${subNotice}) vào Timeline!`);
         }
     }
 
@@ -1504,6 +1771,95 @@
         if (btnRender) {
             btnRender.click();
         }
+    }
+
+    // Format Seconds to SRT Timecode: 00:00:00,000
+    function formatSrtTimecode(seconds) {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = Math.floor(seconds % 60);
+        const ms = Math.floor((seconds % 1) * 1000);
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')},${String(ms).padStart(3, '0')}`;
+    }
+
+    // Export .SRT Subtitle File
+    function handleExportSrt() {
+        if (!AVState.scenes || AVState.scenes.length === 0) {
+            alert('⚠️ Chưa có phân cảnh nào để xuất phụ đề! Vui lòng khớp Audio và Kịch bản trước.');
+            return;
+        }
+
+        let srtContent = '';
+        AVState.scenes.forEach((s, idx) => {
+            const text = (s.sceneText || '').trim();
+            if (!text) return;
+
+            const st = formatSrtTimecode(s.startTime);
+            const et = formatSrtTimecode(s.endTime);
+
+            srtContent += `${idx + 1}\n`;
+            srtContent += `${st} --> ${et}\n`;
+            srtContent += `${text}\n\n`;
+        });
+
+        const blob = new Blob([srtContent], { type: 'application/x-subrip;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `subtitles_${Date.now()}.srt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast(`📥 Đã xuất thành công file SRT gồm ${AVState.scenes.length} câu phụ đề!`);
+    }
+
+    // Export .ASS Subtitle File
+    function handleExportAss() {
+        if (!AVState.scenes || AVState.scenes.length === 0) {
+            alert('⚠️ Chưa có phân cảnh nào để xuất phụ đề! Vui lòng khớp Audio và Kịch bản trước.');
+            return;
+        }
+
+        const segments = AVState.scenes.map((s, idx) => ({
+            id: idx + 1,
+            start: s.startTime,
+            end: s.endTime,
+            text: s.sceneText || '',
+            words: [{ word: s.sceneText || '', start: s.startTime, end: s.endTime }]
+        }));
+
+        fetch('/api/subtitles/export', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                segments,
+                format: 'ass',
+                style: {
+                    aspectRatio: AVState.aspectRatio || '16:9',
+                    fontFamily: 'Arial',
+                    fontSize: AVState.subtitleStyle.fontSize || 48,
+                    primaryColor: AVState.subtitleStyle.textColor || '#FFFFFF',
+                    highlightColor: AVState.subtitleStyle.textAccent || '#06B6D4',
+                    position: AVState.subtitleStyle.position || 'bottom'
+                }
+            })
+        })
+        .then(res => res.blob())
+        .then(blob => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `subtitles_${Date.now()}.ass`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast(`📥 Đã xuất thành công file ASS gồm ${segments.length} câu!`);
+        })
+        .catch(err => {
+            alert('Lỗi xuất file ASS: ' + err.message);
+        });
     }
 
     // Initialize on DOM Ready
