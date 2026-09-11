@@ -1638,7 +1638,7 @@
     }
 
     // Helper: Split long sentence (especially CJK/Japanese without spaces) into neat readable display pages
-    function splitTextIntoDisplayPages(text, maxCharsPerPage = 46) {
+    function splitTextIntoDisplayPages(text, maxCharsPerPage = 36) {
         if (!text) return [];
         const cleanText = text.trim();
         if (cleanText.length <= maxCharsPerPage) {
@@ -1747,10 +1747,10 @@
         ctx.textBaseline = 'middle';
 
         // 1. Chia câu dài thành các trang (pages/chunks) để hiển thị tuần tự theo tiến trình audio
-        // Khung phụ đề 2 dòng thoải mái chứa:
-        // - 16:9 hoặc 1:1: tối đa ~46 ký tự (khoảng 20-23 ký tự/dòng x 2 dòng)
-        // - 9:16 (dọc): tối đa ~26 ký tự (khoảng 13 ký tự/dòng x 2 dòng)
-        const maxChars = (w < h) ? 26 : 46;
+        // Khung an toàn chừa chỗ cho Watermark / Avatar góc phải:
+        // - 16:9 hoặc 1:1: tối đa ~36 ký tự (khoảng 16-18 ký tự/dòng x 2 dòng, chừa rộng 2 mép)
+        // - 9:16 (dọc): tối đa ~24 ký tự
+        const maxChars = (w < h) ? 24 : 36;
         const pages = splitTextIntoDisplayPages(fullText, maxChars);
         
         let activeText = fullText;
@@ -1778,7 +1778,8 @@
         }
 
         // 2. Wrap trang hiện tại thành tối đa 1-2 dòng (hỗ trợ cả tiếng Nhật CJK và tiếng Latin/Việt)
-        const maxTextWidth = w * 0.82;
+        // Dành ra khoảng an toàn ~15% mỗi bên (tổng chiều rộng chiếm 70% ở giữa) để né hoàn toàn Avatar/Watermark
+        const maxTextWidth = w * 0.70;
         let lines = wrapTextToLines(ctx, activeText, maxTextWidth);
         if (lines.length > 2) {
             lines = lines.slice(0, 2); // Chuẩn phụ đề tối đa 2 dòng
@@ -2053,7 +2054,7 @@
 
         let srtContent = '';
         let cueCounter = 1;
-        const maxChars = (AVState.aspectRatio === '9:16') ? 26 : 46;
+        const maxChars = (AVState.aspectRatio === '9:16') ? 24 : 36;
 
         AVState.scenes.forEach((s) => {
             const fullText = (s.sceneText || '').trim();
@@ -2103,7 +2104,7 @@
             return;
         }
 
-        const maxChars = (AVState.aspectRatio === '9:16') ? 26 : 46;
+        const maxChars = (AVState.aspectRatio === '9:16') ? 24 : 36;
         const segments = [];
         let segCounter = 1;
 
