@@ -113,6 +113,30 @@
                 shadow: 1,
                 position: 'bottom',
                 animationType: 'karaoke_fill'
+            },
+            japanese_documentary: {
+                name: '🇯🇵 NHK Tài Liệu (Chuẩn Nhật)',
+                fontFamily: 'Noto Sans JP',
+                fontSize: 40,
+                primaryColor: '#FFFFFF',
+                highlightColor: '#FFE500',
+                outlineColor: '#000000',
+                outlineWidth: 4,
+                shadow: 3,
+                position: 'bottom',
+                animationType: 'none'
+            },
+            japanese_gold_telop: {
+                name: '🇯🇵 Telop Hoàng Gia (Vàng Sang Trọng)',
+                fontFamily: 'M PLUS Rounded 1c',
+                fontSize: 42,
+                primaryColor: '#FFF8E1',
+                highlightColor: '#FFD700',
+                outlineColor: '#1A1A1A',
+                outlineWidth: 4,
+                shadow: 2,
+                position: 'bottom',
+                animationType: 'none'
             }
         }
     };
@@ -465,11 +489,11 @@
         }
 
         // --- PRO TOOLBAR EVENT BINDINGS ---
-        // 3. Smart Word Chunking Chips
+        // 3. Smart Word & Japanese Bunsetsu Chunking Chips
         if (dom.btnChunkChips) {
             dom.btnChunkChips.forEach(chip => {
                 chip.addEventListener('click', () => {
-                    const chunkVal = parseInt(chip.dataset.chunk) || 4;
+                    const chunkVal = chip.dataset.chunk;
                     smartChunkSegments(chunkVal);
                 });
             });
@@ -1244,7 +1268,7 @@
     async function generateSubtitlesWithGemini() {
         const apiKey = dom.subAiApiKey ? dom.subAiApiKey.value.trim() : '';
         const scriptText = dom.subScriptTextarea ? dom.subScriptTextarea.value.trim() : '';
-        const maxWordsPerSegment = dom.subChunkWordsSelect ? parseInt(dom.subChunkWordsSelect.value) : 4;
+        const maxWordsPerSegment = dom.subChunkWordsSelect ? dom.subChunkWordsSelect.value : 'ja_bunsetsu';
         const mediaFilename = SubState.currentMedia ? SubState.currentMedia.filename : null;
 
         if (!scriptText && !mediaFilename) {
@@ -1507,23 +1531,81 @@
     // PRO EDITING TOOLS: 3. Smart Chunking, 4. Find & Replace, 5. Time Shift
     // =========================================================================
 
-    // 3. Smart Word Chunking (1-2 words / 3-4 words / 5-7 words)
-    function smartChunkSegments(maxWords) {
+    // 3. Smart Word & Japanese Bunsetsu Chunking
+    function smartChunkSegments(maxWordsOrMode) {
         if (!SubState.segments || SubState.segments.length === 0) {
             alert('Chưa có phân đoạn phụ đề nào để chia nhỏ! Hãy nạp file SRT hoặc dùng AI tạo phụ đề trước nhé.');
             return;
         }
 
-        const targetChunkSize = parseInt(maxWords) || 4;
+        const isJapaneseMode = maxWordsOrMode === 'ja_bunsetsu' || maxWordsOrMode === 'ja_short';
+        const targetChunkSize = parseInt(maxWordsOrMode) || 4;
         const newSegments = [];
         let newId = 1;
 
         SubState.segments.forEach((seg) => {
+            const rawText = (seg.text || '').trim();
+            const isJapaneseText = isJapaneseMode || /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(rawText);
+
+            if (isJapaneseText) {
+                // Split by natural Japanese punctuations (。 、 ！ ？) and bunsetsu boundary particles
+                const maxCharLimit = maxWordsOrMode === 'ja_short' ? 12 : 18;
+                
+                // If sentence is already concise, keep intact
+                if (rawText.length <= maxCharLimit) {
+                    newSegments.push({
+                        ...JSON.parse(JSON.stringify(seg)),
+                        id: newId++
+                    });
+                    return;
+                }
+
+                // Split by punctuation marks first, keeping delimiters
+                const clauses = [];
+                let currentClause = '';
+                for (let i = 0; i < rawText.length; i++) {
+                    const ch = rawText[i];
+                    currentClause += ch;
+                    if (['。', '、', '！', '？', '\n'].includes(ch) || currentClause.length >= maxCharLimit) {
+                        clauses.push(currentClause.trim());
+                        currentClause = '';
+                    }
+                }
+                if (currentClause.trim()) {
+                    clauses.push(currentClause.trim());
+                }
+
+                const totalChars = Math.max(1, clauses.reduce((sum, c) => sum + c.length, 0));
+                const totalDur = Math.max(0.5, seg.end - seg.start);
+                let curStart = seg.start;
+
+                clauses.forEach((cl, idx) => {
+                    const clauseDur = parseFloat(((cl.length / totalChars) * totalDur).toFixed(2));
+                    const clauseEnd = idx === clauses.length - 1 ? seg.end : parseFloat((curStart + clauseDur).toFixed(2));
+
+                    newSegments.push({
+                        id: newId++,
+                        start: curStart,
+                        end: clauseEnd,
+                        duration: parseFloat(Math.max(0.3, clauseEnd - curStart).toFixed(2)),
+                        text: cl,
+                        imageIndex: seg.imageIndex,
+                        imageOriginalName: seg.imageOriginalName,
+                        imageUrl: seg.imageUrl,
+                        matchScore: seg.matchScore || 90,
+                        matchReason: 'Tách ngữ tiết chuẩn Nhật (12-18 ký tự)',
+                        words: [{ word: cl, start: curStart, end: clauseEnd }]
+                    });
+                    curStart = clauseEnd;
+                });
+                return;
+            }
+
+            // Normal Word-based splitting for Vietnamese / English
             let words = seg.words || [];
 
-            // If no word array, construct from text and distribute duration
-            if (words.length === 0 && seg.text) {
-                const rawWords = seg.text.split(/\s+/).filter(Boolean);
+            if (words.length === 0 && rawText) {
+                const rawWords = rawText.split(/\s+/).filter(Boolean);
                 const dur = Math.max(0.15, (seg.end - seg.start) / Math.max(1, rawWords.length));
                 words = rawWords.map((w, idx) => ({
                     word: w,
@@ -1533,7 +1615,6 @@
             }
 
             if (words.length <= targetChunkSize) {
-                // Already small enough, keep as is
                 newSegments.push({
                     ...JSON.parse(JSON.stringify(seg)),
                     id: newId++
@@ -1541,7 +1622,6 @@
                 return;
             }
 
-            // Split into chunks of size targetChunkSize
             for (let i = 0; i < words.length; i += targetChunkSize) {
                 const chunkWords = words.slice(i, i + targetChunkSize);
                 const chunkStart = chunkWords[0].start;
@@ -1569,7 +1649,7 @@
 
         SubState.segments = newSegments;
         renderCuesList();
-        showToast(`✂️ Đã chia nhỏ phụ đề thành ${newSegments.length} phân đoạn (${targetChunkSize} từ/câu)!`);
+        showToast(`✂️ Đã cắt phụ đề thành ${newSegments.length} phân đoạn tối ưu (${isJapaneseMode ? 'Chuẩn Nhật 12-18 ký tự' : targetChunkSize + ' từ/câu'})!`);
     }
 
     // 4. Find & Replace in Subtitles

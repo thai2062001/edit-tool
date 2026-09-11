@@ -134,17 +134,18 @@ function setupSubtitlesRoutes(app, config) {
             }
 
             const chunkWords = parseInt(maxWordsPerSegment) || 4;
+            const targetLang = req.body.language || 'auto';
 
             let promptText = `
-Bạn là chuyên gia tạo phụ đề video chuyên nghiệp (CapCut / TikTok Style Subtitle Specialist).
-Nhiệm vụ: Tạo danh sách các câu phụ đề kèm mốc thời gian chi tiết từng từ (word-level timestamps) để làm hiệu ứng Karaoke / Word-level Animation.
+Bạn là chuyên gia tạo phụ đề video chuyên nghiệp (CapCut / YouTube Documentary / Subtitle Specialist).
+Nhiệm vụ: Tạo danh sách các câu phụ đề kèm mốc thời gian chi tiết (word-level hoặc bunsetsu-level timestamps) để hiển thị phụ đề hoặc hiệu ứng Karaoke / Animation.
 
 `;
 
             if (audioBase64) {
                 promptText += `
 Hãy lắng nghe kỹ file âm thanh đính kèm (tổng thời lượng: ${mediaDuration.toFixed(1)}s).
-${scriptText && scriptText.trim() ? `Tham khảo kịch bản gốc nếu cần: """${scriptText.trim().slice(0, 5000)}"""` : 'Hãy tự động chép lời (transcribe) chính xác từng từ từ giọng nói.'}
+${scriptText && scriptText.trim() ? `Tham khảo kịch bản gốc: """${scriptText.trim().slice(0, 8000)}"""` : 'Hãy tự động chép lời (transcribe) chính xác từng câu từ giọng nói.'}
 `;
             } else if (scriptText && scriptText.trim()) {
                 promptText += `
@@ -158,10 +159,19 @@ ${scriptText.trim().slice(0, 8000)}
             }
 
             promptText += `
-YÊU CẦU ĐỊNH DẠNG:
-- Chia thành các cụm từ ngắn gọn, tự nhiên (${chunkWords} - ${chunkWords + 2} từ mỗi câu) phù hợp phong cách video ngắn TikTok/Shorts.
+YÊU CẦU ĐỊNH DẠNG & QUY TẮC NGÔN NGỮ QUAN TRỌNG:
+1. ĐỐI VỚI TIẾNG NHẬT (日本語 - JAPANESE):
+- Nếu phát hiện là tiếng Nhật: KHÔNG cắt vụn câu theo từng từ đơn lẻ!
+- Độ dài lý tưởng mỗi câu phụ đề: khoảng 12 - 18 ký tự (文字), tối đa 20 ký tự trên một màn hình để người xem dễ đọc (khoảng 3 - 5 giây mỗi câu).
+- Cắt câu tự nhiên theo ngữ tiết (文節 - Bunsetsu) và dấu câu (。 、 ！ ？) hoặc trước các trợ từ (は, が, を, に, で, と). Tuyệt đối KHÔNG ngắt đôi một từ vựng, kanji hoặc trợ từ.
+- Trong mảng 'words' của tiếng Nhật: hãy chia thành các cụm ngữ tiết (bunsetsu/phrases) tự nhiên có nghĩa (ví dụ: "想像して", "みてください。", "あなたは今、", "深海の暗闇を", "漂っています。"), kèm start và end tương ứng.
+
+2. ĐỐI VỚI CÁC NGÔN NGỮ KHÁC (Tiếng Việt, Tiếng Anh):
+- Chia thành các cụm từ ngắn gọn, tự nhiên (${chunkWords} - ${chunkWords + 2} từ mỗi câu) phù hợp ngữ điệu nói.
 - Mỗi câu (cue/segment) có 'start' (giây, float), 'end' (giây, float), 'text' (nội dung câu), và mảng 'words' gồm từng từ riêng biệt với start, end của từng từ.
-- 'start' và 'end' của từ phải liên tục và khớp với start/end của câu.
+
+3. NGUYÊN TẮC THỜI GIAN:
+- 'start' và 'end' phải liên tục, tăng dần và khớp với tổng thời lượng âm thanh (${mediaDuration.toFixed(1)}s).
 - Trả về DUY NHẤT một JSON hợp lệ có cấu trúc:
 {
   "segments": [
@@ -169,13 +179,10 @@ YÊU CẦU ĐỊNH DẠNG:
       "id": 1,
       "start": 0.0,
       "end": 2.4,
-      "text": "Chào mừng bạn đến với",
+      "text": "想像してみてください。",
       "words": [
-        { "word": "Chào", "start": 0.0, "end": 0.5 },
-        { "word": "mừng", "start": 0.5, "end": 1.0 },
-        { "word": "bạn", "start": 1.0, "end": 1.5 },
-        { "word": "đến", "start": 1.5, "end": 1.9 },
-        { "word": "với", "start": 1.9, "end": 2.4 }
+        { "word": "想像して", "start": 0.0, "end": 1.2 },
+        { "word": "みてください。", "start": 1.2, "end": 2.4 }
       ]
     }
   ]
@@ -921,7 +928,15 @@ const FONT_SYSTEM_MAP = {
     'nanum gothic': 'Malgun Gothic',
     'black han sans': 'Malgun Gothic',
     'do hyeon': 'Malgun Gothic',
-    'noto sans jp': 'MS Gothic',
+    'noto sans jp': 'Yu Gothic',
+    'm plus rounded 1c': 'Meiryo',
+    'yu gothic': 'Yu Gothic',
+    'meiryo': 'Meiryo',
+    'biz udgothic': 'BIZ UDGothic',
+    'ms gothic': 'MS Gothic',
+    'dela gothic one': 'Yu Gothic',
+    'shippori mincho': 'Yu Mincho',
+    'yuji boku': 'Yu Mincho',
     'noto sans sc': 'Microsoft YaHei',
     'noto sans ru': 'Arial'
 };

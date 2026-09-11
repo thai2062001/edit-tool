@@ -921,11 +921,13 @@
                         <div id="sub-panel-transcribe-mode" class="sub-transcribe-panel-wrap mt-2 hidden">
                             <div class="flex-between align-center">
                                 <div class="setting-row" style="margin: 0;">
-                                    <label for="sub-chunk-words-select" class="text-xs">Độ dài câu:</label>
+                                    <label for="sub-chunk-words-select" class="text-xs">Độ dài câu / Ngắt dòng:</label>
                                     <select id="sub-chunk-words-select" class="custom-select custom-select-sm">
-                                        <option value="3">3 - 4 từ (TikTok Shorts)</option>
-                                        <option value="5" selected>4 - 6 từ (Tiêu chuẩn)</option>
-                                        <option value="8">7 - 10 từ (Câu dài)</option>
+                                        <option value="ja_bunsetsu" selected>🇯🇵 Chuẩn Nhật (12-18 ký tự / Theo ngữ tiết Bunsetsu)</option>
+                                        <option value="ja_short">🇯🇵 Nhật ngắn (8-12 ký tự / Dấu phẩy 、。)</option>
+                                        <option value="3">3 - 4 từ (Shorts / Reels)</option>
+                                        <option value="5">4 - 6 từ (Tiêu chuẩn VN/EN)</option>
+                                        <option value="8">7 - 10 từ (Câu dài VN/EN)</option>
                                     </select>
                                 </div>
                                 <button id="sub-btn-generate-ai" class="btn btn-ai-action">
@@ -955,10 +957,11 @@
                     <div class="sub-pro-toolbar">
                         <!-- Row 1: Action Groups -->
                         <div class="pro-toolbar-row">
-                            <!-- 3. Smart Word Chunking -->
+                            <!-- 3. Smart Word / Bunsetsu Chunking -->
                             <div class="pro-tool-group">
-                                <span class="pro-tool-label">✂️ Chia từ:</span>
+                                <span class="pro-tool-label">✂️ Cắt câu:</span>
                                 <div class="pro-btn-group">
+                                    <button type="button" class="btn-pro-chip btn-chunk-chip" data-chunk="ja_bunsetsu" title="Chuẩn tiếng Nhật: Cắt theo ngữ tiết & dấu phẩy (khoảng 15 ký tự)">🇯🇵 15 ký tự</button>
                                     <button type="button" class="btn-pro-chip btn-chunk-chip" data-chunk="2" title="Tối ưu cho TikTok / Shorts (1-2 từ/màn hình)">1-2 từ</button>
                                     <button type="button" class="btn-pro-chip btn-chunk-chip" data-chunk="4" title="Tiêu chuẩn (3-4 từ/màn hình)">3-4 từ</button>
                                     <button type="button" class="btn-pro-chip btn-chunk-chip" data-chunk="7" title="Câu vừa (5-7 từ/màn hình)">5-7 từ</button>

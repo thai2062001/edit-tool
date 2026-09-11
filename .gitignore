@@ -6,6 +6,19 @@ uploads/*
 !uploads/.gitkeep
 outputs/*
 !outputs/.gitkeep
+video/*
+!video/.gitkeep
+audio/*
+!audio/.gitkeep
+
+# Ignore large media & binary output formats
+*.mp4
+*.mkv
+*.mov
+*.avi
+*.wav
+*.mp3
+*.zip
 
 # Environment & logs
 .env
