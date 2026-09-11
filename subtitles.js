@@ -155,7 +155,7 @@ YÊU CẦU ĐỊNH DẠNG:
             contents.push({ text: promptText });
 
             const response = await ai.models.generateContent({
-                model: 'gemini-3.6-flash',
+                model: 'gemini-3.7-flash',
                 contents: contents,
                 config: {
                     responseMimeType: 'application/json'
@@ -360,7 +360,7 @@ Trả về DUY NHẤT một JSON hợp lệ có cấu trúc:
             let alignedCues = [];
             try {
                 const response = await ai.models.generateContent({
-                    model: 'gemini-3.6-flash',
+                    model: 'gemini-3.7-flash',
                     contents: contents,
                     config: {
                         responseMimeType: 'application/json'
