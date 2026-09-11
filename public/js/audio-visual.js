@@ -24,7 +24,7 @@
         animationFrameId: null,
         aspectRatio: '16:9',
         transition: 'none', // Mặc định cắt thẳng (Cut)
-        motion: 'zoom_in',   // Mặc định Zoom In nhẹ điện ảnh (mượt mà như Tab 1)
+        motion: 'combo_zoom_in_out', // Mặc định kết hợp: Luân phiên Zoom In ➔ Zoom Out
         isRendering: false,
         // Subtitle Sync 1-to-1 State
         enableSubtitles: true,
@@ -1102,7 +1102,7 @@
                         },
                         reason: `Tệp audio: ${audioItem.originalName} (${audioDur}s) khớp ảnh #${assignedImageIdx + 1}`,
                         transition: selectedTrans,
-                        motion: selectedMotion,
+                        motion: resolveMotionForScene(selectedMotion, idx, batchList.length),
                         fadeIn: (selectedTrans === 'none') ? 0.0 : 0.25,
                         fadeOut: (selectedTrans === 'none') ? 0.0 : 0.25
                     };
@@ -1252,8 +1252,12 @@
                     }
                 });
 
-                // Gán ID lại tuần tự
-                AVState.scenes = expandedScenes.map((s, idx) => ({ ...s, id: idx + 1 }));
+                // Gán ID lại tuần tự và phân bổ chuyển động theo quy luật luân phiên cho toàn bộ các cảnh
+                AVState.scenes = expandedScenes.map((s, idx) => ({
+                    ...s,
+                    id: idx + 1,
+                    motion: resolveMotionForScene(selectedMotion, idx, expandedScenes.length)
+                }));
 
                 renderScenesList();
                 const modeLabel = densityMode === '2_per_scene' ? '1 câu 2 ảnh' : (densityMode === 'smart_split' ? 'Tự động tách câu dài' : '1 câu 1 ảnh');
@@ -1301,6 +1305,9 @@
                             ${partBadge}
                         </div>
                         <div class="flex-row align-center gap-xs">
+                            <span class="badge" style="font-size: 11px; padding: 2px 6px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); color: #38BDF8;">
+                                ${typeof getMotionShortName === 'function' ? getMotionShortName(scene.motion) : (scene.motion || 'Zoom')}
+                            </span>
                             <span class="av-scene-timebadge">⏱️ [${scene.startTime.toFixed(1)}s ➔ ${scene.endTime.toFixed(1)}s] (${scene.duration.toFixed(1)}s)</span>
                             <button type="button" class="btn btn-xs btn-ghost btn-split-scene" title="Tách cảnh này thành 2 ảnh (Chia đôi thời lượng)" style="padding: 2px 6px; font-size: 11px; border: 1px solid rgba(56, 189, 248, 0.3); color: #38BDF8;">
                                 ✂️ Tách
@@ -1469,16 +1476,40 @@
         });
     }
 
+    // Helper: Phân bổ hiệu ứng chuyển động theo quy luật (Đơn lẻ, Luân phiên tuần tự, hoặc Xáo trộn ngẫu nhiên)
+    function resolveMotionForScene(motionKey, sceneIdx, totalScenes) {
+        if (!motionKey || motionKey === 'combo_zoom_in_out') {
+            // Luân phiên 2 kiểu: Cảnh chẵn Zoom In, Cảnh lẻ Zoom Out (Chu kỳ 1:1 tài liệu chuẩn)
+            return (sceneIdx % 2 === 0) ? 'zoom_in' : 'zoom_out';
+        }
+        if (motionKey === 'combo_zoom_pan_4') {
+            // Luân phiên 4 kiểu: Zoom In -> Pan Trái -> Zoom Out -> Pan Phải
+            const cycle = ['zoom_in', 'pan_left', 'zoom_out', 'pan_right'];
+            return cycle[sceneIdx % cycle.length];
+        }
+        if (motionKey === 'combo_all_random') {
+            // Xáo trộn ngẫu nhiên nghệ thuật, tránh trùng lặp 2 cảnh liền nhau
+            const pool = ['zoom_in', 'zoom_out', 'pan_left', 'pan_right', 'pan_up', 'pan_down', 'zoom_in_left', 'zoom_in_right', 'zoom_pan'];
+            // Sử dụng seed ổn định theo sceneIdx để preview và render luôn nhất quán
+            const prevIdx = (sceneIdx > 0) ? ((sceneIdx - 1) % pool.length) : -1;
+            let available = pool.filter((_, i) => i !== prevIdx);
+            return available[sceneIdx % available.length];
+        }
+        return motionKey;
+    }
+
     // Apply user selected transition/motion settings across current scenes
     function applySettingsToCurrentScenes() {
         if (!AVState.scenes || AVState.scenes.length === 0) return;
-        AVState.scenes.forEach(s => {
+        AVState.scenes.forEach((s, idx) => {
             s.transition = AVState.transition;
-            s.motion = AVState.motion;
+            s.motion = resolveMotionForScene(AVState.motion, idx, AVState.scenes.length);
             s.fadeIn = (AVState.transition === 'none') ? 0.0 : 0.25;
             s.fadeOut = (AVState.transition === 'none') ? 0.0 : 0.25;
         });
-        showToast(`⚡ Đã cập nhật chuyển cảnh "${AVState.transition}" và chuyển động "${AVState.motion}"`);
+        renderScenesList();
+        drawCanvasAtTime(AVState.audioElement ? (AVState.audioElement.currentTime || 0) : 0);
+        showToast(`⚡ Đã phân bổ chuyển động "${AVState.motion}" cho toàn bộ ${AVState.scenes.length} phân cảnh!`);
     }
 
     // Live Canvas Drawing (Clean, No Subtitles)
