@@ -9,13 +9,15 @@
 
     // State for Tab 5 Audio Visual
     const AVState = {
+        audioMode: 'single', // 'single' (1 file duy nhất) | 'batch' (loạt audio rời theo từng cảnh)
         audioFile: null,
         audioDuration: 0,
         audioUrl: '',
         audioName: '',
         audioElement: new Audio(),
+        batchAudioFiles: [], // [{ file, filename, originalName, url, duration, path }]
         images: [], // [{ id, filename, originalName, url, duration }]
-        scenes: [], // [{ id, startTime, endTime, duration, imageIndex, sceneText, reason }]
+        scenes: [], // [{ id, startTime, endTime, duration, imageIndex, sceneText, reason, voiceAudio }]
         activeSceneIndex: 0,
         isPlaying: false,
         animationFrameId: null,
@@ -33,7 +35,13 @@
             tabBtn: document.getElementById('tab-btn-audio-visual'),
             tabPane: document.getElementById('tab-pane-audio-visual'),
 
-            // Audio Controls
+            // Audio Mode Selector (Option: Single vs Batch)
+            btnAudioModeSingle: document.getElementById('btn-av-mode-single'),
+            btnAudioModeBatch: document.getElementById('btn-av-mode-batch'),
+            audioSingleSection: document.getElementById('av-audio-single-section'),
+            audioBatchSection: document.getElementById('av-audio-batch-section'),
+
+            // Single Audio Controls
             audioInput: document.getElementById('av-audio-input'),
             audioDropzone: document.getElementById('av-audio-dropzone'),
             btnLoadAudio: document.getElementById('btn-av-load-audio'),
@@ -41,6 +49,17 @@
             audioBanner: document.getElementById('av-audio-banner'),
             audioNameLabel: document.getElementById('av-audio-name'),
             audioDurLabel: document.getElementById('av-audio-dur'),
+
+            // Batch Audio Controls (Option Mới)
+            batchAudioInput: document.getElementById('av-batch-audio-input'),
+            batchAudioDropzone: document.getElementById('av-batch-audio-dropzone'),
+            btnLoadBatchAudio: document.getElementById('btn-av-load-batch-audio'),
+            btnSortBatchAudio: document.getElementById('btn-av-sort-batch-audio'),
+            btnClearBatchAudio: document.getElementById('btn-av-clear-batch-audio'),
+            batchAudioBanner: document.getElementById('av-batch-audio-banner'),
+            batchAudioCountLabel: document.getElementById('av-batch-audio-count-label'),
+            batchAudioDurLabel: document.getElementById('av-batch-audio-dur-label'),
+            batchAudioSampleLabel: document.getElementById('av-batch-audio-sample-label'),
 
             // Images Controls
             imagesInput: document.getElementById('av-images-input'),
@@ -105,80 +124,156 @@
             });
         }
 
-        // Load Audio File
-        if (dom.btnLoadAudio && dom.audioInput) {
-            dom.btnLoadAudio.addEventListener('click', () => dom.audioInput.click());
-            dom.audioInput.addEventListener('change', handleAudioUpload);
-        }
+            // Switch between Single Audio Mode and Batch Audio Mode (Option Mới)
+            if (dom.btnAudioModeSingle && dom.btnAudioModeBatch) {
+                dom.btnAudioModeSingle.addEventListener('click', () => {
+                    AVState.audioMode = 'single';
+                    dom.btnAudioModeSingle.classList.add('btn-primary', 'active');
+                    dom.btnAudioModeSingle.classList.remove('btn-outline');
+                    dom.btnAudioModeBatch.classList.remove('btn-primary', 'active');
+                    dom.btnAudioModeBatch.classList.add('btn-outline');
+                    if (dom.audioSingleSection) dom.audioSingleSection.classList.remove('hidden');
+                    if (dom.audioBatchSection) dom.audioBatchSection.classList.add('hidden');
+                    updateValidationIndicator();
+                });
 
-        // Drag and drop for Audio
-        if (dom.audioDropzone) {
-            dom.audioDropzone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                dom.audioDropzone.style.borderColor = '#06B6D4';
-                dom.audioDropzone.style.background = 'rgba(6, 182, 212, 0.15)';
-            });
-            dom.audioDropzone.addEventListener('dragleave', (e) => {
-                e.preventDefault();
-                dom.audioDropzone.style.borderColor = '';
-                dom.audioDropzone.style.background = '';
-            });
-            dom.audioDropzone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                dom.audioDropzone.style.borderColor = '';
-                dom.audioDropzone.style.background = '';
-                if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                    handleAudioUpload({ target: { files: e.dataTransfer.files } });
-                }
-            });
-        }
+                dom.btnAudioModeBatch.addEventListener('click', () => {
+                    AVState.audioMode = 'batch';
+                    dom.btnAudioModeBatch.classList.add('btn-primary', 'active');
+                    dom.btnAudioModeBatch.classList.remove('btn-outline');
+                    dom.btnAudioModeSingle.classList.remove('btn-primary', 'active');
+                    dom.btnAudioModeSingle.classList.add('btn-outline');
+                    if (dom.audioBatchSection) dom.audioBatchSection.classList.remove('hidden');
+                    if (dom.audioSingleSection) dom.audioSingleSection.classList.add('hidden');
+                    updateValidationIndicator();
+                });
+            }
 
-        // Use Timeline BGM
-        if (dom.btnUseTimelineBgm) {
-            dom.btnUseTimelineBgm.addEventListener('click', () => {
-                if (window.bgmTrack && window.bgmTrack.url) {
-                    AVState.audioFile = null;
-                    AVState.audioUrl = window.bgmTrack.url;
-                    AVState.audioDuration = window.bgmTrack.duration || 0;
-                    AVState.audioName = window.bgmTrack.originalName || 'BGM Từ Timeline';
-                    AVState.audioElement.src = AVState.audioUrl;
-                    updateAudioUI();
-                    showToast(`🎵 Đã nhận Voice/Audio từ Timeline: ${AVState.audioName}`);
-                } else {
-                    alert('Chưa có nhạc nền/audio nào được nạp trên Timeline Tab 1!');
-                }
-            });
-        }
+            // Load Single Audio File
+            if (dom.btnLoadAudio && dom.audioInput) {
+                dom.btnLoadAudio.addEventListener('click', () => dom.audioInput.click());
+                dom.audioInput.addEventListener('change', handleAudioUpload);
+            }
 
-        // Load Images
-        if (dom.btnLoadImages && dom.imagesInput) {
-            dom.btnLoadImages.addEventListener('click', () => dom.imagesInput.click());
-            dom.imagesInput.addEventListener('change', handleImagesUpload);
-        }
+            // Drag and drop for Single Audio
+            if (dom.audioDropzone) {
+                dom.audioDropzone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    dom.audioDropzone.style.borderColor = '#06B6D4';
+                    dom.audioDropzone.style.background = 'rgba(6, 182, 212, 0.15)';
+                });
+                dom.audioDropzone.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    dom.audioDropzone.style.borderColor = '';
+                    dom.audioDropzone.style.background = '';
+                });
+                dom.audioDropzone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    dom.audioDropzone.style.borderColor = '';
+                    dom.audioDropzone.style.background = '';
+                    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                        handleAudioUpload({ target: { files: e.dataTransfer.files } });
+                    }
+                });
+            }
 
-        // Drag and drop for Images
-        if (dom.imagesDropzone) {
-            dom.imagesDropzone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                dom.imagesDropzone.style.borderColor = '#A78BFA';
-                dom.imagesDropzone.style.background = 'rgba(167, 139, 250, 0.15)';
-            });
-            dom.imagesDropzone.addEventListener('dragleave', (e) => {
-                e.preventDefault();
-                dom.imagesDropzone.style.borderColor = '';
-                dom.imagesDropzone.style.background = '';
-            });
-            dom.imagesDropzone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                dom.imagesDropzone.style.borderColor = '';
-                dom.imagesDropzone.style.background = '';
-                if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                    handleImagesUpload({ target: { files: e.dataTransfer.files } });
-                }
-            });
-        }
+            // Batch Audio Controls (Option Mới Thêm)
+            if (dom.btnLoadBatchAudio && dom.batchAudioInput) {
+                dom.btnLoadBatchAudio.addEventListener('click', () => dom.batchAudioInput.click());
+                dom.batchAudioInput.addEventListener('change', handleBatchAudioUpload);
+            }
 
-        // Use Timeline Images
+            if (dom.batchAudioDropzone) {
+                dom.batchAudioDropzone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    dom.batchAudioDropzone.style.borderColor = '#38BDF8';
+                    dom.batchAudioDropzone.style.background = 'rgba(56, 189, 248, 0.15)';
+                });
+                dom.batchAudioDropzone.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    dom.batchAudioDropzone.style.borderColor = '';
+                    dom.batchAudioDropzone.style.background = '';
+                });
+                dom.batchAudioDropzone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    dom.batchAudioDropzone.style.borderColor = '';
+                    dom.batchAudioDropzone.style.background = '';
+                    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                        handleBatchAudioUpload({ target: { files: e.dataTransfer.files } });
+                    }
+                });
+            }
+
+            if (dom.btnSortBatchAudio) {
+                dom.btnSortBatchAudio.addEventListener('click', () => {
+                    if (!AVState.batchAudioFiles || AVState.batchAudioFiles.length === 0) {
+                        alert('Chưa có loạt audio nào để sắp xếp!');
+                        return;
+                    }
+                    sortBatchAudioNaturally();
+                    updateBatchAudioUI();
+                    showToast(`🔢 Đã sắp xếp ${AVState.batchAudioFiles.length} tệp audio phân cảnh theo thứ tự tự nhiên (1 ➔ N)!`);
+                });
+            }
+
+            if (dom.btnClearBatchAudio) {
+                dom.btnClearBatchAudio.addEventListener('click', () => {
+                    if (confirm('Bạn có chắc muốn xóa toàn bộ loạt file audio phân cảnh đã nạp?')) {
+                        AVState.batchAudioFiles = [];
+                        if (dom.batchAudioInput) dom.batchAudioInput.value = '';
+                        if (dom.batchAudioBanner) dom.batchAudioBanner.classList.add('hidden');
+                        updateValidationIndicator();
+                        showToast('🗑️ Đã xóa toàn bộ loạt file audio!');
+                    }
+                });
+            }
+
+            // Use Timeline BGM
+            if (dom.btnUseTimelineBgm) {
+                dom.btnUseTimelineBgm.addEventListener('click', () => {
+                    if (window.bgmTrack && window.bgmTrack.url) {
+                        AVState.audioFile = null;
+                        AVState.audioUrl = window.bgmTrack.url;
+                        AVState.audioDuration = window.bgmTrack.duration || 0;
+                        AVState.audioName = window.bgmTrack.originalName || 'BGM Từ Timeline';
+                        AVState.audioElement.src = AVState.audioUrl;
+                        updateAudioUI();
+                        showToast(`🎵 Đã nhận Voice/Audio từ Timeline: ${AVState.audioName}`);
+                    } else {
+                        alert('Chưa có nhạc nền/audio nào được nạp trên Timeline Tab 1!');
+                    }
+                });
+            }
+
+            // Load Images
+            if (dom.btnLoadImages && dom.imagesInput) {
+                dom.btnLoadImages.addEventListener('click', () => dom.imagesInput.click());
+                dom.imagesInput.addEventListener('change', handleImagesUpload);
+            }
+
+            // Drag and drop for Images
+            if (dom.imagesDropzone) {
+                dom.imagesDropzone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    dom.imagesDropzone.style.borderColor = '#A78BFA';
+                    dom.imagesDropzone.style.background = 'rgba(167, 139, 250, 0.15)';
+                });
+                dom.imagesDropzone.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    dom.imagesDropzone.style.borderColor = '';
+                    dom.imagesDropzone.style.background = '';
+                });
+                dom.imagesDropzone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    dom.imagesDropzone.style.borderColor = '';
+                    dom.imagesDropzone.style.background = '';
+                    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                        handleImagesUpload({ target: { files: e.dataTransfer.files } });
+                    }
+                });
+            }
+
+            // Use Timeline Images
         if (dom.btnUseTimelineImages) {
             dom.btnUseTimelineImages.addEventListener('click', () => {
                 if (window.mediaItems && window.mediaItems.length > 0) {
@@ -248,7 +343,21 @@
         if (dom.scrubber) {
             dom.scrubber.addEventListener('input', (e) => {
                 const targetTime = parseFloat(e.target.value);
-                if (AVState.audioElement) {
+                if (AVState.audioMode === 'batch') {
+                    // Find scene containing targetTime
+                    const sIdx = AVState.scenes.findIndex(s => targetTime >= s.startTime && targetTime <= s.endTime);
+                    if (sIdx !== -1) {
+                        const scene = AVState.scenes[sIdx];
+                        const localOffset = Math.max(0, targetTime - scene.startTime);
+                        const trackUrl = scene.voiceAudio?.url || AVState.batchAudioFiles[sIdx]?.url;
+                        if (trackUrl && AVState.audioElement) {
+                            if (AVState.audioElement.src !== trackUrl && !AVState.audioElement.src.endsWith(trackUrl)) {
+                                AVState.audioElement.src = trackUrl;
+                            }
+                            AVState.audioElement.currentTime = localOffset;
+                        }
+                    }
+                } else if (AVState.audioElement) {
                     AVState.audioElement.currentTime = targetTime;
                 }
                 drawCanvasAtTime(targetTime);
@@ -294,18 +403,41 @@
 
         // Audio element events
         AVState.audioElement.addEventListener('timeupdate', () => {
-            const cur = AVState.audioElement.currentTime;
-            if (dom.scrubber && !dom.scrubber.matches(':active')) {
-                dom.scrubber.value = cur;
+            if (AVState.audioMode === 'batch') {
+                // In batch mode, audioElement.currentTime is local to the active scene's audio
+                const activeScene = AVState.scenes[AVState.activeSceneIndex];
+                let cur = activeScene ? (activeScene.startTime + AVState.audioElement.currentTime) : AVState.audioElement.currentTime;
+                if (dom.scrubber && !dom.scrubber.matches(':active')) {
+                    dom.scrubber.value = cur;
+                }
+                if (dom.timeLabel) {
+                    dom.timeLabel.textContent = `${formatTime(cur)} / ${formatTime(AVState.audioDuration)}`;
+                }
+                drawCanvasAtTime(cur);
+                updateActiveSceneByTime(cur);
+            } else {
+                // In single mode (100% original behavior)
+                const cur = AVState.audioElement.currentTime;
+                if (dom.scrubber && !dom.scrubber.matches(':active')) {
+                    dom.scrubber.value = cur;
+                }
+                if (dom.timeLabel) {
+                    dom.timeLabel.textContent = `${formatTime(cur)} / ${formatTime(AVState.audioDuration)}`;
+                }
+                drawCanvasAtTime(cur);
+                updateActiveSceneByTime(cur);
             }
-            if (dom.timeLabel) {
-                dom.timeLabel.textContent = `${formatTime(cur)} / ${formatTime(AVState.audioDuration)}`;
-            }
-            drawCanvasAtTime(cur);
-            updateActiveSceneByTime(cur);
         });
 
         AVState.audioElement.addEventListener('ended', () => {
+            if (AVState.audioMode === 'batch' && AVState.isPlaying) {
+                // In batch mode, proceed to next scene audio track automatically
+                const nextIdx = AVState.activeSceneIndex + 1;
+                if (nextIdx < AVState.scenes.length) {
+                    playSceneAudio(nextIdx);
+                    return;
+                }
+            }
             AVState.isPlaying = false;
             if (dom.btnPlayPause) dom.btnPlayPause.textContent = '▶ Phát';
         });
@@ -380,6 +512,118 @@
         }
     }
 
+    // Sort batch audio files naturally by filename (e.g., segment_0001.wav, segment_0002.wav... segment_0091.wav)
+    function sortBatchAudioNaturally() {
+        if (!AVState.batchAudioFiles || AVState.batchAudioFiles.length === 0) return;
+        AVState.batchAudioFiles.sort((a, b) => {
+            const nameA = a.originalName || a.filename || '';
+            const nameB = b.originalName || b.filename || '';
+            return nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: 'base' });
+        });
+    }
+
+    // Batch Audio Upload Handler (Option Mới Thêm: Loạt Audio Phân Cảnh)
+    async function handleBatchAudioUpload(e) {
+        const rawFiles = Array.from(e.target.files || []);
+        if (rawFiles.length === 0) return;
+
+        // Filter valid audio files
+        const audioFiles = rawFiles.filter(f => {
+            const ext = (f.name || '').split('.').pop().toLowerCase();
+            return ['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac'].includes(ext);
+        });
+
+        if (audioFiles.length === 0) {
+            alert('Không tìm thấy tệp audio hợp lệ (.mp3, .wav, .m4a, .aac, .ogg)!');
+            return;
+        }
+
+        // Natural sort files before uploading
+        audioFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+
+        if (dom.batchAudioCountLabel) {
+            dom.batchAudioCountLabel.textContent = `Đang tải ${audioFiles.length} tệp audio...`;
+        }
+        if (dom.batchAudioBanner) dom.batchAudioBanner.classList.remove('hidden');
+
+        try {
+            // Upload in chunks of 30 if large to avoid payload size limit
+            const chunkSize = 30;
+            const uploadedAudioData = [];
+
+            for (let i = 0; i < audioFiles.length; i += chunkSize) {
+                const chunk = audioFiles.slice(i, i + chunkSize);
+                const formData = new FormData();
+                chunk.forEach(f => formData.append('files', f));
+
+                const res = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success && data.files) {
+                    uploadedAudioData.push(...data.files);
+                } else {
+                    throw new Error(data.error || `Tải đợt ${Math.floor(i / chunkSize) + 1} thất bại`);
+                }
+            }
+
+            AVState.batchAudioFiles = uploadedAudioData;
+            sortBatchAudioNaturally();
+            updateBatchAudioUI();
+            updateValidationIndicator();
+
+            showToast(`📂 Đã nạp thành công ${uploadedAudioData.length} tệp audio phân cảnh (Đã xếp 1 ➔ N)!`);
+        } catch (err) {
+            alert('Lỗi nạp loạt audio: ' + err.message);
+            if (dom.batchAudioCountLabel) {
+                dom.batchAudioCountLabel.textContent = `${AVState.batchAudioFiles.length} tệp audio`;
+            }
+        }
+    }
+
+    function updateBatchAudioUI() {
+        if (!dom.batchAudioBanner) return;
+        const count = AVState.batchAudioFiles ? AVState.batchAudioFiles.length : 0;
+        if (count === 0) {
+            dom.batchAudioBanner.classList.add('hidden');
+            return;
+        }
+
+        dom.batchAudioBanner.classList.remove('hidden');
+
+        const totalDur = AVState.batchAudioFiles.reduce((sum, a) => sum + (a.duration || 0), 0);
+        if (dom.batchAudioCountLabel) {
+            dom.batchAudioCountLabel.textContent = `${count} tệp audio phân cảnh`;
+        }
+        if (dom.batchAudioDurLabel) {
+            dom.batchAudioDurLabel.textContent = `${totalDur.toFixed(1)}s (~${formatTime(totalDur)})`;
+        }
+
+        if (dom.batchAudioSampleLabel) {
+            const first = AVState.batchAudioFiles[0]?.originalName || '';
+            const last = AVState.batchAudioFiles[count - 1]?.originalName || '';
+            dom.batchAudioSampleLabel.textContent = count > 1 
+                ? `Thứ tự: ${first} ➔ ... ➔ ${last}` 
+                : `Tệp: ${first}`;
+        }
+
+        // Update main preview audio to first track or cumulative duration
+        if (AVState.audioMode === 'batch') {
+            AVState.audioDuration = totalDur;
+            if (dom.scrubber) {
+                dom.scrubber.max = totalDur || 10;
+                dom.scrubber.value = 0;
+            }
+            if (dom.timeLabel) {
+                dom.timeLabel.textContent = `0:00.0 / ${formatTime(totalDur)}`;
+            }
+            if (AVState.batchAudioFiles[0]?.url) {
+                AVState.audioElement.src = AVState.batchAudioFiles[0].url;
+            }
+        }
+    }
+
     // Natural sort helper (e.g. scene_1, scene_2, 01.png, 2.png, 10.png)
     function sortImagesNaturally() {
         if (!AVState.images || AVState.images.length === 0) return;
@@ -439,13 +683,61 @@
         updateValidationIndicator();
     }
 
-    // Smart Validation: Check Images Count vs Script Lines Count
+    // Smart Validation: Check Images Count vs Script Lines Count (or Batch Audio Files Count)
     function updateValidationIndicator() {
         if (!dom.validationBanner || !dom.validationText || !dom.validationStatus) return;
 
+        const imgCount = AVState.images ? AVState.images.length : 0;
+
+        // MODE BATCH AUDIO: So sánh trực tiếp số tệp audio phân cảnh với số lượng ảnh
+        if (AVState.audioMode === 'batch') {
+            const batchCount = AVState.batchAudioFiles ? AVState.batchAudioFiles.length : 0;
+            if (batchCount === 0 && imgCount === 0) {
+                dom.validationBanner.classList.add('hidden');
+                return;
+            }
+
+            dom.validationBanner.classList.remove('hidden');
+
+            if (batchCount > 0 && imgCount > 0) {
+                if (batchCount === imgCount) {
+                    dom.validationBanner.style.background = 'rgba(16, 185, 129, 0.15)';
+                    dom.validationBanner.style.border = '1px solid #10B981';
+                    dom.validationText.innerHTML = `✅ <strong>Khớp 1:1 hoàn hảo:</strong> Đã có <b>${batchCount} file audio phân cảnh</b> = Kho ảnh có đúng <b>${imgCount} ảnh</b> (Mỗi audio tương ứng đúng 1 ảnh)`;
+                    dom.validationStatus.style.background = '#10B981';
+                    dom.validationStatus.textContent = 'Khớp 100%';
+                } else if (imgCount < batchCount) {
+                    const diff = batchCount - imgCount;
+                    dom.validationBanner.style.background = 'rgba(245, 158, 11, 0.15)';
+                    dom.validationBanner.style.border = '1px solid #F59E0B';
+                    dom.validationText.innerHTML = `⚠️ <strong>Thiếu ${diff} ảnh:</strong> Có <b>${batchCount} file audio</b> nhưng mới nạp <b>${imgCount} ảnh</b> (Sẽ lặp lại ảnh hoặc để trống chờ bù)`;
+                    dom.validationStatus.style.background = '#F59E0B';
+                    dom.validationStatus.textContent = `Thiếu ${diff} ảnh`;
+                } else {
+                    const diff = imgCount - batchCount;
+                    dom.validationBanner.style.background = 'rgba(56, 189, 248, 0.15)';
+                    dom.validationBanner.style.border = '1px solid #38BDF8';
+                    dom.validationText.innerHTML = `ℹ️ <strong>Dư ${diff} ảnh:</strong> Có <b>${batchCount} file audio</b> trong khi kho có <b>${imgCount} ảnh</b> (Sẽ ưu tiên lấy đúng ${batchCount} ảnh đầu tiên)`;
+                    dom.validationStatus.style.background = '#38BDF8';
+                    dom.validationStatus.textContent = `Dư ${diff} ảnh`;
+                }
+            } else if (batchCount > 0) {
+                dom.validationBanner.style.background = 'rgba(255, 255, 255, 0.05)';
+                dom.validationBanner.style.border = '1px solid rgba(255,255,255,0.1)';
+                dom.validationText.innerHTML = `🎧 Đã nạp <b>${batchCount} file audio phân cảnh</b> (Chưa nạp kho ảnh minh họa)`;
+                dom.validationStatus.textContent = 'Chờ nạp ảnh';
+            } else {
+                dom.validationBanner.style.background = 'rgba(255, 255, 255, 0.05)';
+                dom.validationBanner.style.border = '1px solid rgba(255,255,255,0.1)';
+                dom.validationText.innerHTML = `🖼️ Đã nạp <b>${imgCount} ảnh</b> vào kho (Chưa nạp loạt file audio phân cảnh)`;
+                dom.validationStatus.textContent = 'Chờ nạp audio';
+            }
+            return;
+        }
+
+        // MODE SINGLE AUDIO (NGUYÊN BẢN CŨ 100%): So sánh số câu thoại kịch bản với số lượng ảnh
         const raw = dom.scriptTextarea ? dom.scriptTextarea.value.trim() : '';
         const scriptLines = raw ? raw.split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith('---') && !l.startsWith('===')).length : 0;
-        const imgCount = AVState.images ? AVState.images.length : 0;
 
         if (scriptLines === 0 && imgCount === 0) {
             dom.validationBanner.classList.add('hidden');
@@ -497,12 +789,20 @@
         return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
     }
 
-    // AI Match Script & Voice to Images
+    // AI Match Script & Voice to Images (Hỗ trợ 2 chế độ: 1 Audio Tổng Hợp vs Loạt Audio Phân Cảnh)
     async function handleRunAiMatch() {
-        if (!AVState.audioUrl && (!AVState.audioDuration || AVState.audioDuration <= 0)) {
-            alert('⚠️ Vui lòng nạp Voice Audio trước (bấm Tải Tệp Audio hoặc Lấy BGM từ Timeline)!');
-            return;
+        if (AVState.audioMode === 'batch') {
+            if (!AVState.batchAudioFiles || AVState.batchAudioFiles.length === 0) {
+                alert('⚠️ Vui lòng nạp loạt file Audio phân cảnh trước (kéo thả hoặc chọn file từ máy)!');
+                return;
+            }
+        } else {
+            if (!AVState.audioUrl && (!AVState.audioDuration || AVState.audioDuration <= 0)) {
+                alert('⚠️ Vui lòng nạp Voice Audio trước (bấm Tải Tệp Audio hoặc Lấy BGM từ Timeline)!');
+                return;
+            }
         }
+
         if (!AVState.images || AVState.images.length === 0) {
             alert('⚠️ Vui lòng nạp Kho Ảnh minh họa trước!');
             return;
@@ -518,7 +818,89 @@
         // Đảm bảo ảnh luôn xếp theo số thứ tự tên file tự nhiên
         sortImagesNaturally();
 
-        // Prepare request
+        // XỬ LÝ CHẾ ĐỘ OPTION B: LOẠT AUDIO PHÂN CẢNH (BATCH AUDIO MODE)
+        if (AVState.audioMode === 'batch') {
+            sortBatchAudioNaturally();
+
+            if (dom.btnRunMatch) {
+                dom.btnRunMatch.disabled = true;
+                dom.btnRunMatch.innerHTML = '⚡ Đang gán 1-1 từng tệp Audio vào từng Phân Cảnh...';
+            }
+
+            try {
+                let currentCursor = 0.0;
+                const batchList = AVState.batchAudioFiles;
+                
+                // Tách các dòng kịch bản nếu người dùng có dán kịch bản
+                const scriptLines = script 
+                    ? script.split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith('---') && !l.startsWith('==='))
+                    : [];
+
+                const baseScenes = batchList.map((audioItem, idx) => {
+                    const audioDur = parseFloat((audioItem.duration || 4.0).toFixed(2));
+                    const durWithPause = parseFloat((audioDur + pauseInterval).toFixed(2));
+                    const st = parseFloat(currentCursor.toFixed(2));
+                    const et = parseFloat((st + durWithPause).toFixed(2));
+                    currentCursor = et;
+
+                    // Gán ảnh: 1-to-1 theo thứ tự ảnh đã sắp xếp tự nhiên
+                    let assignedImageIdx = 0;
+                    if (matchMode === 'sequential') {
+                        assignedImageIdx = idx < AVState.images.length ? idx : (idx % AVState.images.length);
+                    } else {
+                        assignedImageIdx = idx < AVState.images.length ? idx : (idx % AVState.images.length);
+                    }
+
+                    // Lấy câu thoại tương ứng nếu có
+                    const text = scriptLines[idx] || `Âm thanh: ${audioItem.originalName || ('Cảnh #' + (idx + 1))}`;
+
+                    return {
+                        imageIndex: assignedImageIdx,
+                        startTime: st,
+                        endTime: et,
+                        duration: durWithPause,
+                        sceneText: text,
+                        voiceAudio: {
+                            filename: audioItem.filename,
+                            originalName: audioItem.originalName,
+                            url: audioItem.url,
+                            duration: audioDur
+                        },
+                        reason: `Tệp audio: ${audioItem.originalName} (${audioDur}s) khớp ảnh #${assignedImageIdx + 1}`,
+                        transition: selectedTrans,
+                        motion: selectedMotion,
+                        fadeIn: (selectedTrans === 'none') ? 0.0 : 0.25,
+                        fadeOut: (selectedTrans === 'none') ? 0.0 : 0.25
+                    };
+                });
+
+                AVState.scenes = baseScenes.map((s, idx) => ({ ...s, id: idx + 1 }));
+                AVState.audioDuration = currentCursor;
+
+                if (dom.scrubber) {
+                    dom.scrubber.max = currentCursor || 10;
+                    dom.scrubber.value = 0;
+                }
+                if (dom.timeLabel) {
+                    dom.timeLabel.textContent = `0:00.0 / ${formatTime(currentCursor)}`;
+                }
+
+                renderScenesList();
+                showToast(`🎉 Đã khớp chuẩn 1:1 thành công ${AVState.scenes.length} phân cảnh từ loạt file audio!`);
+                drawCanvasAtTime(0);
+                return;
+            } catch (err) {
+                alert('Lỗi ghép loạt audio: ' + err.message);
+                return;
+            } finally {
+                if (dom.btnRunMatch) {
+                    dom.btnRunMatch.disabled = false;
+                    dom.btnRunMatch.innerHTML = '✨ Bắt Đầu Tự Động Khớp Voice ➔ Ảnh (Không Phụ Đề)';
+                }
+            }
+        }
+
+        // XỬ LÝ CHẾ ĐỘ OPTION A: 1 FILE AUDIO DUY NHẤT (GIỮ NGUYÊN 100% CŨ)
         const formData = new FormData();
         formData.append('scriptText', script || 'Kịch bản tự động theo nhịp audio');
         formData.append('items', JSON.stringify(AVState.images));
@@ -804,9 +1186,22 @@
         const scene = AVState.scenes[sceneIdx];
         if (!scene) return;
         AVState.activeSceneIndex = sceneIdx;
-        if (AVState.audioElement) {
+        
+        if (AVState.audioMode === 'batch') {
+            const trackUrl = scene.voiceAudio?.url || AVState.batchAudioFiles[sceneIdx]?.url;
+            if (trackUrl && AVState.audioElement) {
+                if (AVState.audioElement.src !== trackUrl && !AVState.audioElement.src.endsWith(trackUrl)) {
+                    AVState.audioElement.src = trackUrl;
+                }
+                AVState.audioElement.currentTime = 0;
+                if (AVState.isPlaying) {
+                    AVState.audioElement.play().catch(e => console.warn(e));
+                }
+            }
+        } else if (AVState.audioElement) {
             AVState.audioElement.currentTime = scene.startTime;
         }
+
         drawCanvasAtTime(scene.startTime);
         highlightActiveSceneCard(sceneIdx);
     }
@@ -943,8 +1338,59 @@
         ctx.restore();
     }
 
+    // Play audio for a specific scene in batch mode
+    function playSceneAudio(sceneIdx) {
+        if (!AVState.scenes || !AVState.scenes[sceneIdx]) return;
+        AVState.activeSceneIndex = sceneIdx;
+        const scene = AVState.scenes[sceneIdx];
+        highlightActiveSceneCard(sceneIdx, true);
+        drawCanvasAtTime(scene.startTime);
+
+        const trackUrl = scene.voiceAudio?.url || AVState.batchAudioFiles[sceneIdx]?.url;
+        if (trackUrl) {
+            if (AVState.audioElement.src !== trackUrl && !AVState.audioElement.src.endsWith(trackUrl)) {
+                AVState.audioElement.src = trackUrl;
+            }
+            AVState.audioElement.currentTime = 0;
+            AVState.audioElement.play().then(() => {
+                AVState.isPlaying = true;
+                if (dom.btnPlayPause) dom.btnPlayPause.textContent = '⏸ Tạm Dừng';
+            }).catch(e => console.warn('Audio play notice:', e));
+        }
+    }
+
     // Play / Pause Toggle
     function togglePlayPause() {
+        if (AVState.audioMode === 'batch') {
+            if (!AVState.scenes || AVState.scenes.length === 0) {
+                if (AVState.batchAudioFiles.length > 0 && AVState.batchAudioFiles[0].url) {
+                    if (AVState.isPlaying) {
+                        AVState.audioElement.pause();
+                        AVState.isPlaying = false;
+                        if (dom.btnPlayPause) dom.btnPlayPause.textContent = '▶ Phát';
+                    } else {
+                        AVState.audioElement.src = AVState.batchAudioFiles[0].url;
+                        AVState.audioElement.play();
+                        AVState.isPlaying = true;
+                        if (dom.btnPlayPause) dom.btnPlayPause.textContent = '⏸ Tạm Dừng';
+                    }
+                    return;
+                }
+                alert('Chưa có loạt audio hoặc phân cảnh để phát!');
+                return;
+            }
+
+            if (AVState.isPlaying) {
+                AVState.audioElement.pause();
+                AVState.isPlaying = false;
+                if (dom.btnPlayPause) dom.btnPlayPause.textContent = '▶ Phát';
+            } else {
+                playSceneAudio(AVState.activeSceneIndex || 0);
+            }
+            return;
+        }
+
+        // Original Single Mode
         if (!AVState.audioElement.src) {
             alert('Chưa có Voice Audio để phát!');
             return;
@@ -987,6 +1433,12 @@
             cloned.settings.overlayText = '';
             cloned.isPlaceholder = false;
 
+            // Discrete per-scene voice audio (nếu dùng chế độ loạt Audio Phân Cảnh)
+            if (scene.voiceAudio) {
+                cloned.voiceAudio = scene.voiceAudio;
+                cloned.settings.voiceAudio = scene.voiceAudio;
+            }
+
             newTimeline.push(cloned);
         });
 
@@ -995,8 +1447,14 @@
 
             window.mediaItems = newTimeline;
 
-            // Set voice audio into Timeline BGM
-            if (AVState.audioUrl) {
+            // Voice audio setup
+            if (AVState.audioMode === 'batch') {
+                // Ở chế độ loạt audio, từng phân cảnh đã có audio riêng gắn trực tiếp trong item.settings.voiceAudio
+                // Xóa hoặc không đè BGM đơn lẻ để tránh lặp âm thanh
+                window.bgmTrack = null;
+                if (typeof window.updateBgmUI === 'function') window.updateBgmUI();
+            } else if (AVState.audioUrl) {
+                // Ở chế độ 1 file duy nhất, đưa vào BGM của Timeline (Giữ nguyên 100% cũ)
                 window.bgmTrack = {
                     filename: AVState.audioFile?.filename || (window.bgmTrack && window.bgmTrack.filename) || 'voiceover.mp3',
                     originalName: AVState.audioName,

@@ -1369,36 +1369,89 @@
                             <h4>🎙️ 1. Tải Lên Giọng Đọc (Voice Audio)</h4>
                             <span class="av-badge">Bắt buộc</span>
                         </div>
-                        <input type="file" id="av-audio-input" accept="audio/*" hidden>
-                        
-                        <!-- Big Visual Audio Dropzone -->
-                        <div id="av-audio-dropzone" class="av-dropzone" onclick="document.getElementById('av-audio-input').click()" style="padding: 24px 16px; margin-bottom: 12px; cursor: pointer;">
-                            <div class="av-dropzone-icon" style="font-size: 38px;">🎧</div>
-                            <h4 style="color: #38BDF8; margin: 4px 0; font-size: 15px;">Bấm Vào Đây Hoặc Kéo Thả Tệp Audio Giọng Đọc</h4>
-                            <p class="text-xs text-dim" style="margin-top: 4px;">Hỗ trợ định dạng: .MP3, .WAV, .M4A, .AAC</p>
-                            <div style="margin-top: 10px;">
-                                <button type="button" id="btn-av-load-audio" class="btn btn-primary" style="pointer-events: none; padding: 6px 18px; font-size: 13px;">
-                                    📁 Chọn File Audio Từ Máy
-                                </button>
-                            </div>
-                        </div>
 
-                        <div class="flex-row gap-xs">
-                            <button type="button" id="btn-av-use-timeline-bgm" class="btn btn-small btn-secondary w-100" title="Dùng BGM hoặc Voice hiện tại trên Timeline Tab 1">
-                                🎶 Hoặc Dùng Voice / BGM Đang Có Trên Tab 1
+                        <!-- Audio Mode Selector (Option Thêm: 1 File Duy Nhất vs Loạt Audio Theo Phân Cảnh) -->
+                        <div class="flex-row gap-xs mb-3">
+                            <button type="button" id="btn-av-mode-single" class="btn btn-small btn-primary active" style="flex: 1; font-weight: 600;">
+                                🎵 1 Tệp Audio Tổng Hợp
+                            </button>
+                            <button type="button" id="btn-av-mode-batch" class="btn btn-small btn-outline" style="flex: 1; font-weight: 600;" title="Nạp loạt file audio (01.wav, 02.wav...) tương ứng 1-1 với từng phân cảnh">
+                                📂 Loạt Audio Phân Cảnh (01 ➔ N)
                             </button>
                         </div>
 
-                        <!-- Audio File Indicator Banner -->
-                        <div id="av-audio-banner" class="av-audio-banner hidden" style="margin-top: 12px;">
-                            <div class="flex-row align-center gap-xs">
-                                <span style="font-size: 24px;">🎵</span>
-                                <div>
-                                    <strong id="av-audio-name" style="color: #38BDF8; font-size: 14px;">audio.mp3</strong>
-                                    <div class="text-xs text-dim">Thời lượng tệp: <span id="av-audio-dur" style="color: #34D399; font-weight: 700;">0.0s</span></div>
+                        <!-- OPTION A: 1 FILE AUDIO DUY NHẤT (GIỮ NGUYÊN 100% CŨ) -->
+                        <div id="av-audio-single-section">
+                            <input type="file" id="av-audio-input" accept="audio/*" hidden>
+                            
+                            <!-- Big Visual Audio Dropzone -->
+                            <div id="av-audio-dropzone" class="av-dropzone" onclick="document.getElementById('av-audio-input').click()" style="padding: 24px 16px; margin-bottom: 12px; cursor: pointer;">
+                                <div class="av-dropzone-icon" style="font-size: 38px;">🎧</div>
+                                <h4 style="color: #38BDF8; margin: 4px 0; font-size: 15px;">Bấm Vào Đây Hoặc Kéo Thả Tệp Audio Giọng Đọc</h4>
+                                <p class="text-xs text-dim" style="margin-top: 4px;">Hỗ trợ định dạng: .MP3, .WAV, .M4A, .AAC</p>
+                                <div style="margin-top: 10px;">
+                                    <button type="button" id="btn-av-load-audio" class="btn btn-primary" style="pointer-events: none; padding: 6px 18px; font-size: 13px;">
+                                        📁 Chọn File Audio Từ Máy
+                                    </button>
                                 </div>
                             </div>
-                            <span class="av-badge" style="background: rgba(16, 185, 129, 0.2); color: #34D399; font-size: 12px; padding: 4px 10px;">✅ Sẵn Sàng Ghép</span>
+
+                            <div class="flex-row gap-xs">
+                                <button type="button" id="btn-av-use-timeline-bgm" class="btn btn-small btn-secondary w-100" title="Dùng BGM hoặc Voice hiện tại trên Timeline Tab 1">
+                                    🎶 Hoặc Dùng Voice / BGM Đang Có Trên Tab 1
+                                </button>
+                            </div>
+
+                            <!-- Audio File Indicator Banner -->
+                            <div id="av-audio-banner" class="av-audio-banner hidden" style="margin-top: 12px;">
+                                <div class="flex-row align-center gap-xs">
+                                    <span style="font-size: 24px;">🎵</span>
+                                    <div>
+                                        <strong id="av-audio-name" style="color: #38BDF8; font-size: 14px;">audio.mp3</strong>
+                                        <div class="text-xs text-dim">Thời lượng tệp: <span id="av-audio-dur" style="color: #34D399; font-weight: 700;">0.0s</span></div>
+                                    </div>
+                                </div>
+                                <span class="av-badge" style="background: rgba(16, 185, 129, 0.2); color: #34D399; font-size: 12px; padding: 4px 10px;">✅ Sẵn Sàng Ghép</span>
+                            </div>
+                        </div>
+
+                        <!-- OPTION B: LOẠT AUDIO PHÂN CẢNH (OPTION MỚI THÊM) -->
+                        <div id="av-audio-batch-section" class="hidden">
+                            <input type="file" id="av-batch-audio-input" accept="audio/*" multiple hidden>
+                            
+                            <!-- Batch Audio Dropzone -->
+                            <div id="av-batch-audio-dropzone" class="av-dropzone" onclick="document.getElementById('av-batch-audio-input').click()" style="padding: 24px 16px; margin-bottom: 12px; cursor: pointer; border-color: rgba(56, 189, 248, 0.4);">
+                                <div class="av-dropzone-icon" style="font-size: 38px;">📁</div>
+                                <h4 style="color: #38BDF8; margin: 4px 0; font-size: 15px;">Bấm Vào Đây Hoặc Kéo Thả Toàn Bộ Loạt File Audio</h4>
+                                <p class="text-xs text-dim" style="margin-top: 4px;">Ví dụ: 91 file segment_0001.wav ➔ segment_0091.wav (Tự động xếp 1 ➔ N khớp từng phân cảnh)</p>
+                                <div style="margin-top: 10px;">
+                                    <button type="button" id="btn-av-load-batch-audio" class="btn btn-primary" style="pointer-events: none; padding: 6px 18px; font-size: 13px;">
+                                        📂 Chọn Toàn Bộ Loạt Audio Từ Thư Mục
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="flex-row gap-xs mb-2">
+                                <button type="button" id="btn-av-sort-batch-audio" class="btn btn-small btn-secondary" style="flex: 1;" title="Sắp xếp loạt audio theo số thứ tự tên file tự nhiên">
+                                    🔢 Sắp Xếp Tự Nhiên (1 ➔ N)
+                                </button>
+                                <button type="button" id="btn-av-clear-batch-audio" class="btn btn-small btn-ghost text-dim" title="Xóa toàn bộ loạt audio đã chọn">
+                                    🗑️ Xóa hết
+                                </button>
+                            </div>
+
+                            <!-- Batch Audio Status Banner -->
+                            <div id="av-batch-audio-banner" class="av-audio-banner hidden" style="margin-top: 10px;">
+                                <div class="flex-row align-center gap-xs">
+                                    <span style="font-size: 24px;">🎧</span>
+                                    <div>
+                                        <strong id="av-batch-audio-count-label" style="color: #38BDF8; font-size: 14px;">0 tệp audio phân cảnh</strong>
+                                        <div class="text-xs text-dim">Tổng thời lượng: <span id="av-batch-audio-dur-label" style="color: #34D399; font-weight: 700;">0.0s</span></div>
+                                        <div id="av-batch-audio-sample-label" class="text-xs text-dim mt-1" style="font-family: monospace; color: #94A3B8;"></div>
+                                    </div>
+                                </div>
+                                <span class="av-badge" style="background: rgba(56, 189, 248, 0.2); color: #38BDF8; font-size: 12px; padding: 4px 10px;">1 Audio = 1 Cảnh</span>
+                            </div>
                         </div>
                     </div>
 
