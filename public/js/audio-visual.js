@@ -24,7 +24,7 @@
         animationFrameId: null,
         aspectRatio: '16:9',
         transition: 'none', // Mặc định cắt thẳng (Cut)
-        motion: 'none',      // Mặc định ảnh tĩnh hoàn toàn, không zoom/pan
+        motion: 'zoom_in',   // Mặc định Zoom In nhẹ điện ảnh (mượt mà như Tab 1)
         isRendering: false,
         // Subtitle Sync 1-to-1 State
         enableSubtitles: true,
@@ -499,36 +499,68 @@
             dom.btnExportDirect.addEventListener('click', handleExportDirect);
         }
 
-        // Audio element events
+        // 60 FPS RequestAnimationFrame Animation Loop (Kế thừa từ Tab 1 Studio Player)
+        function start60FpsAnimationLoop() {
+            if (AVState.animationFrameId) {
+                cancelAnimationFrame(AVState.animationFrameId);
+            }
+
+            function frameStep() {
+                if (!AVState.isPlaying) return;
+
+                let cur = 0;
+                if (AVState.audioMode === 'batch') {
+                    const activeScene = AVState.scenes[AVState.activeSceneIndex];
+                    if (activeScene) {
+                        cur = parseFloat((activeScene.startTime + (AVState.audioElement.currentTime || 0)).toFixed(2));
+                        if (cur > AVState.audioDuration) cur = AVState.audioDuration;
+                    }
+                } else {
+                    cur = AVState.audioElement.currentTime || 0;
+                    updateActiveSceneByTime(cur);
+                }
+
+                // Smooth scrubber & time label update
+                if (dom.scrubber && !dom.scrubber.matches(':active')) {
+                    dom.scrubber.value = cur;
+                }
+                if (dom.timeLabel) {
+                    dom.timeLabel.textContent = `${formatTime(cur)} / ${formatTime(AVState.audioDuration)}`;
+                }
+
+                // Render 60 FPS canvas with precise sub-frame interpolation
+                drawCanvasAtTime(cur);
+
+                AVState.animationFrameId = requestAnimationFrame(frameStep);
+            }
+
+            AVState.animationFrameId = requestAnimationFrame(frameStep);
+        }
+
+        function stop60FpsAnimationLoop() {
+            if (AVState.animationFrameId) {
+                cancelAnimationFrame(AVState.animationFrameId);
+                AVState.animationFrameId = null;
+            }
+        }
+
+        // Expose functions for playback control
+        AVState.start60FpsAnimationLoop = start60FpsAnimationLoop;
+        AVState.stop60FpsAnimationLoop = stop60FpsAnimationLoop;
+
+        // Audio element fallback timeupdate for UI consistency
         AVState.audioElement.addEventListener('timeupdate', () => {
             if (AVState.isSwitchingTrack) return;
-
-            if (AVState.audioMode === 'batch') {
-                // In batch mode, audioElement.currentTime is local to the active scene's audio
-                const activeScene = AVState.scenes[AVState.activeSceneIndex];
-                if (!activeScene) return;
-
-                let cur = parseFloat((activeScene.startTime + (AVState.audioElement.currentTime || 0)).toFixed(2));
-                if (cur > AVState.audioDuration) cur = AVState.audioDuration;
-
-                if (dom.scrubber && !dom.scrubber.matches(':active')) {
-                    dom.scrubber.value = cur;
-                }
-                if (dom.timeLabel) {
-                    dom.timeLabel.textContent = `${formatTime(cur)} / ${formatTime(AVState.audioDuration)}`;
+            // Chỉ cập nhật tĩnh nếu player đang tạm dừng
+            if (!AVState.isPlaying) {
+                let cur = AVState.audioElement.currentTime || 0;
+                if (AVState.audioMode === 'batch') {
+                    const activeScene = AVState.scenes[AVState.activeSceneIndex];
+                    if (activeScene) {
+                        cur = parseFloat((activeScene.startTime + cur).toFixed(2));
+                    }
                 }
                 drawCanvasAtTime(cur);
-            } else {
-                // In single mode (100% original behavior)
-                const cur = AVState.audioElement.currentTime;
-                if (dom.scrubber && !dom.scrubber.matches(':active')) {
-                    dom.scrubber.value = cur;
-                }
-                if (dom.timeLabel) {
-                    dom.timeLabel.textContent = `${formatTime(cur)} / ${formatTime(AVState.audioDuration)}`;
-                }
-                drawCanvasAtTime(cur);
-                updateActiveSceneByTime(cur);
             }
         });
 
@@ -543,6 +575,7 @@
                     return;
                 } else {
                     // Reached the very end of all scenes
+                    stop60FpsAnimationLoop();
                     AVState.isPlaying = false;
                     AVState.activeSceneIndex = 0;
                     if (dom.btnPlayPause) dom.btnPlayPause.textContent = '▶ Phát';
@@ -553,6 +586,7 @@
                     return;
                 }
             }
+            stop60FpsAnimationLoop();
             AVState.isPlaying = false;
             if (dom.btnPlayPause) dom.btnPlayPause.textContent = '▶ Phát';
         });
@@ -1493,53 +1527,109 @@
         const sceneDur = Math.max(0.1, scene.endTime - scene.startTime);
         const progress = Math.min(1.0, Math.max(0, (currentTime - scene.startTime) / sceneDur));
 
-        // Motion transform
-        let scale = 1.0;
+        // High quality rendering
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
+        // 1. Calculate smart aspect-ratio cover crop coordinates (100% matching Tab 1 & FFmpeg preScaleFilter)
+        const imgW = img.naturalWidth || img.width || w;
+        const imgH = img.naturalHeight || img.height || h;
+        const imgRatio = imgW / imgH;
+        const canvasRatio = w / h;
+
+        let sx = 0, sy = 0, sWidth = imgW, sHeight = imgH;
+        if (imgRatio > canvasRatio) {
+            sWidth = imgH * canvasRatio;
+            sx = (imgW - sWidth) / 2;
+        } else {
+            sHeight = imgW / canvasRatio;
+            sy = (imgH - sHeight) / 2;
+        }
+
+        // 2. Motion Transform (100% matching Tab 1 & FFmpeg zoompan formula)
+        const motion = scene.motion || AVState.motion || 'zoom_in';
+        const zoomIntensity = 1.22;
+        const delta = zoomIntensity - 1.0;
+
+        let zoom = 1.0;
         let offsetX = 0;
         let offsetY = 0;
 
-        if (scene.motion === 'zoom_in') {
-            scale = 1.0 + (0.15 * progress);
-        } else if (scene.motion === 'zoom_out') {
-            scale = 1.15 - (0.15 * progress);
-        } else if (scene.motion === 'pan_left') {
-            scale = 1.1;
-            offsetX = -(progress * 40);
-        } else if (scene.motion === 'pan_right') {
-            scale = 1.1;
-            offsetX = (progress * 40);
+        const maxPanX = (1 - 1 / zoomIntensity) * (w / 2);
+        const maxPanY = (1 - 1 / zoomIntensity) * (h / 2);
+
+        if (motion === 'zoom_in') {
+            zoom = 1.0 + (delta * progress);
+        } else if (motion === 'zoom_out') {
+            zoom = zoomIntensity - (delta * progress);
+        } else if (motion === 'pan_left') {
+            zoom = zoomIntensity;
+            offsetX = maxPanX * (1 - 2 * progress);
+        } else if (motion === 'pan_right') {
+            zoom = zoomIntensity;
+            offsetX = maxPanX * (2 * progress - 1);
+        } else if (motion === 'pan_up') {
+            zoom = zoomIntensity;
+            offsetY = maxPanY * (1 - 2 * progress);
+        } else if (motion === 'pan_down') {
+            zoom = zoomIntensity;
+            offsetY = maxPanY * (2 * progress - 1);
+        } else if (motion === 'zoom_in_left') {
+            zoom = 1.0 + (delta * progress);
+            offsetX = (1 - 1 / zoom) * (w / 2);
+            offsetY = (1 - 1 / zoom) * (h / 2);
+        } else if (motion === 'zoom_in_right') {
+            zoom = 1.0 + (delta * progress);
+            offsetX = -(1 - 1 / zoom) * (w / 2);
+            offsetY = (1 - 1 / zoom) * (h / 2);
+        } else if (motion === 'zoom_pan') {
+            zoom = 1.0 + (delta * progress);
+            offsetX = -(1 - 1 / zoom) * (w / 2) * (1 - 2 * progress);
+            offsetY = -(1 - 1 / zoom) * (h / 2) * (1 - 2 * progress);
+        } else {
+            zoom = 1.0;
+            offsetX = 0;
+            offsetY = 0;
         }
 
-        // Transition fade (if not 'none')
+        // 3. Smooth Transitions (Fade, Crossfade, Flash White)
+        const sceneTime = currentTime - scene.startTime;
+        const fadeIn = Number(scene.fadeIn !== undefined ? scene.fadeIn : 0.25);
+        const fadeOut = Number(scene.fadeOut !== undefined ? scene.fadeOut : 0.25);
+        const transition = scene.transition || AVState.transition || 'none';
+
         let alpha = 1.0;
-        if (scene.transition !== 'none' && scene.fadeIn > 0 && (currentTime - scene.startTime) < scene.fadeIn) {
-            alpha = (currentTime - scene.startTime) / scene.fadeIn;
+        let transOffsetX = 0;
+        let transOffsetY = 0;
+        let transScale = 1.0;
+        let flashWhiteOpacity = 0.0;
+
+        if (transition !== 'none' && fadeIn > 0 && sceneTime < fadeIn) {
+            const transProgress = sceneTime / fadeIn;
+            if (transition === 'flash_white') {
+                alpha = Math.min(1.0, transProgress * 1.5);
+                flashWhiteOpacity = Math.max(0, 1.0 - transProgress);
+            } else if (transition === 'crossfade' || transition === 'fade_black') {
+                alpha = Math.min(1.0, Math.max(0, transProgress));
+            }
+        }
+        if (transition !== 'none' && fadeOut > 0 && sceneTime > (sceneDur - fadeOut)) {
+            alpha = Math.min(alpha, Math.max(0, (sceneDur - sceneTime) / fadeOut));
         }
 
         ctx.save();
         ctx.globalAlpha = Math.max(0, Math.min(1.0, alpha));
-        ctx.translate(w / 2, h / 2);
-        ctx.scale(scale, scale);
-        ctx.translate(-w / 2 + offsetX, -h / 2 + offsetY);
-
-        // Aspect ratio cover fill
-        const imgRatio = img.naturalWidth / img.naturalHeight;
-        const canvasRatio = w / h;
-        let dw, dh, dx, dy;
-        if (imgRatio > canvasRatio) {
-            dh = h;
-            dw = h * imgRatio;
-            dx = (w - dw) / 2;
-            dy = 0;
-        } else {
-            dw = w;
-            dh = w / imgRatio;
-            dx = 0;
-            dy = (h - dh) / 2;
-        }
-
-        ctx.drawImage(img, dx, dy, dw, dh);
+        ctx.translate(w / 2 + transOffsetX, h / 2 + transOffsetY);
+        ctx.scale(zoom * transScale, zoom * transScale);
+        ctx.drawImage(img, sx, sy, sWidth, sHeight, -w / 2 + offsetX, -h / 2 + offsetY, w, h);
         ctx.restore();
+
+        if (flashWhiteOpacity > 0.01) {
+            ctx.save();
+            ctx.fillStyle = `rgba(255, 255, 255, ${flashWhiteOpacity.toFixed(3)})`;
+            ctx.fillRect(0, 0, w, h);
+            ctx.restore();
+        }
 
         // RENDER LIVE SUBTITLE OVERLAY ON CANVAS (If enabled and scene has text)
         if (AVState.enableSubtitles && scene.sceneText && scene.sceneText.trim()) {
@@ -1773,6 +1863,9 @@
             AVState.audioElement.play().then(() => {
                 AVState.isPlaying = true;
                 if (dom.btnPlayPause) dom.btnPlayPause.textContent = '⏸ Tạm Dừng';
+                if (typeof AVState.start60FpsAnimationLoop === 'function') {
+                    AVState.start60FpsAnimationLoop();
+                }
             }).catch(e => {
                 console.warn('Audio play notice:', e);
             });
@@ -1787,11 +1880,13 @@
                     if (AVState.isPlaying) {
                         AVState.audioElement.pause();
                         AVState.isPlaying = false;
+                        if (typeof AVState.stop60FpsAnimationLoop === 'function') AVState.stop60FpsAnimationLoop();
                         if (dom.btnPlayPause) dom.btnPlayPause.textContent = '▶ Phát';
                     } else {
                         AVState.audioElement.src = AVState.batchAudioFiles[0].url;
                         AVState.audioElement.play();
                         AVState.isPlaying = true;
+                        if (typeof AVState.start60FpsAnimationLoop === 'function') AVState.start60FpsAnimationLoop();
                         if (dom.btnPlayPause) dom.btnPlayPause.textContent = '⏸ Tạm Dừng';
                     }
                     return;
@@ -1803,6 +1898,7 @@
             if (AVState.isPlaying) {
                 AVState.audioElement.pause();
                 AVState.isPlaying = false;
+                if (typeof AVState.stop60FpsAnimationLoop === 'function') AVState.stop60FpsAnimationLoop();
                 if (dom.btnPlayPause) dom.btnPlayPause.textContent = '▶ Phát';
             } else {
                 playSceneAudio(AVState.activeSceneIndex || 0);
@@ -1819,10 +1915,12 @@
         if (AVState.isPlaying) {
             AVState.audioElement.pause();
             AVState.isPlaying = false;
+            if (typeof AVState.stop60FpsAnimationLoop === 'function') AVState.stop60FpsAnimationLoop();
             if (dom.btnPlayPause) dom.btnPlayPause.textContent = '▶ Phát';
         } else {
             AVState.audioElement.play();
             AVState.isPlaying = true;
+            if (typeof AVState.start60FpsAnimationLoop === 'function') AVState.start60FpsAnimationLoop();
             if (dom.btnPlayPause) dom.btnPlayPause.textContent = '⏸ Tạm Dừng';
         }
     }
