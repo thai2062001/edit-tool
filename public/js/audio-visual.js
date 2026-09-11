@@ -20,6 +20,7 @@
         scenes: [], // [{ id, startTime, endTime, duration, imageIndex, sceneText, reason, voiceAudio }]
         activeSceneIndex: 0,
         isPlaying: false,
+        isSwitchingTrack: false,
         animationFrameId: null,
         aspectRatio: '16:9',
         transition: 'none', // Mặc định cắt thẳng (Cut)
@@ -35,6 +36,18 @@
             textAccent: '#06B6D4'
         }
     };
+
+    // Helper: Normalize URL comparison for HTMLAudioElement.src vs relative URL
+    function isSameAudioSrc(currentSrc, newUrl) {
+        if (!currentSrc || !newUrl) return false;
+        try {
+            const a = new URL(currentSrc, window.location.origin).href;
+            const b = new URL(newUrl, window.location.origin).href;
+            return a === b;
+        } catch (e) {
+            return currentSrc === newUrl || currentSrc.endsWith(newUrl);
+        }
+    }
 
     // DOM Elements Cache
     let dom = {};
@@ -416,16 +429,22 @@
                 const targetTime = parseFloat(e.target.value);
                 if (AVState.audioMode === 'batch') {
                     // Find scene containing targetTime
-                    const sIdx = AVState.scenes.findIndex(s => targetTime >= s.startTime && targetTime <= s.endTime);
+                    const sIdx = AVState.scenes.findIndex(s => targetTime >= s.startTime && targetTime <= (s.endTime + 0.05));
                     if (sIdx !== -1) {
+                        AVState.activeSceneIndex = sIdx;
+                        highlightActiveSceneCard(sIdx);
                         const scene = AVState.scenes[sIdx];
                         const localOffset = Math.max(0, targetTime - scene.startTime);
                         const trackUrl = scene.voiceAudio?.url || AVState.batchAudioFiles[sIdx]?.url;
                         if (trackUrl && AVState.audioElement) {
-                            if (AVState.audioElement.src !== trackUrl && !AVState.audioElement.src.endsWith(trackUrl)) {
+                            if (!isSameAudioSrc(AVState.audioElement.src, trackUrl)) {
+                                AVState.isSwitchingTrack = true;
                                 AVState.audioElement.src = trackUrl;
+                                AVState.audioElement.currentTime = localOffset;
+                                AVState.isSwitchingTrack = false;
+                            } else {
+                                AVState.audioElement.currentTime = localOffset;
                             }
-                            AVState.audioElement.currentTime = localOffset;
                         }
                     }
                 } else if (AVState.audioElement) {
@@ -482,10 +501,16 @@
 
         // Audio element events
         AVState.audioElement.addEventListener('timeupdate', () => {
+            if (AVState.isSwitchingTrack) return;
+
             if (AVState.audioMode === 'batch') {
                 // In batch mode, audioElement.currentTime is local to the active scene's audio
                 const activeScene = AVState.scenes[AVState.activeSceneIndex];
-                let cur = activeScene ? (activeScene.startTime + AVState.audioElement.currentTime) : AVState.audioElement.currentTime;
+                if (!activeScene) return;
+
+                let cur = parseFloat((activeScene.startTime + (AVState.audioElement.currentTime || 0)).toFixed(2));
+                if (cur > AVState.audioDuration) cur = AVState.audioDuration;
+
                 if (dom.scrubber && !dom.scrubber.matches(':active')) {
                     dom.scrubber.value = cur;
                 }
@@ -493,7 +518,6 @@
                     dom.timeLabel.textContent = `${formatTime(cur)} / ${formatTime(AVState.audioDuration)}`;
                 }
                 drawCanvasAtTime(cur);
-                updateActiveSceneByTime(cur);
             } else {
                 // In single mode (100% original behavior)
                 const cur = AVState.audioElement.currentTime;
@@ -509,11 +533,23 @@
         });
 
         AVState.audioElement.addEventListener('ended', () => {
-            if (AVState.audioMode === 'batch' && AVState.isPlaying) {
+            if (AVState.isSwitchingTrack) return;
+            if (AVState.audioMode === 'batch') {
+                if (!AVState.isPlaying) return;
                 // In batch mode, proceed to next scene audio track automatically
                 const nextIdx = AVState.activeSceneIndex + 1;
                 if (nextIdx < AVState.scenes.length) {
                     playSceneAudio(nextIdx);
+                    return;
+                } else {
+                    // Reached the very end of all scenes
+                    AVState.isPlaying = false;
+                    AVState.activeSceneIndex = 0;
+                    if (dom.btnPlayPause) dom.btnPlayPause.textContent = '▶ Phát';
+                    if (dom.scrubber) dom.scrubber.value = 0;
+                    if (dom.timeLabel) dom.timeLabel.textContent = `0:00.0 / ${formatTime(AVState.audioDuration)}`;
+                    drawCanvasAtTime(0);
+                    highlightActiveSceneCard(0, true);
                     return;
                 }
             }
@@ -1354,10 +1390,14 @@
         if (AVState.audioMode === 'batch') {
             const trackUrl = scene.voiceAudio?.url || AVState.batchAudioFiles[sceneIdx]?.url;
             if (trackUrl && AVState.audioElement) {
-                if (AVState.audioElement.src !== trackUrl && !AVState.audioElement.src.endsWith(trackUrl)) {
+                if (!isSameAudioSrc(AVState.audioElement.src, trackUrl)) {
+                    AVState.isSwitchingTrack = true;
                     AVState.audioElement.src = trackUrl;
+                    AVState.audioElement.currentTime = 0;
+                    AVState.isSwitchingTrack = false;
+                } else {
+                    AVState.audioElement.currentTime = 0;
                 }
-                AVState.audioElement.currentTime = 0;
                 if (AVState.isPlaying) {
                     AVState.audioElement.play().catch(e => console.warn(e));
                 }
@@ -1367,7 +1407,7 @@
         }
 
         drawCanvasAtTime(scene.startTime);
-        highlightActiveSceneCard(sceneIdx);
+        highlightActiveSceneCard(sceneIdx, true);
     }
 
     function updateActiveSceneByTime(currentTime) {
@@ -1503,37 +1543,113 @@
 
         // RENDER LIVE SUBTITLE OVERLAY ON CANVAS (If enabled and scene has text)
         if (AVState.enableSubtitles && scene.sceneText && scene.sceneText.trim()) {
-            drawLiveSubtitleOnCanvas(ctx, scene.sceneText.trim(), w, h, AVState.subtitleStyle);
+            drawLiveSubtitleOnCanvas(ctx, scene.sceneText.trim(), w, h, AVState.subtitleStyle, progress);
         }
     }
 
-    // Helper: Draw Live Subtitle with High-Res Wrap, Box/Outline/Glow styling
-    function drawLiveSubtitleOnCanvas(ctx, text, w, h, styleConf) {
-        ctx.save();
+    // Helper: Split long sentence (especially CJK/Japanese without spaces) into neat readable display pages
+    function splitTextIntoDisplayPages(text, maxCharsPerPage = 26) {
+        if (!text) return [];
+        const cleanText = text.trim();
+        if (cleanText.length <= maxCharsPerPage) {
+            return [cleanText];
+        }
 
-        const baseFontSize = styleConf.fontSize || 48;
-        const fontSize = Math.round(baseFontSize * (h / 1080));
-        ctx.font = `bold ${fontSize}px "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
+        // Split into natural clauses by punctuation: 。, 、 , . ! ? !? … \n
+        const clauseTokens = [];
+        let currentBuf = '';
+        for (let i = 0; i < cleanText.length; i++) {
+            const ch = cleanText[i];
+            currentBuf += ch;
+            if (/[。、,.;:!?！？\n]/.test(ch)) {
+                clauseTokens.push(currentBuf);
+                currentBuf = '';
+            }
+        }
+        if (currentBuf) clauseTokens.push(currentBuf);
 
-        // Auto wrap text to fit within canvas margins
-        const maxTextWidth = w * 0.84;
-        const words = text.split(/\s+/);
+        // Group clauses into pages that don't exceed maxCharsPerPage
+        const pages = [];
+        let pageBuf = '';
+        clauseTokens.forEach(clause => {
+            if (!pageBuf) {
+                pageBuf = clause;
+            } else if ((pageBuf + clause).length <= maxCharsPerPage) {
+                pageBuf += clause;
+            } else {
+                pages.push(pageBuf);
+                pageBuf = clause;
+            }
+        });
+        if (pageBuf) pages.push(pageBuf);
+
+        // If any single page is still too long (e.g. no punctuation), cut hard by maxCharsPerPage
+        const finalPages = [];
+        pages.forEach(p => {
+            if (p.length <= maxCharsPerPage) {
+                finalPages.push(p);
+            } else {
+                for (let i = 0; i < p.length; i += maxCharsPerPage) {
+                    finalPages.push(p.slice(i, i + maxCharsPerPage));
+                }
+            }
+        });
+
+        return finalPages.filter(p => p && p.trim());
+    }
+
+    // Helper: Wrap words or CJK characters into lines fitting within maxTextWidth
+    function wrapTextToLines(ctx, text, maxTextWidth) {
+        if (!text) return [];
+        // Test if text contains whitespace (Latin / Vietnamese) or is continuous (Japanese / Chinese)
+        const hasWhitespace = /\s+/.test(text.trim());
+        const tokens = hasWhitespace ? text.split(/\s+/) : text.split('');
         const lines = [];
         let currentLine = '';
 
-        words.forEach(word => {
-            const testLine = currentLine ? `${currentLine} ${word}` : word;
+        tokens.forEach((token, idx) => {
+            const joiner = hasWhitespace ? (currentLine ? ' ' : '') : '';
+            const testLine = currentLine + joiner + token;
             const metrics = ctx.measureText(testLine);
             if (metrics.width > maxTextWidth && currentLine) {
                 lines.push(currentLine);
-                currentLine = word;
+                currentLine = token;
             } else {
                 currentLine = testLine;
             }
         });
         if (currentLine) lines.push(currentLine);
+        return lines;
+    }
+
+    // Helper: Draw Live Subtitle with Smart Paged Chunks, CJK wrapping, Box/Outline/Glow styling
+    function drawLiveSubtitleOnCanvas(ctx, fullText, w, h, styleConf, progress = 0.0) {
+        ctx.save();
+
+        const baseFontSize = styleConf.fontSize || 48;
+        const fontSize = Math.round(baseFontSize * (h / 1080));
+        ctx.font = `bold ${fontSize}px "Segoe UI", -apple-system, BlinkMacSystemFont, "Noto Sans JP", "Hiragino Sans", "Meiryo", Roboto, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // 1. Chia câu dài thành các trang (pages/chunks) để hiển thị tuần tự theo tiến trình audio
+        // Ngưỡng maxCharsPerPage: ~26-30 ký tự cho tỉ lệ 16:9, ~18 cho 9:16
+        const maxChars = (w < h) ? 18 : 26;
+        const pages = splitTextIntoDisplayPages(fullText, maxChars);
+        
+        let activeText = fullText;
+        if (pages.length > 1) {
+            // Xác định trang hiện tại dựa theo % tiến trình nói của phân cảnh (progress từ 0.0 -> 1.0)
+            const pageIndex = Math.min(pages.length - 1, Math.floor(progress * pages.length));
+            activeText = pages[pageIndex] || pages[0];
+        }
+
+        // 2. Wrap trang hiện tại thành tối đa 1-2 dòng (hỗ trợ cả tiếng Nhật CJK và tiếng Latin/Việt)
+        const maxTextWidth = w * 0.82;
+        let lines = wrapTextToLines(ctx, activeText, maxTextWidth);
+        if (lines.length > 2) {
+            lines = lines.slice(0, 2); // Chuẩn phụ đề tối đa 2 dòng
+        }
 
         const lineHeight = fontSize * 1.35;
         const totalBlockHeight = lines.length * lineHeight;
@@ -1604,14 +1720,19 @@
 
         const trackUrl = scene.voiceAudio?.url || AVState.batchAudioFiles[sceneIdx]?.url;
         if (trackUrl) {
-            if (AVState.audioElement.src !== trackUrl && !AVState.audioElement.src.endsWith(trackUrl)) {
+            AVState.isSwitchingTrack = true;
+            if (!isSameAudioSrc(AVState.audioElement.src, trackUrl)) {
                 AVState.audioElement.src = trackUrl;
             }
             AVState.audioElement.currentTime = 0;
+            AVState.isSwitchingTrack = false;
+
             AVState.audioElement.play().then(() => {
                 AVState.isPlaying = true;
                 if (dom.btnPlayPause) dom.btnPlayPause.textContent = '⏸ Tạm Dừng';
-            }).catch(e => console.warn('Audio play notice:', e));
+            }).catch(e => {
+                console.warn('Audio play notice:', e);
+            });
         }
     }
 
@@ -1790,16 +1911,33 @@
         }
 
         let srtContent = '';
-        AVState.scenes.forEach((s, idx) => {
-            const text = (s.sceneText || '').trim();
-            if (!text) return;
+        let cueCounter = 1;
+        const maxChars = (AVState.aspectRatio === '9:16') ? 18 : 26;
 
-            const st = formatSrtTimecode(s.startTime);
-            const et = formatSrtTimecode(s.endTime);
+        AVState.scenes.forEach((s) => {
+            const fullText = (s.sceneText || '').trim();
+            if (!fullText) return;
 
-            srtContent += `${idx + 1}\n`;
-            srtContent += `${st} --> ${et}\n`;
-            srtContent += `${text}\n\n`;
+            const sceneDur = Math.max(0.2, s.endTime - s.startTime);
+            const pages = splitTextIntoDisplayPages(fullText, maxChars);
+
+            if (pages.length <= 1) {
+                const st = formatSrtTimecode(s.startTime);
+                const et = formatSrtTimecode(s.endTime);
+                srtContent += `${cueCounter++}\n`;
+                srtContent += `${st} --> ${et}\n`;
+                srtContent += `${fullText}\n\n`;
+            } else {
+                // Chia thời lượng phân cảnh đều cho các trang phụ đề
+                const chunkDur = sceneDur / pages.length;
+                pages.forEach((pText, pIdx) => {
+                    const chunkSt = s.startTime + (pIdx * chunkDur);
+                    const chunkEt = (pIdx === pages.length - 1) ? s.endTime : (chunkSt + chunkDur);
+                    srtContent += `${cueCounter++}\n`;
+                    srtContent += `${formatSrtTimecode(chunkSt)} --> ${formatSrtTimecode(chunkEt)}\n`;
+                    srtContent += `${pText.trim()}\n\n`;
+                });
+            }
         });
 
         const blob = new Blob([srtContent], { type: 'application/x-subrip;charset=utf-8' });
@@ -1811,7 +1949,7 @@
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        showToast(`📥 Đã xuất thành công file SRT gồm ${AVState.scenes.length} câu phụ đề!`);
+        showToast(`📥 Đã xuất thành công file SRT gồm ${cueCounter - 1} phân đoạn câu phụ đề!`);
     }
 
     // Export .ASS Subtitle File
@@ -1821,13 +1959,40 @@
             return;
         }
 
-        const segments = AVState.scenes.map((s, idx) => ({
-            id: idx + 1,
-            start: s.startTime,
-            end: s.endTime,
-            text: s.sceneText || '',
-            words: [{ word: s.sceneText || '', start: s.startTime, end: s.endTime }]
-        }));
+        const maxChars = (AVState.aspectRatio === '9:16') ? 18 : 26;
+        const segments = [];
+        let segCounter = 1;
+
+        AVState.scenes.forEach((s) => {
+            const fullText = (s.sceneText || '').trim();
+            if (!fullText) return;
+
+            const sceneDur = Math.max(0.2, s.endTime - s.startTime);
+            const pages = splitTextIntoDisplayPages(fullText, maxChars);
+
+            if (pages.length <= 1) {
+                segments.push({
+                    id: segCounter++,
+                    start: s.startTime,
+                    end: s.endTime,
+                    text: fullText,
+                    words: [{ word: fullText, start: s.startTime, end: s.endTime }]
+                });
+            } else {
+                const chunkDur = sceneDur / pages.length;
+                pages.forEach((pText, pIdx) => {
+                    const chunkSt = s.startTime + (pIdx * chunkDur);
+                    const chunkEt = (pIdx === pages.length - 1) ? s.endTime : (chunkSt + chunkDur);
+                    segments.push({
+                        id: segCounter++,
+                        start: chunkSt,
+                        end: chunkEt,
+                        text: pText.trim(),
+                        words: [{ word: pText.trim(), start: chunkSt, end: chunkEt }]
+                    });
+                });
+            }
+        });
 
         fetch('/api/subtitles/export', {
             method: 'POST',
@@ -1855,7 +2020,7 @@
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            showToast(`📥 Đã xuất thành công file ASS gồm ${segments.length} câu!`);
+            showToast(`📥 Đã xuất thành công file ASS gồm ${segments.length} phân đoạn câu!`);
         })
         .catch(err => {
             alert('Lỗi xuất file ASS: ' + err.message);

@@ -1975,16 +1975,19 @@ function wrapTextSmart(text, maxChars = 50) {
             return;
         }
 
-        const words = trimmed.split(/\s+/);
+        const hasWhitespace = /\s+/.test(trimmed);
+        const tokens = hasWhitespace ? trimmed.split(/\s+/) : trimmed.split('');
         let currentLine = '';
-        words.forEach(word => {
+
+        tokens.forEach(token => {
+            const joiner = hasWhitespace ? (currentLine ? ' ' : '') : '';
             if (!currentLine) {
-                currentLine = word;
-            } else if ((currentLine + ' ' + word).length <= maxChars) {
-                currentLine += ' ' + word;
+                currentLine = token;
+            } else if ((currentLine + joiner + token).length <= maxChars) {
+                currentLine += joiner + token;
             } else {
                 finalLines.push(currentLine);
-                currentLine = word;
+                currentLine = token;
             }
         });
         if (currentLine) {

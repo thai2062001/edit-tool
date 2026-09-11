@@ -283,17 +283,19 @@ function renderCanvasTextOverlay(ctx, canvas, overlayText, settings = {}) {
     ctx.textAlign = textAlign;
     ctx.textBaseline = 'middle';
 
-    // Word wrap into lines
-    const words = overlayText.split(/\s+/);
+    // Word wrap into lines (supporting Latin with spaces and CJK without spaces)
+    const hasWhitespace = /\s+/.test(overlayText.trim());
+    const tokens = hasWhitespace ? overlayText.split(/\s+/) : overlayText.split('');
     const lines = [];
     let currentLine = '';
 
-    words.forEach(word => {
-        const testLine = currentLine ? `${currentLine} ${word}` : word;
+    tokens.forEach(token => {
+        const joiner = hasWhitespace ? (currentLine ? ' ' : '') : '';
+        const testLine = currentLine + joiner + token;
         const testWidth = ctx.measureText(testLine).width;
         if (testWidth > maxTextWidth && currentLine) {
             lines.push(currentLine);
-            currentLine = word;
+            currentLine = token;
         } else {
             currentLine = testLine;
         }
