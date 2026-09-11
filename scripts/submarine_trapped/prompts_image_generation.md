@@ -3,6 +3,7 @@
 
 ---
 
+
 Cinematic wide shot of a compact industrial deep-sea research mini-submarine resting motionless on the flat sediment of the ocean floor, 600 meters deep, surrounded by total blackness, cold murky water, 8k, bottom-right corner empty --ar 16:9
 
 Cinematic shot of deep abyssal ocean water mass pressing relentlessly against the metallic hull of a mini-submarine, glowing translucent blue underwater volumetric lighting, suffocating scale, photorealistic, bottom-right corner empty --ar 16:9
@@ -13,9 +14,9 @@ Cinematic interior cockpit shot: instrument panels vibrating violently, loose me
 
 Interior view of main digital dashboard shutting down completely: bright navigation monitors fading into dead black screens with upper-left faint red Japanese alert 主電源喪失, emergency red LED strip light kicking on dimly, tense and silent, no people, bottom-right corner empty --ar 16:9
 
-Macro close-up of a digital medical monitor flatlining into a weak pulse on a naval cockpit instrument panel, displaying accurate Japanese readout 心拍数低下 on the left screen area, red LED ambient light, dark shadows, high tension, no people, bottom-right empty --ar 16:9
-
 Close-up macro of an industrial brass depth gauge dial: glowing mechanical needle locked firmly at red tick mark labeled in precise Japanese text 水深 600m, condensation beads dripping down circular glass lens, bottom-right empty --ar 16:9
+
+Macro close-up of a digital medical monitor flatlining into a weak pulse on a naval cockpit instrument panel, displaying accurate Japanese readout 心拍数低下 on the left screen area, red LED ambient light, dark shadows, high tension, no people, bottom-right empty --ar 16:9
 
 Exterior wide shot of the dark slate-gray and hazard-orange research mini-submarine completely trapped and embedded in ocean floor silt, thrusters dead and silent, abyssal marine snow drifting past, bottom-right clear --ar 16:9
 
@@ -113,11 +114,11 @@ Macro audio concept: single water droplet falling from overhead valve hitting me
 
 Conceptual visual of isolation: tiny metallic submarine silhouette suspended alone inside massive deep-blue abyssal ocean sphere, labeled on upper-left in Japanese 完全孤立, vast empty space, dramatic scale, bottom-right clear --ar 16:9
 
+Still life of two naval service badges and analog chronometer resting neatly side-by-side on polished steel ledge, representing unwavering duty and discipline, moody lighting, bottom-right clear --ar 16:9
+
 Historical tribute still life: handwritten letter on lined paper resting beside old brass naval compass and dim pocket penlight on steel table, solemn atmosphere, no people, bottom-right empty --ar 16:9
 
 Extreme close-up macro of handwritten farewell lines on paper under dying yellow flashlight beam, Japanese calligraphy script conveying hope and love: 暗闇の中でも希望を捨てないで, emotional depth, no people, bottom-right clear --ar 16:9
-
-Still life of two naval service badges and analog chronometer resting neatly side-by-side on polished steel ledge, representing unwavering duty and discipline, moody lighting, bottom-right clear --ar 16:9
 
 Surface view: Naval search and rescue command bridge on large support ship, tactical digital charts on upper-left displaying blinking red search grid sectors labeled in Japanese 緊急捜索作戦 (SUBMISS), nighttime marine electronics, bottom-right clear --ar 16:9
 
@@ -153,9 +154,9 @@ Engineering cutaway diagram of submarine vertical escape trunk: showing dual hat
 
 Still life of bright yellow inflatable naval SEIE (Submarine Escape Immersion Equipment) survival suit with transparent face visor laid out on steel bench, labeled on upper-left in Japanese 潜水艦脱出スーツ (SEIE), industrial render, no people, bottom-right empty --ar 16:9
 
-Medical science diagram of Boyle's Law during ascent: human lungs graphic showing air expansion from high pressure to surface, labeled on upper-left in Japanese ボイルの法則: 浮上時の肺膨張防止 (連続呼気), clean visual, bottom-right strictly clear --ar 16:9
-
 Exterior underwater shot of trail of rising silvery air bubbles escaping from submarine hatch and rushing toward distant sunlit ocean surface, dramatic upward perspective, bottom-right clear --ar 16:9
+
+Medical science diagram of Boyle's Law during ascent: human lungs graphic showing air expansion from high pressure to surface, labeled on upper-left in Japanese ボイルの法則: 浮上時の肺膨張防止 (連続呼気), clean visual, bottom-right strictly clear --ar 16:9
 
 Solemn black and white naval memorial archival style graphic honoring lost submarines: elegant silhouettes of submarines at sea against peaceful horizon, labeled on upper-left in Japanese 深海に眠る英雄たちへ, respectful tribute, bottom-right clear --ar 16:9
 
@@ -165,16 +166,23 @@ Exterior shot of emergency satellite radio beacon (EPIRB) capsule detaching from
 
 Majestic wide cinematic shot: The tiny research mini-sub resting in immense vastness of deep ocean trench, dwarfed by ancient underwater abyssal geography, awe-inspiring scale, bottom-right clear --ar 16:9
 
+Tactical digital hydrophone telemetry and sonar mapping display showing deep ocean bathymetry, marked with search coordinates and acoustic pulse logs honoring Argentine submarine ARA San Juan and submersible Titan incidents, accurate technical Japanese HUD overlays, dark navy interface, photorealistic, bottom-right corner empty --ar 16:9
+
 POV looking straight up through circular top access hatch as mechanical locking dogs turn and rotate open, revealing blinding warm white rescue lights beaming down into dark cabin, bottom-right clear --ar 16:9
 
 Interior of high-tech rescue vehicle: warm ambient lighting, clean medical monitoring consoles, fresh blankets, and emergency medical kits neatly prepared, welcoming relief, no people, bottom-right clear --ar 16:9
 
 Breathtaking cinematic surface shot: Naval rescue ship sailing across tranquil ocean waters at golden hour sunrise, brilliant morning sun rays reflecting across gentle waves, bottom-right clear --ar 16:9
 
-Cinematic shot on ship deck: warm morning sunlight illuminating naval equipment, fresh ocean breeze blowing sea mist, atmosphere of peaceful survival and renewed life, no people, bottom-right clear --ar 16:9
-
 Close-up still life: steaming ceramic mug of hot coffee resting on ship railing against backdrop of calm, sunlit ocean horizon, symbolizing life, comfort, and warmth, bottom-right clear --ar 16:9
+
+Cinematic shot on ship deck: warm morning sunlight illuminating naval equipment, fresh ocean breeze blowing sea mist, atmosphere of peaceful survival and renewed life, no people, bottom-right clear --ar 16:9
 
 Final conceptual shot: The blue planet Earth floating peacefully in dark space, vast oceans covering curved surface, celebrating human bravery in exploring inner and outer frontiers, bottom-right clear --ar 16:9
 
+Cinematic interior close-up shot: warm golden morning sunlight streaming through circular reinforced submarine porthole viewport, illuminating drifting dust motes in peaceful quiet cabin, symbolizing life, hope, and fresh breath, no people, photorealistic, bottom-right corner empty --ar 16:9
+
 Closing channel outro composition: sleek naval compass and clean minimalist Like & Subscribe graphic emblems embedded with Japanese text on left side 高評価 & チャンネル登録, dark ocean-blue backdrop, bottom-right corner strictly empty --ar 16:9
+
+Closing outro screen for educational documentary: peaceful calm ocean horizon at dusk with starry sky, elegant Japanese typography centered on left side reading ご視聴、ありがとうございました。, cinematic, clean modern layout, no people, bottom-right corner strictly empty --ar 16:9
+
