@@ -1548,54 +1548,78 @@
     }
 
     // Helper: Split long sentence (especially CJK/Japanese without spaces) into neat readable display pages
-    function splitTextIntoDisplayPages(text, maxCharsPerPage = 26) {
+    function splitTextIntoDisplayPages(text, maxCharsPerPage = 46) {
         if (!text) return [];
         const cleanText = text.trim();
         if (cleanText.length <= maxCharsPerPage) {
             return [cleanText];
         }
 
-        // Split into natural clauses by punctuation: 。, 、 , . ! ? !? … \n
-        const clauseTokens = [];
+        // 1. Tách theo các dấu ngắt câu tự nhiên
+        const rawTokens = [];
         let currentBuf = '';
         for (let i = 0; i < cleanText.length; i++) {
             const ch = cleanText[i];
             currentBuf += ch;
             if (/[。、,.;:!?！？\n]/.test(ch)) {
-                clauseTokens.push(currentBuf);
+                rawTokens.push(currentBuf);
                 currentBuf = '';
             }
         }
-        if (currentBuf) clauseTokens.push(currentBuf);
+        if (currentBuf) rawTokens.push(currentBuf);
 
-        // Group clauses into pages that don't exceed maxCharsPerPage
+        // 2. Nếu một token vượt quá maxCharsPerPage, tách thông minh
+        const refinedTokens = [];
+        rawTokens.forEach(tok => {
+            if (tok.length <= maxCharsPerPage) {
+                refinedTokens.push(tok);
+            } else {
+                let rem = tok;
+                while (rem.length > maxCharsPerPage) {
+                    let cutPos = maxCharsPerPage;
+                    const spaceIdx = rem.lastIndexOf(' ', maxCharsPerPage);
+                    if (spaceIdx > maxCharsPerPage * 0.5) {
+                        cutPos = spaceIdx + 1;
+                    }
+                    refinedTokens.push(rem.slice(0, cutPos));
+                    rem = rem.slice(cutPos);
+                }
+                if (rem) refinedTokens.push(rem);
+            }
+        });
+
+        // 3. Gom các token thành các page
         const pages = [];
         let pageBuf = '';
-        clauseTokens.forEach(clause => {
+        refinedTokens.forEach(tok => {
             if (!pageBuf) {
-                pageBuf = clause;
-            } else if ((pageBuf + clause).length <= maxCharsPerPage) {
-                pageBuf += clause;
+                pageBuf = tok;
+            } else if ((pageBuf + tok).length <= maxCharsPerPage) {
+                pageBuf += tok;
             } else {
                 pages.push(pageBuf);
-                pageBuf = clause;
+                pageBuf = tok;
             }
         });
         if (pageBuf) pages.push(pageBuf);
 
-        // If any single page is still too long (e.g. no punctuation), cut hard by maxCharsPerPage
-        const finalPages = [];
-        pages.forEach(p => {
-            if (p.length <= maxCharsPerPage) {
-                finalPages.push(p);
-            } else {
-                for (let i = 0; i < p.length; i += maxCharsPerPage) {
-                    finalPages.push(p.slice(i, i + maxCharsPerPage));
-                }
-            }
-        });
+        // 4. RÀO LỖI TUYỆT ĐỐI (Orphan Punctuation Protection):
+        // Không bao giờ để lại page chỉ có dấu câu hoặc chỉ 1-2 ký tự lẻ loi!
+        const consolidated = [];
+        for (let i = 0; i < pages.length; i++) {
+            let p = pages[i].trim();
+            if (!p) continue;
 
-        return finalPages.filter(p => p && p.trim());
+            const isOnlyPunctuationOrTiny = /^[。、,.;:!?！？…\s\-_]+$/.test(p) || p.length <= 2;
+            if (isOnlyPunctuationOrTiny && consolidated.length > 0) {
+                consolidated[consolidated.length - 1] += p;
+            } else {
+                consolidated.push(p);
+            }
+        }
+
+        const result = consolidated.filter(p => p && !/^[。、,.;:!?！？…\s\-_]+$/.test(p));
+        return result.length > 0 ? result : [cleanText];
     }
 
     // Helper: Wrap words or CJK characters into lines fitting within maxTextWidth
@@ -1633,15 +1657,34 @@
         ctx.textBaseline = 'middle';
 
         // 1. Chia câu dài thành các trang (pages/chunks) để hiển thị tuần tự theo tiến trình audio
-        // Ngưỡng maxCharsPerPage: ~26-30 ký tự cho tỉ lệ 16:9, ~18 cho 9:16
-        const maxChars = (w < h) ? 18 : 26;
+        // Khung phụ đề 2 dòng thoải mái chứa:
+        // - 16:9 hoặc 1:1: tối đa ~46 ký tự (khoảng 20-23 ký tự/dòng x 2 dòng)
+        // - 9:16 (dọc): tối đa ~26 ký tự (khoảng 13 ký tự/dòng x 2 dòng)
+        const maxChars = (w < h) ? 26 : 46;
         const pages = splitTextIntoDisplayPages(fullText, maxChars);
         
         let activeText = fullText;
         if (pages.length > 1) {
-            // Xác định trang hiện tại dựa theo % tiến trình nói của phân cảnh (progress từ 0.0 -> 1.0)
-            const pageIndex = Math.min(pages.length - 1, Math.floor(progress * pages.length));
+            // TÍNH TOÁN THEO TỈ LỆ SỐ KÝ TỰ (Character-weighted Timing):
+            // Giúp đồng bộ chính xác với voice đọc: câu ngắn chuyển trang nhanh, câu dài giữ lâu hơn,
+            // triệt tiêu hoàn toàn hiện tượng câu ngắn bị giữ quá lâu làm trễ sub so với tiếng!
+            const totalChars = pages.reduce((sum, p) => sum + p.length, 0) || 1;
+            let acc = 0;
+            let pageIndex = 0;
+            for (let i = 0; i < pages.length; i++) {
+                acc += pages[i].length;
+                if (progress <= acc / totalChars || i === pages.length - 1) {
+                    pageIndex = i;
+                    break;
+                }
+            }
             activeText = pages[pageIndex] || pages[0];
+        }
+
+        // Bỏ qua nếu activeText trống hoặc chỉ toàn dấu ngắt câu lẻ loi
+        if (!activeText || /^[。、,.;:!?！？…\s\-_]+$/.test(activeText.trim())) {
+            ctx.restore();
+            return;
         }
 
         // 2. Wrap trang hiện tại thành tối đa 1-2 dòng (hỗ trợ cả tiếng Nhật CJK và tiếng Latin/Việt)
@@ -1912,7 +1955,7 @@
 
         let srtContent = '';
         let cueCounter = 1;
-        const maxChars = (AVState.aspectRatio === '9:16') ? 18 : 26;
+        const maxChars = (AVState.aspectRatio === '9:16') ? 26 : 46;
 
         AVState.scenes.forEach((s) => {
             const fullText = (s.sceneText || '').trim();
@@ -1928,14 +1971,17 @@
                 srtContent += `${st} --> ${et}\n`;
                 srtContent += `${fullText}\n\n`;
             } else {
-                // Chia thời lượng phân cảnh đều cho các trang phụ đề
-                const chunkDur = sceneDur / pages.length;
+                // Chia thời lượng phân cảnh theo tỉ lệ số ký tự để đồng bộ chính xác với voice
+                const totalChars = pages.reduce((sum, p) => sum + p.length, 0) || 1;
+                let currentStart = s.startTime;
                 pages.forEach((pText, pIdx) => {
-                    const chunkSt = s.startTime + (pIdx * chunkDur);
-                    const chunkEt = (pIdx === pages.length - 1) ? s.endTime : (chunkSt + chunkDur);
+                    const frac = pText.length / totalChars;
+                    const chunkDur = sceneDur * frac;
+                    const chunkEt = (pIdx === pages.length - 1) ? s.endTime : (currentStart + chunkDur);
                     srtContent += `${cueCounter++}\n`;
-                    srtContent += `${formatSrtTimecode(chunkSt)} --> ${formatSrtTimecode(chunkEt)}\n`;
+                    srtContent += `${formatSrtTimecode(currentStart)} --> ${formatSrtTimecode(chunkEt)}\n`;
                     srtContent += `${pText.trim()}\n\n`;
+                    currentStart = chunkEt;
                 });
             }
         });
@@ -1959,7 +2005,7 @@
             return;
         }
 
-        const maxChars = (AVState.aspectRatio === '9:16') ? 18 : 26;
+        const maxChars = (AVState.aspectRatio === '9:16') ? 26 : 46;
         const segments = [];
         let segCounter = 1;
 
@@ -1979,17 +2025,20 @@
                     words: [{ word: fullText, start: s.startTime, end: s.endTime }]
                 });
             } else {
-                const chunkDur = sceneDur / pages.length;
+                const totalChars = pages.reduce((sum, p) => sum + p.length, 0) || 1;
+                let currentStart = s.startTime;
                 pages.forEach((pText, pIdx) => {
-                    const chunkSt = s.startTime + (pIdx * chunkDur);
-                    const chunkEt = (pIdx === pages.length - 1) ? s.endTime : (chunkSt + chunkDur);
+                    const frac = pText.length / totalChars;
+                    const chunkDur = sceneDur * frac;
+                    const chunkEt = (pIdx === pages.length - 1) ? s.endTime : (currentStart + chunkDur);
                     segments.push({
                         id: segCounter++,
-                        start: chunkSt,
+                        start: currentStart,
                         end: chunkEt,
                         text: pText.trim(),
-                        words: [{ word: pText.trim(), start: chunkSt, end: chunkEt }]
+                        words: [{ word: pText.trim(), start: currentStart, end: chunkEt }]
                     });
+                    currentStart = chunkEt;
                 });
             }
         });
