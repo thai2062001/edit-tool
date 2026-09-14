@@ -1,5 +1,3 @@
-# BÍ ẨN THÀNH PHỐ NGẦM DERINKUYU: 18 TẦNG ĐỊA NGỤC SINH TỒN DƯỚI LÒNG ĐẤT
-
 Năm 1963, tại vùng Cappadocia cằn cỗi của Thổ Nhĩ Kỳ, một người đàn ông quyết định cải tạo lại căn nhà đá cũ kỹ của mình.
 
 Trong lúc dùng búa tạ đập vỡ bức tường ở góc tầng hầm ẩm thấp, một mảng vữa dày bất ngờ đổ sập xuống, để lộ ra một khoảng không đen ngòm sâu hun hút.
@@ -18,7 +16,7 @@ Ngay giữa tâm đĩa đá là một lỗ tròn khoét thủng kỳ dị — m�
 
 Từ bên trong, các chiến binh có thể quan sát bóng tối bên ngoài trong đường hầm hẹp và bất ngờ phóng những ngọn giáo đồng sắc nhọn đâm xuyên qua ngực bất kỳ kẻ thù nào đang loay hoay tìm cách phá cửa.
 
-Điều đó dẫn tới một kết luận tàn nhẫn: 20.000 con người cổ đại đã tự nguyện bước vào đây, hạ chốt đá xuống và chấp nhận tự giam mình trong lòng đất tối tăm.
+Một khi chốt đá đã hạ xuống và khóa chặt hoàn toàn, không một ai bên ngoài có thể đột nhập, và những người bên trong chấp nhận tự giam mình vào ngục tối tạm thời, sẵn sàng bám trụ nhiều tháng ròng hoặc rút lui qua những lối thoát ngầm bí mật được ngụy trang cách xa hàng trăm mét giữa hoang mạc.
 
 Đây không phải là một pháo đài xây dựng để nghênh chiến hay giương cờ chiến thắng.
 
@@ -122,11 +120,27 @@ Câu hỏi lớn nhất và bí ẩn nhất vẫn làm đau đầu các nhà kho
 
 Trong suốt nhiều thập kỷ nghiên cứu, 3 giả thuyết lớn nhất đã được giới khoa học quốc tế đưa ra để giải mã bí ẩn này.
 
-Giả thuyết đầu tiên: Cuộc đào thoát khỏi các cuộc càn quét đẫm máu của các đế chế xâm lược. Vùng đất Cappadocia nằm ngay trên ngã ba giao tranh ác liệt của các nền văn minh cổ đại: Từ cuộc đàn áp tàn khốc của Đế quốc La Mã đối với những tín đồ Cơ Đốc giáo ban đầu, cho đến các cuộc chinh phạt chớp nhoáng của người Ba Tư và các cuộc đột kích của kỵ binh Ả Rập. Khi quân xâm lược tràn qua như châu chấu thiêu rụi mọi làng mạc trên mặt đất, hàng vạn người biến mất không dấu vết vào lòng đất, để lại những hoang mạc trống rỗng khiến kẻ thù hoang mang rồi buộc phải rút lui vì cạn kiệt quân lương.
+Giả thuyết đầu tiên: Cuộc đào thoát khỏi các cuộc càn quét đẫm máu của các đế chế xâm lược.
 
-Giả thuyết thứ hai: Cuộc trốn chạy khỏi thảm họa Kỷ Băng Hà Dryas Trẻ cách đây khoảng 12.000 năm. Các dữ liệu cổ khí hậu học cho thấy, trong thời kỳ Dryas Trẻ, bề mặt Trái Đất đã trải qua một đợt tụt giảm nhiệt độ kinh hoàng chỉ trong vài năm ngắn ngủi. Bề mặt đất biến thành vùng hoang mạc băng giá với bão tuyết gầm rú khiến con người không thể tồn tại lộ thiên. Trong khi bề mặt đất lạnh âm hàng chục độ C, thì sâu dưới 18 tầng đá của Derinkuyu, nhiệt độ lại duy trì ở mức ổn định kỳ diệu từ 13 đến 15 độ C quanh năm nhờ nhiệt lượng tự nhiên của lòng đất — trở thành nơi trú ẩn hoàn hảo để duy trì giống nòi.
+Vùng đất Cappadocia nằm ngay trên ngã ba giao tranh ác liệt của các nền văn minh cổ đại: Từ cuộc đàn áp tàn khốc của Đế quốc La Mã đối với những tín đồ Cơ Đốc giáo ban đầu, cho đến các cuộc chinh phạt chớp nhoáng của người Ba Tư và các cuộc đột kích của kỵ binh Ả Rập.
 
-Giả thuyết thứ ba — đầy kỳ bí và gắn liền với thần thoại cổ xưa nhất: Tránh né "Ngọn lửa hủy diệt từ bầu trời". Trong thần thoại Zoroastrian của Ba Tư cổ đại, vị thần tối cao Ahura Mazda đã cảnh báo thủ lĩnh Yima về một thảm họa toàn cầu mang tính hủy diệt đến từ bầu trời. Thần đã ra lệnh cho Yima phải đục khoét một thành phố ngầm khổng lồ nhiều tầng mang tên "Vara", đưa những hạt giống tốt nhất của nhân loại, gia súc và cây cỏ vào trú ẩn để tái sinh thế giới sau tận thế. Nhiều nhà nghiên cứu hiện đại cho rằng, truyền thuyết này có thể mô tả một sự kiện va chạm thiên thạch hoặc mưa sao băng quy mô lớn thiêu rụi bầu khí quyển cổ đại, và Derinkuyu chính là hầm trú ẩn sóng nhiệt và bụi phóng xạ thời tiền sử.
+Khi quân xâm lược tràn qua như châu chấu thiêu rụi mọi làng mạc trên mặt đất, hàng vạn người biến mất không dấu vết vào lòng đất, để lại những hoang mạc trống rỗng khiến kẻ thù hoang mang rồi buộc phải rút lui vì cạn kiệt quân lương.
+
+Giả thuyết thứ hai: Cuộc trốn chạy khỏi thảm họa Kỷ Băng Hà Dryas Trẻ cách đây khoảng 12.000 năm.
+
+Các dữ liệu cổ khí hậu học cho thấy, trong thời kỳ Dryas Trẻ, bề mặt Trái Đất đã trải qua một đợt tụt giảm nhiệt độ kinh hoàng chỉ trong vài năm ngắn ngủi.
+
+Bề mặt đất biến thành vùng hoang mạc băng giá với bão tuyết gầm rú khiến con người không thể tồn tại lộ thiên.
+
+Trong khi bề mặt đất lạnh âm hàng chục độ C, thì sâu dưới 18 tầng đá của Derinkuyu, nhiệt độ lại duy trì ở mức ổn định kỳ diệu từ 13 đến 15 độ C quanh năm nhờ nhiệt lượng tự nhiên của lòng đất — trở thành nơi trú ẩn hoàn hảo để duy trì giống nòi.
+
+Giả thuyết thứ ba — đầy kỳ bí và gắn liền với thần thoại cổ xưa nhất: Tránh né "Ngọn lửa hủy diệt từ bầu trời".
+
+Trong thần thoại Zoroastrian của Ba Tư cổ đại, vị thần tối cao Ahura Mazda đã cảnh báo thủ lĩnh Yima về một thảm họa toàn cầu mang tính hủy diệt đến từ bầu trời.
+
+Thần đã ra lệnh cho Yima phải đục khoét một thành phố ngầm khổng lồ nhiều tầng mang tên "Vara", đưa những hạt giống tốt nhất của nhân loại, gia súc và cây cỏ vào trú ẩn để tái sinh thế giới sau tận thế.
+
+Nhiều nhà nghiên cứu hiện đại cho rằng, truyền thuyết này có thể mô tả một sự kiện va chạm thiên thạch hoặc mưa sao băng quy mô lớn thiêu rụi bầu khí quyển cổ đại, và Derinkuyu chính là hầm trú ẩn sóng nhiệt và bụi phóng xạ thời tiền sử.
 
 Một cuộc xâm lăng tàn khốc của các đế chế, cái lạnh chết người của Kỷ Băng Hà, hay một thảm họa hủy diệt từ bầu trời cổ đại?
 
