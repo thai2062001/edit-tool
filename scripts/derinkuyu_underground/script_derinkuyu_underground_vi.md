@@ -20,7 +20,7 @@ Một khi chốt đá đã hạ xuống và khóa chặt hoàn toàn, không m�
 
 Đây không phải là một pháo đài xây dựng để nghênh chiến hay giương cờ chiến thắng.
 
-Đây là một cỗ máy tự giam cầm khổng lồ — một pháo đài sinh tồn tuyệt vọng được kiến tạo để 20.000 con người tự chôn sống mình cùng hàng ngàn gia súc dưới đáy sâu.
+Đây là một cỗ máy tự giam cầm khổng lồ — một pháo đài sinh tồn tuyệt vọng được kiến tạo để che giấu và bảo vệ sự sống cho một cộng đồng khổng lồ hơn 20.000 cư dân cùng hàng ngàn gia súc dưới đáy sâu.
 
 Thế lực tàn bạo nào trên mặt đất đã gieo rắc nỗi kinh hoàng lớn đến mức buộc họ phải đánh đổi ánh sáng mặt trời, chui sâu vào bóng tối vĩnh cửu như loài gặm nhấm?
 
@@ -28,17 +28,17 @@ Thế lực tàn bạo nào trên mặt đất đã gieo rắc nỗi kinh hoàng
 
 Toàn bộ công trình ngầm này được đục đẽo hoàn toàn thủ công bằng búa đồng, rìu đá và đục sắt, khoét sâu qua các tầng đá núi lửa tuff mềm nhưng có độ liên kết dẻo dai phi thường.
 
-Để tạo ra không gian sinh tồn cho 20.000 cư dân, người xưa đã phải đục đẽo và vận chuyển ra ngoài hàng triệu tấn đất đá qua những lối đi dốc hẹp chỉ vừa một người lọt qua.
+Để tạo ra không gian sinh tồn cho hàng vạn sinh mạng, người xưa đã phải đục đẽo và vận chuyển ra ngoài hàng triệu tấn đất đá qua những lối đi dốc hẹp chỉ vừa một người lọt qua.
 
 Thế nhưng, điều làm các kỹ sư kết cấu hiện đại phải ngả mũ thán phục chính là kiến thức hình học và địa chất phi thường của những thợ đá cổ đại.
 
 Bên dưới lòng đất, áp lực từ sức nặng hàng triệu tấn của các tầng trên đè nặng xuống các tầng dưới là vô cùng khủng khiếp.
 
-Nếu không tính toán chuẩn xác tỷ lệ chịu lực của các cột trụ đá tự nhiên và độ cong vòm trần, toàn bộ cấu trúc sẽ sụp đổ dây chuyền trong tích tắc và biến thành một nấm mồ tập thể chôn sống tất cả.
+Nếu không tính toán chuẩn xác tỷ lệ chịu lực của các cột trụ đá tự nhiên và độ cong vòm trần, toàn bộ cấu trúc sẽ sụp đổ dây chuyền trong tích tắc và chôn vùi toàn bộ sinh mạng bên dưới.
 
 Thế nhưng qua hàng ngàn năm lịch sử, vượt qua vô số trận động đất dữ dội ở vùng lòng chảo Anatolia, các tầng ngầm của Derinkuyu vẫn đứng vững một cách thần kỳ mà không cần sử dụng bất kỳ một thanh giằng kim loại hay chất kết dính vôi vữa nào.
 
-Chìa khóa sống còn đầu tiên giúp 20.000 con người không bị ngạt thở dưới đáy sâu 85 mét chính là hệ thống thông khí đạt tới trình độ cơ học thiên tài.
+Chìa khóa sống còn đầu tiên giúp hàng vạn người không bị ngạt thở dưới đáy sâu 85 mét chính là hệ thống thông khí đạt tới trình độ cơ học thiên tài.
 
 Hơn 15.000 trục thông gió thẳng đứng được bố trí dày đặc khắp các ngóc ngách của thành phố ngầm.
 
@@ -46,7 +46,7 @@ Trục thông gió chính sâu tới 55 mét, xuyên thẳng từ bề mặt sa 
 
 Hệ thống này tận dụng nguyên lý đối lưu nhiệt độ tự nhiên: Nhiệt độ ấm bên trong các hầm ngầm sẽ đẩy không khí cũ, ngột ngạt bay lên qua các ống xả phụ ngụy trang trên mặt đất, đồng thời tạo ra một lực hút chân không liên tục kéo dưỡng khí trong lành, mát lạnh từ bề mặt xuống tầng đáy.
 
-Luồng gió đối lưu được thiết kế tinh vi đến mức cung cấp đủ oxy dồi dào cho hàng chục ngàn người cùng hít thở, nhưng lại không tạo ra những cơn gió lùa mạnh làm tắt ngọn nến hay đèn dầu le lói của cư dân.
+Luồng gió đối lưu được thiết kế tinh vi đến mức cung cấp đủ oxy dồi dào cho cả một cộng đồng ẩn mật cùng hít thở, nhưng lại không tạo ra những cơn gió lùa mạnh làm tắt ngọn nến hay đèn dầu le lói của cư dân.
 
 Bên cạnh không khí, nguồn nước uống cũng được bảo vệ bằng một cơ chế phòng thủ sinh học và chống đầu độc vô cùng tinh vi.
 
@@ -66,25 +66,25 @@ Trong tư thế bất lợi đó, kẻ tấn công không thể vung kiếm, gi�
 
 Nếu quân địch dùng biển người chọc thủng được phòng tuyến ở tầng 1 hoặc tầng 2, cư dân ở tầng 3 và các tầng dưới sẽ lập tức đóng sập cánh cửa đá của tầng mình lại.
 
-Họ chấp nhận một mệnh lệnh sinh tử nghiệt ngã: Cô lập hoàn toàn tầng trên, sẵn sàng hy sinh những người còn kẹt lại để bảo toàn cơ hội sống sót cho hàng vạn sinh mạng phía dưới đáy sâu.
+Họ chấp nhận một mệnh lệnh sinh tử nghiệt ngã: Cô lập hoàn toàn tầng trên, sẵn sàng hy sinh những người còn kẹt lại để bảo toàn cơ hội sống sót cho toàn bộ cư dân phía dưới đáy sâu.
 
 Thế nhưng, sau khi cánh cửa đá đã khóa chặt và kẻ thù bị chặn đứng bên ngoài, một cuộc chiến sinh tồn khác mới thực sự bắt đầu — cuộc chiến chống lại sự ngột ngạt và bóng tối vĩnh cửu.
 
-Hãy thử nhắm mắt lại và tưởng tượng: Hơn 20.000 con người cùng hàng ngàn con gia súc như cừu, dê, bò bị giam hãm suốt nhiều tháng liền trong một khối đá kín bưng, hoàn toàn không có ánh sáng mặt trời.
+Hãy thử nhắm mắt lại và tưởng tượng: Hàng vạn con người cùng hàng ngàn con gia súc như cừu, dê, bò bị giam hãm suốt nhiều tháng liền trong một khối đá kín bưng, hoàn toàn không có ánh sáng mặt trời.
 
-Mùi hôi thối từ phân động vật và chất bài tiết của hàng vạn con người chính là mầm mống dịch bệnh chết người trong không gian kín.
+Mùi hôi thối từ phân động vật và chất bài tiết của đám đông chính là mầm mống dịch bệnh chết người trong không gian kín.
 
 Để giải quyết bài toán sinh tử này, các kỹ sư cổ đại đã bố trí toàn bộ chuồng trại gia súc ở tầng trên cùng sát mặt đất, nơi gần các cửa xả khí nhất để mùi xú uế nhanh chóng thoát ra ngoài mà không chìm xuống các tầng sinh hoạt phía dưới.
 
-Chất thải sinh hoạt của con người được gom vào những hầm chứa kín riêng biệt, sau đó được phủ dày bằng tro núi lửa và đất khô để hút ẩm, trung hòa khí độc amoniac và triệt tiêu vi khuẩn.
+Chất thải sinh hoạt của cư dân được gom vào những hầm chứa kín riêng biệt, sau đó được phủ dày bằng tro núi lửa và đất khô để hút ẩm, trung hòa khí độc amoniac và triệt tiêu vi khuẩn.
 
 Hiểm họa vô hình thứ hai đe dọa sự sống của họ chính là khói bếp từ việc nấu nướng.
 
-Trong một không gian ngầm khép kín, một bếp lửa nhóm sai cách có thể tạo ra khí carbon monoxide gây ngạt thở hàng loạt cư dân.
+Trong một không gian ngầm khép kín, một bếp lửa nhóm sai cách có thể tạo ra khí carbon monoxide gây ngạt thở hàng loạt người dân.
 
-Hơn nữa, nếu khói bốc lên từ các lỗ thông gió giữa ban ngày, kẻ thù trên sa mạc sẽ lập tức xác định được vị trí của thành phố ngầm và tìm cách bịt kín các cửa hút gió để hun khói toàn bộ cư dân.
+Hơn nữa, nếu khói bốc lên từ các lỗ thông gió giữa ban ngày, kẻ thù trên sa mạc sẽ lập tức xác định được vị trí của thành phố ngầm và tìm cách bịt kín các cửa hút gió để hun khói toàn bộ hầm ngầm.
 
-Vì vậy, một quy tắc bất di bất dịch được thực thi nghiêm ngặt: Toàn bộ cư dân chỉ được phép nhóm bếp nấu ăn vào ban đêm — thời điểm bóng tối đen đặc của sa mạc che giấu làn khói mỏng bốc lên không trung.
+Vì vậy, một quy tắc bất di bất dịch được thực thi nghiêm ngặt: Mọi người chỉ được phép nhóm bếp nấu ăn vào ban đêm — thời điểm bóng tối đen đặc của sa mạc che giấu làn khói mỏng bốc lên không trung.
 
 Họ buộc phải sử dụng các loại gỗ khô đặc biệt ít khói, và tro than sau khi nấu nướng được thu gom cẩn thận từng chút một để tái sử dụng làm chất hút ẩm và khử trùng trong các ngách hầm.
 
@@ -98,7 +98,7 @@ Khi dầu cạn, toàn bộ không gian chìm vào một màu đen tuyệt đố
 
 Hội chứng hoang tưởng và sợ không gian hẹp bóp nghẹt tâm trí; rất nhiều đứa trẻ sinh ra trong thời gian phong tỏa đã lớn lên mà không hề biết hình dạng của bầu trời xanh hay cảm giác ấm áp của một tia nắng mặt trời rọi lên da thịt.
 
-Trong bóng tối tĩnh mịch, thỉnh thoảng những rung chấn trầm đục phát ra do sự chuyển dịch địa tầng đè nặng lên các vòm đá, gieo rắc nỗi kinh hoàng tột độ về một vụ sập hầm có thể chôn sống tất cả bất cứ lúc nào.
+Trong bóng tối tĩnh mịch, thỉnh thoảng những rung chấn trầm đục phát ra do sự chuyển dịch địa tầng đè nặng lên các vòm đá, gieo rắc nỗi kinh hoàng tột độ về một vụ sập hầm có thể chôn vùi tất cả bất cứ lúc nào.
 
 Và khi có người kiệt sức hoặc ngã bệnh qua đời trong thời gian lẩn trốn, bi kịch sinh tồn lại hiện rõ hơn bao giờ hết.
 
@@ -112,21 +112,25 @@ Thế nhưng, điều khiến toàn bộ giới khoa học và khảo cổ học
 
 Ẩn sâu trong lòng đá, các nhà khảo cổ đã phát hiện một đường hầm ngầm khổng lồ dài gần 10 kilomet nối thẳng Derinkuyu tới thành phố ngầm Kaymakli lân cận.
 
-Đường hầm này đủ rộng để người và gia súc di chuyển liên tục, đóng vai trò như một tuyến đường huyết mạch bí mật để tiếp ứng lương thực, vũ khí hoặc di tản hàng vạn cư dân khi một trong hai thành phố bị bao vây.
+Đường hầm này đủ rộng để người và gia súc di chuyển liên tục, đóng vai trò như một tuyến đường huyết mạch bí mật để tiếp ứng lương thực, vũ khí hoặc di tản hàng vạn người khi một trong hai thành phố bị bao vây.
 
 Phát hiện này làm thay đổi hoàn toàn mọi giả định trước đây của giới sử học: Derinkuyu không phải là một hầm trú ẩn tạm bợ của một ngôi làng, mà là một phần trong mạng lưới siêu đô thị ngầm liên thành phố quy mô cấp quốc gia.
 
-Câu hỏi lớn nhất và bí ẩn nhất vẫn làm đau đầu các nhà khoa học: Điều gì trên mặt đất đã đủ khủng khiếp để buộc hàng chục ngàn người phải từ bỏ ánh sáng mặt trời và xây dựng một siêu công trình ngầm đồ sộ đến như vậy?
+Câu hỏi lớn nhất và bí ẩn nhất vẫn làm đau đầu các nhà khoa học: Điều gì trên mặt đất đã đủ khủng khiếp để buộc hàng vạn con người phải từ bỏ ánh sáng mặt trời và xây dựng một siêu công trình ngầm đồ sộ đến như vậy?
 
 Trong suốt nhiều thập kỷ nghiên cứu, 3 giả thuyết lớn nhất đã được giới khoa học quốc tế đưa ra để giải mã bí ẩn này.
 
-Giả thuyết đầu tiên: Cuộc đào thoát khỏi các cuộc càn quét đẫm máu của các đế chế xâm lược.
+Giả thuyết đầu tiên: Cuộc đào thoát khỏi các cuộc càn quét đẫm máu của các đế chế xâm lược thời cổ đại.
 
 Vùng đất Cappadocia nằm ngay trên ngã ba giao tranh ác liệt của các nền văn minh cổ đại: Từ cuộc đàn áp tàn khốc của Đế quốc La Mã đối với những tín đồ Cơ Đốc giáo ban đầu, cho đến các cuộc chinh phạt chớp nhoáng của người Ba Tư và các cuộc đột kích của kỵ binh Ả Rập.
 
 Khi quân xâm lược tràn qua như châu chấu thiêu rụi mọi làng mạc trên mặt đất, hàng vạn người biến mất không dấu vết vào lòng đất, để lại những hoang mạc trống rỗng khiến kẻ thù hoang mang rồi buộc phải rút lui vì cạn kiệt quân lương.
 
-Giả thuyết thứ hai: Cuộc trốn chạy khỏi thảm họa Kỷ Băng Hà Dryas Trẻ cách đây khoảng 12.000 năm.
+Thế nhưng, nhiều nhà sử học đã đặt ra một câu hỏi phản biện đầy sắc bén: Nếu chỉ đơn thuần để lẩn tránh các đội kỵ binh cướp bóc trong vài tuần hay vài tháng, tại sao người cổ đại phải bỏ ra hàng thế kỷ lao dịch khổ sai, đục khoét tới 85 mét qua 18 tầng đá với mạng lưới hầm liên tỉnh dài 10 kilomet?
+
+Liệu động lực chiến tranh thông thường giữa người với người có đủ lớn để tạo ra một cỗ máy sinh tồn vượt xa mọi giới hạn công trình quân sự cùng thời?
+
+Chính sự nghi vấn đó đã dẫn các nhà địa chất học đến với Giả thuyết thứ hai: Cuộc trốn chạy khỏi thảm họa Kỷ Băng Hà Dryas Trẻ cách đây khoảng 12.000 năm.
 
 Các dữ liệu cổ khí hậu học cho thấy, trong thời kỳ Dryas Trẻ, bề mặt Trái Đất đã trải qua một đợt tụt giảm nhiệt độ kinh hoàng chỉ trong vài năm ngắn ngủi.
 
@@ -146,4 +150,4 @@ Một cuộc xâm lăng tàn khốc của các đế chế, cái lạnh chết n
 
 Ai thực sự là những người đầu tiên đục nhát cuốc khai sinh ra kỳ quan ngầm này: Người Hittite, người Phrygian, hay một nền văn minh tiền sử đã bị thời gian xóa sổ?
 
-Theo bạn, đâu là lý do thực sự đã đẩy 20.000 con người chấp nhận tự chôn sống mình trong bóng tối 18 tầng ngầm của Derinkuyu? Hãy để lại suy nghĩ của bạn bên dưới phần bình luận để cùng thảo luận nhé!
+Theo bạn, đâu là lý do thực sự đã đẩy những con người cổ đại chấp nhận từ bỏ ánh sáng mặt trời để bước vào bóng tối 18 tầng ngầm của Derinkuyu? Hãy để lại suy nghĩ của bạn bên dưới phần bình luận để cùng thảo luận nhé!
