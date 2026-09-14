@@ -4,13 +4,13 @@ Trong lúc dùng búa tạ đập vỡ bức tường ở góc tầng hầm ẩm
 
 Cầm ngọn đèn dầu run rẩy bước qua bức tường vỡ, ông lần theo một cầu thang đá dốc đứng ăn sâu vào lòng đất.
 
-Người đàn ông không hề hay biết rằng mình vừa mở ra cánh cửa dẫn vào một trong những kỳ quan khảo cổ bí ẩn và kinh hoàng nhất lịch sử loài người: Thành phố ngầm Derinkuyu — một đô thị ngầm khổng lồ với cấu trúc ước tính lên tới 18 tầng địa chất, khoét sâu 85 mét thẳng vào lòng đất.
+Người đàn ông không hề hay biết rằng mình vừa mở ra cánh cửa dẫn vào một trong những kỳ quan khảo cổ bí ẩn bậc nhất lịch sử loài người: Thành phố ngầm Derinkuyu — một đô thị ngầm khổng lồ với cấu trúc ước tính lên tới 18 tầng địa chất, khoét sâu 85 mét thẳng vào lòng đất.
 
 Thế nhưng, điều khiến các nhà khảo cổ học quốc tế rùng mình khi tiến sâu vào bóng tối không chỉ là quy mô choáng ngợp, mà là một cơ chế phòng thủ kỳ quái chắn ngang đường hầm.
 
 Đó là một khối đá tròn nguyên khối nặng hơn nửa tấn, có đường kính gần 2 mét và dày tới nửa mét, nằm khít khao trong một rãnh đá khoét sẵn.
 
-Cánh cửa đá này chỉ có thể được lăn và cài then chốt từ bên trong; toàn bộ mặt ngoài phẳng lì, không có bất kỳ tay cầm, then cài hay điểm tựa đòn bẩy nào để kẻ bên ngoài có thể cạy mở.
+Cánh cửa đá này chỉ có thể được lăn và cài then chốt từ bên trong; toàn bộ mặt ngoài phẳng lì, hoàn toàn không có điểm tựa đòn bẩy nào để kẻ bên ngoài có thể cạy mở.
 
 Ngay giữa tâm đĩa đá là một lỗ tròn khoét thủng kỳ dị — một "lỗ tử thần" lạnh lùng.
 
@@ -20,9 +20,9 @@ Một khi chốt đá đã hạ xuống và khóa chặt hoàn toàn, không m�
 
 Đây không phải là một pháo đài xây dựng để nghênh chiến hay giương cờ chiến thắng.
 
-Đây là một cỗ máy tự giam cầm khổng lồ — một pháo đài sinh tồn tuyệt vọng được kiến tạo để che giấu và bảo vệ sự sống cho một cộng đồng khổng lồ hơn 20.000 cư dân cùng hàng ngàn gia súc dưới đáy sâu.
+Đây là một cỗ máy tự giam cầm khổng lồ — một pháo đài sinh tồn được kiến tạo để che giấu và bảo vệ sự sống cho một cộng đồng hơn 20.000 cư dân cùng hàng ngàn gia súc dưới đáy sâu.
 
-Thế lực tàn bạo nào trên mặt đất đã gieo rắc nỗi kinh hoàng lớn đến mức buộc họ phải đánh đổi ánh sáng mặt trời, chui sâu vào bóng tối vĩnh cửu như loài gặm nhấm?
+Thế lực tàn bạo nào trên mặt đất đã gieo rắc nỗi khiếp sợ lớn đến mức buộc họ phải đánh đổi ánh sáng mặt trời, chui sâu vào bóng tối vĩnh cửu như loài gặm nhấm?
 
 Để hiểu được mức độ kỳ vĩ của Derinkuyu, bạn phải hình dung độ sâu 85 mét tương đương với chiều cao của một tòa nhà chọc trời gần 30 tầng, nhưng thay vì vươn lên bầu trời xanh, nó lại cắm thẳng xuống lòng đất tăm tối.
 
@@ -40,7 +40,7 @@ Thế nhưng qua hàng ngàn năm lịch sử, vượt qua vô số trận độ
 
 Chìa khóa sống còn đầu tiên giúp hàng vạn người không bị ngạt thở dưới đáy sâu 85 mét chính là hệ thống thông khí đạt tới trình độ cơ học thiên tài.
 
-Hơn 15.000 trục thông gió thẳng đứng được bố trí dày đặc khắp các ngóc ngách của thành phố ngầm.
+Hàng trăm trục thông gió thẳng đứng được bố trí dày đặc khắp các ngóc ngách của thành phố ngầm.
 
 Trục thông gió chính sâu tới 55 mét, xuyên thẳng từ bề mặt sa mạc xuống tận các tầng sâu nhất, hoạt động như một lá phổi khổng lồ.
 
@@ -56,7 +56,7 @@ Nguồn nước tại Derinkuyu không lấy từ các dòng suối hay nước 
 
 Kiến trúc này được thiết kế để ngăn chặn triệt để kịch bản kẻ thù phát hiện cửa giếng trên sa mạc và đổ thuốc độc xuống nhằm thảm sát toàn bộ cư dân bên dưới.
 
-Và khi quân thù tìm cách đột nhập vào lòng đất, chúng sẽ rơi vào một mê cung phòng thủ đa tầng tàn nhẫn bậc nhất trong lịch sử quân sự.
+Và khi quân thù tìm cách đột nhập vào lòng đất, chúng sẽ rơi vào một mê cung phòng thủ đa tầng hiểm hóc bậc nhất trong lịch sử quân sự.
 
 Các hành lang của Derinkuyu được cố tình thiết kế vô cùng chật hẹp, trần thấp và uốn lượn ngoằn ngoèo, buộc kẻ xâm lược chỉ có thể di chuyển nối đuôi từng người một trong tư thế cúi khom lưng.
 
@@ -120,9 +120,9 @@ Câu hỏi lớn nhất và bí ẩn nhất vẫn làm đau đầu các nhà kho
 
 Trong suốt nhiều thập kỷ nghiên cứu, 3 giả thuyết lớn nhất đã được giới khoa học quốc tế đưa ra để giải mã bí ẩn này.
 
-Giả thuyết đầu tiên: Cuộc đào thoát khỏi các cuộc càn quét đẫm máu của các đế chế xâm lược thời cổ đại.
+Giả thuyết đầu tiên, cũng là quan điểm được giới khảo cổ chính thống công nhận nhiều nhất: Cuộc đào thoát khỏi các cuộc càn quét đẫm máu của các đế chế xâm lược thời cổ đại.
 
-Vùng đất Cappadocia nằm ngay trên ngã ba giao tranh ác liệt của các nền văn minh cổ đại: Từ cuộc đàn áp tàn khốc của Đế quốc La Mã đối với những tín đồ Cơ Đốc giáo ban đầu, cho đến các cuộc chinh phạt chớp nhoáng của người Ba Tư và các cuộc đột kích của kỵ binh Ả Rập.
+Vùng đất Cappadocia nằm ngay trên ngã ba giao tranh ác liệt của các nền văn minh: Ban đầu được khởi công bởi người Phrygian hoặc Hittite, sau đó được mở rộng tối đa bởi các tín đồ Kitô giáo thời Byzantine để trốn các cuộc đột kích của người Ba Tư và kỵ binh Ả Rập.
 
 Khi quân xâm lược tràn qua như châu chấu thiêu rụi mọi làng mạc trên mặt đất, hàng vạn người biến mất không dấu vết vào lòng đất, để lại những hoang mạc trống rỗng khiến kẻ thù hoang mang rồi buộc phải rút lui vì cạn kiệt quân lương.
 
@@ -132,17 +132,13 @@ Liệu động lực chiến tranh thông thường giữa người với ngư�
 
 Chính sự nghi vấn đó đã dẫn các nhà địa chất học đến với Giả thuyết thứ hai: Cuộc trốn chạy khỏi thảm họa Kỷ Băng Hà Dryas Trẻ cách đây khoảng 12.000 năm.
 
-Các dữ liệu cổ khí hậu học cho thấy, trong thời kỳ Dryas Trẻ, bề mặt Trái Đất đã trải qua một đợt tụt giảm nhiệt độ kinh hoàng chỉ trong vài năm ngắn ngủi.
-
-Bề mặt đất biến thành vùng hoang mạc băng giá với bão tuyết gầm rú khiến con người không thể tồn tại lộ thiên.
+Các dữ liệu cổ khí hậu học cho thấy, trong thời kỳ Dryas Trẻ, bề mặt Trái Đất đã trải qua một đợt tụt giảm nhiệt độ kinh hoàng chỉ trong vài năm ngắn ngủi, biến mặt đất thành vùng hoang mạc băng giá với bão tuyết gầm rú khiến con người không thể tồn tại lộ thiên.
 
 Trong khi bề mặt đất lạnh âm hàng chục độ C, thì sâu dưới 18 tầng đá của Derinkuyu, nhiệt độ lại duy trì ở mức ổn định kỳ diệu từ 13 đến 15 độ C quanh năm nhờ nhiệt lượng tự nhiên của lòng đất — trở thành nơi trú ẩn hoàn hảo để duy trì giống nòi.
 
 Giả thuyết thứ ba — đầy kỳ bí và gắn liền với thần thoại cổ xưa nhất: Tránh né "Ngọn lửa hủy diệt từ bầu trời".
 
-Trong thần thoại Zoroastrian của Ba Tư cổ đại, vị thần tối cao Ahura Mazda đã cảnh báo thủ lĩnh Yima về một thảm họa toàn cầu mang tính hủy diệt đến từ bầu trời.
-
-Thần đã ra lệnh cho Yima phải đục khoét một thành phố ngầm khổng lồ nhiều tầng mang tên "Vara", đưa những hạt giống tốt nhất của nhân loại, gia súc và cây cỏ vào trú ẩn để tái sinh thế giới sau tận thế.
+Trong thần thoại Zoroastrian của Ba Tư cổ đại, vị thần tối cao Ahura Mazda đã cảnh báo thủ lĩnh Yima về một thảm họa toàn cầu mang tính hủy diệt đến từ bầu trời, ra lệnh đục khoét thành phố ngầm "Vara" để cứu lấy mầm sống nhân loại.
 
 Nhiều nhà nghiên cứu hiện đại cho rằng, truyền thuyết này có thể mô tả một sự kiện va chạm thiên thạch hoặc mưa sao băng quy mô lớn thiêu rụi bầu khí quyển cổ đại, và Derinkuyu chính là hầm trú ẩn sóng nhiệt và bụi phóng xạ thời tiền sử.
 
