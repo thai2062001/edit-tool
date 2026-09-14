@@ -5,16 +5,16 @@
 
 ### [PHẦN 1: PHÁT HIỆN CHẤN ĐỘNG NĂM 1963 & CÁNH CỬA ĐÁ TỬ THẦN]
 
-**Câu 1:** Năm 1963, tại vùng Cappadocia cằn cỗi của Thổ Nhĩ Kỳ, một người đàn ông quyết định cải tạo lại căn nhà đá cũ kỹ của mình.
+**Câu 1:** Sâu 85 mét dưới lòng đất cằn cỗi của Thổ Nhĩ Kỳ, tồn tại một siêu đô thị ngầm khổng lồ đủ sức che giấu hơn 20.000 sinh mạng... và cánh cửa dẫn vào kỳ quan ấy lại được phát hiện chỉ sau một nhát búa tình cờ.
 > **Prompt 1:** Cinematic wide shot of a rustic 1963 Turkish stone basement room, a middle-aged Turkish man in vintage 1960s work clothes inspecting an old rough porous beige volcanic stone wall, dusty sunlight streaming through a small cellar window, 35mm film photography, muted earth tones, photorealistic 8k --ar 16:9
 
-**Câu 2:** Trong lúc dùng búa tạ đập vỡ bức tường ở góc tầng hầm ẩm thấp, một mảng vữa dày bất ngờ đổ sập xuống, để lộ ra một khoảng không đen ngòm sâu hun hút.
+**Câu 2:** Năm 1963, một người đàn ông tại Cappadocia đập vỡ bức tường tầng hầm cũ kỹ để sửa nhà, nhưng mảng vữa bất ngờ sập xuống, để lộ ra một khoảng không đen ngòm sâu hun hút.
 > **Prompt 2:** Dynamic close-up of a heavy vintage sledgehammer smashing through a thick masonry porous beige stone wall, stone rubble and mortar collapsing outward, revealing a gaping dark hole into an ancient subterranean void, airborne dust motes, dramatic lighting --ar 16:9
 
-**Câu 3:** Cầm ngọn đèn dầu run rẩy bước qua bức tường vỡ, ông lần theo một cầu thang đá dốc đứng ăn sâu vào lòng đất.
+**Câu 3:** Cầm ngọn đèn dầu run rẩy bước qua bức tường vỡ, ông lần theo những bậc thang đá dốc đứng cắm thẳng vào bóng tối vĩnh cửu.
 > **Prompt 3:** First-person POV holding a vintage brass oil lantern, stepping through the jagged hole in the basement wall into an ancient descending rock-cut tunnel with steep stone stairs carved out of porous beige volcanic tuff, disappearing into deep subterranean darkness, suspenseful atmosphere --ar 16:9
 
-**Câu 4:** Người đàn ông không hề hay biết rằng mình vừa mở ra cánh cửa dẫn vào một trong những kỳ quan khảo cổ bí ẩn bậc nhất lịch sử loài người: Thành phố ngầm Derinkuyu — một đô thị ngầm khổng lồ với cấu trúc ước tính lên tới 18 tầng địa chất, khoét sâu 85 mét thẳng vào lòng đất.
+**Câu 4:** Người đàn ông không hề hay biết rằng mình vừa đánh thức Thành phố ngầm Derinkuyu — một pháo đài sinh tồn ước tính lên tới 18 tầng địa chất, kỳ quan khảo cổ bí ẩn bậc nhất lịch sử loài người.
 > **Prompt 4:** Cinematic low-angle shot standing inside a massive excavated underground rock gallery of Derinkuyu, hand-carved porous beige volcanic tuff stone arches and pillars, descending stone steps plunging deeper into darkness, illuminated by warm amber oil lamps, archaeological documentary realism --ar 16:9
 
 **Câu 5:** Thế nhưng, điều khiến các nhà khảo cổ học quốc tế rùng mình khi tiến sâu vào bóng tối không chỉ là quy mô choáng ngợp, mà là một cơ chế phòng thủ kỳ quái chắn ngang đường hầm.
@@ -49,7 +49,7 @@
 ### [PHẦN 2: KỲ QUAN ĐỊA CHẤT & BẬC THẦY KỸ THUẬT NGẦM]
 
 **Câu 14:** Để hiểu được mức độ kỳ vĩ của Derinkuyu, bạn phải hình dung độ sâu 85 mét tương đương với chiều cao của một tòa nhà chọc trời gần 30 tầng, nhưng thay vì vươn lên bầu trời xanh, nó lại cắm thẳng xuống lòng đất tăm tối.
-> **Prompt 14:** Cinematic wide cutaway illustration: an ancient 18-level underground stone city carved inside porous beige-ochre volcanic tuff strata descending 85 meters, layered chambers illuminated by faint amber torchlight, shown side-by-side with an outline of a 30-story skyscraper for scale comparison, museum documentary quality --ar 16:9
+> **Prompt 14:** Cinematic wide cutaway illustration: an ancient 18-level underground stone city carved inside porous beige-ochre volcanic tuff strata descending 85 meters, labeled with clean Japanese text 地下18階 (深さ85m), layered chambers illuminated by faint amber torchlight, shown side-by-side with an outline of a 30-story skyscraper labeled in Japanese text 30階建てビル for scale comparison, museum documentary quality --ar 16:9
 
 **Câu 15:** Toàn bộ công trình ngầm này được đục đẽo hoàn toàn thủ công bằng búa đồng, rìu đá và đục sắt, khoét sâu qua các tầng đá núi lửa tuff mềm nhưng có độ liên kết dẻo dai phi thường.
 > **Prompt 15:** Close-up of an ancient stonemason’s rugged calloused hands holding a bronze chisel and wooden mallet, precisely chipping away at porous beige volcanic tuff stone, airborne stone dust illuminated by an amber oil lamp --ar 16:9
@@ -64,7 +64,7 @@
 > **Prompt 18:** Low-angle dramatic shot emphasizing the colossal tectonic weight: massive porous beige volcanic stone columns supporting layered subterranean rock ceilings, deep shadows, moody chiaroscuro lighting, tangible structural tension --ar 16:9
 
 **Câu 19:** Nếu không tính toán chuẩn xác tỷ lệ chịu lực của các cột trụ đá tự nhiên và độ cong vòm trần, toàn bộ cấu trúc sẽ sụp đổ dây chuyền trong tích tắc và chôn vùi toàn bộ sinh mạng bên dưới.
-> **Prompt 19:** Macro close-up of a hand-chiseled rock-cut arch meeting the solid bedrock ceiling, showing antique chisel score marks along the smooth load-bearing curve in porous beige-ochre volcanic tuff stone --ar 16:9
+> **Prompt 19:** Cinematic close-up shot inside a low subterranean rock chamber: an archaeologist's hand gently touching the curved underside of a massive hand-carved stone arch in porous beige volcanic tuff, illuminating the sharp antique chisel grooves with a warm amber inspection light, floating micro dust motes, dramatic chiaroscuro shadows, showcasing ancient load-bearing engineering precision, photorealistic 8k, 35mm film photography --ar 16:9
 
 **Câu 20:** Thế nhưng qua hàng ngàn năm lịch sử, vượt qua vô số trận động đất dữ dội ở vùng lòng chảo Anatolia, các tầng ngầm của Derinkuyu vẫn đứng vững một cách thần kỳ mà không cần sử dụng bất kỳ một thanh giằng kim loại hay chất kết dính vôi vữa nào.
 > **Prompt 20:** Cinematic eye-level shot of an intact subterranean hall of porous beige volcanic tuff standing resilient through millennia, weathered monolithic pillars with ancient soot stains and mineral patina, timeless archaeological endurance, 35mm photography --ar 16:9
@@ -79,7 +79,7 @@
 > **Prompt 23:** Vertiginous vertical shot looking down into the deep cylindrical master ventilation shaft plunging 55 meters into darkness through porous beige-ochre volcanic rock, smooth hand-carved tube walls, faint natural air currents visible --ar 16:9
 
 **Câu 24:** Hệ thống này tận dụng nguyên lý đối lưu nhiệt độ tự nhiên: Nhiệt độ ấm bên trong các hầm ngầm sẽ đẩy không khí cũ, ngột ngạt bay lên qua các ống xả phụ ngụy trang trên mặt đất, đồng thời tạo ra một lực hút chân không liên tục kéo dưỡng khí trong lành, mát lạnh từ bề mặt xuống tầng đáy.
-> **Prompt 24:** Clean documentary diagrammatic cross-section illustration showing thermal convection airflow in Derinkuyu: cool fresh air descending through the deep primary shaft, warm stale air exhausting upward through secondary hidden vents in the beige rock strata --ar 16:9
+> **Prompt 24:** Japanese scientific infographic diagram cross-section of Derinkuyu underground ventilation: layered beige rock chambers on a dark grid backdrop, top-left large heading 自然熱対流, vertical main air shaft annotated 深度55m 主通気孔, glowing cyan descending arrow labeled 新鮮な冷気, glowing orange ascending arrows through secondary vents labeled 排気 (暖気), left side depth scale 地下1階 to 地下10階, strictly Japanese Kanji Katakana typography, absolute zero English words, clean minimalist vector graphics --ar 16:9
 
 **Câu 25:** Luồng gió đối lưu được thiết kế tinh vi đến mức cung cấp đủ oxy dồi dào cho cả một cộng đồng ẩn mật cùng hít thở, nhưng lại không tạo ra những cơn gió lùa mạnh làm tắt ngọn nến hay đèn dầu le lói của cư dân.
 > **Prompt 25:** Macro close-up of a rustic terracotta oil lamp burning with a steady, peaceful yellow flame resting on a hand-carved beige stone ledge beside a small ventilation flue, serene underground atmosphere, 8k --ar 16:9
@@ -97,7 +97,7 @@
 > **Prompt 29:** Wide exterior shot of the arid, rocky Cappadocia surface landscape: barren desert plateau of pale volcanic rock and fairy chimneys, completely concealing the solid stone underground well cap, deceptive natural camouflage under harsh sunlight --ar 16:9
 
 **Câu 30:** Và khi quân thù tìm cách đột nhập vào lòng đất, chúng sẽ rơi vào một mê cung phòng thủ đa tầng hiểm hóc bậc nhất trong lịch sử quân sự.
-> **Prompt 30:** First-person POV advancing down a sinister, narrow, zigzagging corridor hand-carved out of porous beige volcanic tuff with sharp 90-degree corners and low ceilings, disorienting subterranean military defense labyrinth, casting eerie shadows --ar 16:9
+> **Prompt 30:** First-person POV advancing down an ominous, narrow ancient stone tunnel with sharp zigzagging corners, holding a flaming wooden torch casting frantic flickering shadows against hand-chiseled porous beige volcanic rock walls, ancient historical warfare era, strictly no modern lightbulbs, no electric wires, pitch-black abyss ahead, claustrophobic subterranean defense maze, 35mm film photography, 8k --ar 16:9
 
 **Câu 31:** Các hành lang của Derinkuyu được cố tình thiết kế vô cùng chật hẹp, trần thấp và uốn lượn ngoằn ngoèo, buộc kẻ xâm lược chỉ có thể di chuyển nối đuôi từng người một trong tư thế cúi khom lưng.
 > **Prompt 31:** Cinematic shot of an ancient invading soldier in iron armor painfully crouching inside a cramped 1-meter-wide beige stone tunnel, unable to raise his shield, restricted and vulnerable in the dark corridor --ar 16:9
@@ -158,7 +158,7 @@
 > **Prompt 48:** Macro close-up of an antique terracotta oil lamp mounted on a hand-carved stone alcove: olive oil pool nearly exhausted, tiny fragile flame flickering faintly against the textured porous beige volcanic rock wall --ar 16:9
 
 **Câu 49:** Khi dầu cạn, toàn bộ không gian chìm vào một màu đen tuyệt đối — thứ bóng tối dày đặc đến mức bạn giơ bàn tay lên sát mắt cũng không thể nhìn thấy ngón tay mình.
-> **Prompt 49:** Atmospheric dark cinematic shot: a rough human hand reaching outward into pitch-black subterranean darkness, feeling along cold porous beige rock, total sensory deprivation, suspenseful --ar 16:9
+> **Prompt 49:** Dramatic macro shot of a weathered human hand groping blindly along a cold porous beige cave wall, an extinguished clay lamp in foreground smoking faintly, very subtle amber rim lighting catching the fingers and textured rock edges emerging from deep shadows, total subterranean isolation, 35mm film grain, 8k --ar 16:9
 
 **Câu 50:** Hội chứng hoang tưởng và sợ không gian hẹp bóp nghẹt tâm trí; rất nhiều đứa trẻ sinh ra trong thời gian phong tỏa đã lớn lên mà không hề biết hình dạng của bầu trời xanh hay cảm giác ấm áp của một tia nắng mặt trời rọi lên da thịt.
 > **Prompt 50:** Emotional silhouette shot: an ancient mother in coarse linen tunic holding her young child tightly in a shadowy beige stone room, both gazing upward toward a distant tiny ceiling air shaft, longing for sunlight, warm rim lighting --ar 16:9
@@ -198,7 +198,7 @@
 > **Prompt 60:** Dramatic cinematic shot from inside an ancient cave entrance: an ancient Cappadocian observer peering out through a narrow stone slit at the vast, stormy, sunless sky of the outside world, mystery and awe --ar 16:9
 
 **Câu 61:** Trong suốt nhiều thập kỷ nghiên cứu, 3 giả thuyết lớn nhất đã được giới khoa học quốc tế đưa ra để giải mã bí ẩn này.
-> **Prompt 61:** Historical documentary montage frame: juxtaposition of ancient invading armies, an ice-age polar blizzard over Anatolian rock spires, and apocalyptic meteor trails over ancient earth, dramatic lighting --ar 16:9
+> **Prompt 61:** Japanese historical documentary 3-panel montage: juxtaposition of ancient invading armies on the left, an ice-age blizzard over frozen fairy chimneys in the center, and blazing apocalyptic meteors on the right, top header annotated with accurate Japanese typography 古代の黙示録: 3つの大仮説, strictly Japanese Kanji Katakana, zero English words, bottom-right corner completely empty and free of any text or graphics, dramatic cinematic lighting --ar 16:9
 
 **Câu 62:** Giả thuyết đầu tiên, cũng là quan điểm được giới khảo cổ chính thống công nhận nhiều nhất: Cuộc đào thoát khỏi các cuộc càn quét đẫm máu của các đế chế xâm lược thời cổ đại.
 > **Prompt 62:** Cinematic wide shot of ancient hostile cavalry soldiers in rugged leather and iron armor patrolling an arid, sun-scorched Cappadocia plateau of pale volcanic rock under harsh midday sun, completely oblivious to the vast subterranean city hidden beneath --ar 16:9
@@ -213,7 +213,7 @@
 > **Prompt 65:** Cinematic shot of an ancient mason’s worn chisel and hammer resting on a colossal beige volcanic stone pillar deep in the 8th underground level, emphasizing centuries of grueling labor beyond mere temporary hiding --ar 16:9
 
 **Câu 66:** Liệu động lực chiến tranh thông thường giữa người với người có đủ lớn để tạo ra một cỗ máy sinh tồn vượt xa mọi giới hạn công trình quân sự cùng thời?
-> **Prompt 66:** Wide shot looking down into a breathtaking, dizzying multi-story underground rock atrium carved in porous beige tuff, colossal engineering scale defying ancient warfare logic, moody amber lighting --ar 16:9
+> **Prompt 66:** Vertiginous wide shot looking down into a colossal dizzying multi-story underground rock atrium carved deep into porous beige volcanic tuff, ancient stone bridges and cascading rock-cut stairs spiraling down into the deep abyss, flickering torchlight and oil braziers casting dramatic chiaroscuro shadows across monumental tiers, strictly ancient architecture, no modern metal railings, no modern tourists, raw hand-chiseled stone ledges, epic subterranean scale, 35mm film photography, 8k --ar 16:9
 
 **Câu 67:** Chính sự nghi vấn đó đã dẫn các nhà địa chất học đến với Giả thuyết thứ hai: Cuộc trốn chạy khỏi thảm họa Kỷ Băng Hà Dryas Trẻ cách đây khoảng 12.000 năm.
 > **Prompt 67:** Epic cinematic shot of ancient Cappadocia landscape during the Younger Dryas epoch: howling polar blizzards and fierce ice storms sweeping across frozen pale volcanic rock formations and fairy chimneys, desolate frozen wasteland, cold blue and slate-gray palette --ar 16:9

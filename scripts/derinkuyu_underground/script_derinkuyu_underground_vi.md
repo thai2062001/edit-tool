@@ -1,10 +1,10 @@
-Năm 1963, tại vùng Cappadocia cằn cỗi của Thổ Nhĩ Kỳ, một người đàn ông quyết định cải tạo lại căn nhà đá cũ kỹ của mình.
+Sâu 85 mét dưới lòng đất cằn cỗi của Thổ Nhĩ Kỳ, tồn tại một siêu đô thị ngầm khổng lồ đủ sức che giấu hơn 20.000 sinh mạng... và cánh cửa dẫn vào kỳ quan ấy lại được phát hiện chỉ sau một nhát búa tình cờ.
 
-Trong lúc dùng búa tạ đập vỡ bức tường ở góc tầng hầm ẩm thấp, một mảng vữa dày bất ngờ đổ sập xuống, để lộ ra một khoảng không đen ngòm sâu hun hút.
+Năm 1963, một người đàn ông tại Cappadocia đập vỡ bức tường tầng hầm cũ kỹ để sửa nhà, nhưng mảng vữa bất ngờ sập xuống, để lộ ra một khoảng không đen ngòm sâu hun hút.
 
-Cầm ngọn đèn dầu run rẩy bước qua bức tường vỡ, ông lần theo một cầu thang đá dốc đứng ăn sâu vào lòng đất.
+Cầm ngọn đèn dầu run rẩy bước qua bức tường vỡ, ông lần theo những bậc thang đá dốc đứng cắm thẳng vào bóng tối vĩnh cửu.
 
-Người đàn ông không hề hay biết rằng mình vừa mở ra cánh cửa dẫn vào một trong những kỳ quan khảo cổ bí ẩn bậc nhất lịch sử loài người: Thành phố ngầm Derinkuyu — một đô thị ngầm khổng lồ với cấu trúc ước tính lên tới 18 tầng địa chất, khoét sâu 85 mét thẳng vào lòng đất.
+Người đàn ông không hề hay biết rằng mình vừa đánh thức Thành phố ngầm Derinkuyu — một pháo đài sinh tồn ước tính lên tới 18 tầng địa chất, kỳ quan khảo cổ bí ẩn bậc nhất lịch sử loài người.
 
 Thế nhưng, điều khiến các nhà khảo cổ học quốc tế rùng mình khi tiến sâu vào bóng tối không chỉ là quy mô choáng ngợp, mà là một cơ chế phòng thủ kỳ quái chắn ngang đường hầm.
 

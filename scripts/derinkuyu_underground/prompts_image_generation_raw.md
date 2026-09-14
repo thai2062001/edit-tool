@@ -29,7 +29,7 @@ Cinematic wide shot inside a vast underground cavern of porous beige-ochre volca
 
 Low-angle shot looking up from deep inside the beige rock entrance tunnel toward the harsh bright sunlight of the barren arid Anatolian plateau above, dark silhouettes of refugees descending into the shadows, dramatic symbolic transition --ar 16:9
 
-Cinematic wide cutaway illustration: an ancient 18-level underground stone city carved inside porous beige-ochre volcanic tuff strata descending 85 meters, layered chambers illuminated by faint amber torchlight, shown side-by-side with an outline of a 30-story skyscraper for scale comparison, museum documentary quality --ar 16:9
+Cinematic wide cutaway illustration: an ancient 18-level underground stone city carved inside porous beige-ochre volcanic tuff strata descending 85 meters, labeled with clean Japanese text 地下18階 (深さ85m), layered chambers illuminated by faint amber torchlight, shown side-by-side with an outline of a 30-story skyscraper labeled in Japanese text 30階建てビル for scale comparison, museum documentary quality --ar 16:9
 
 Close-up of an ancient stonemason’s rugged calloused hands holding a bronze chisel and wooden mallet, precisely chipping away at porous beige volcanic tuff stone, airborne stone dust illuminated by an amber oil lamp --ar 16:9
 
@@ -39,7 +39,7 @@ Wide shot of a grand underground hall supported by massive square monolithic roc
 
 Low-angle dramatic shot emphasizing the colossal tectonic weight: massive porous beige volcanic stone columns supporting layered subterranean rock ceilings, deep shadows, moody chiaroscuro lighting, tangible structural tension --ar 16:9
 
-Macro close-up of a hand-chiseled rock-cut arch meeting the solid bedrock ceiling, showing antique chisel score marks along the smooth load-bearing curve in porous beige-ochre volcanic tuff stone --ar 16:9
+Cinematic close-up shot inside a low subterranean rock chamber: an archaeologist's hand gently touching the curved underside of a massive hand-carved stone arch in porous beige volcanic tuff, illuminating the sharp antique chisel grooves with a warm amber inspection light, floating micro dust motes, dramatic chiaroscuro shadows, showcasing ancient load-bearing engineering precision, photorealistic 8k, 35mm film photography --ar 16:9
 
 Cinematic eye-level shot of an intact subterranean hall of porous beige volcanic tuff standing resilient through millennia, weathered monolithic pillars with ancient soot stains and mineral patina, timeless archaeological endurance, 35mm photography --ar 16:9
 
@@ -49,7 +49,7 @@ Interior perspective of an ancient underground junction gallery showing multiple
 
 Vertiginous vertical shot looking down into the deep cylindrical master ventilation shaft plunging 55 meters into darkness through porous beige-ochre volcanic rock, smooth hand-carved tube walls, faint natural air currents visible --ar 16:9
 
-Clean documentary diagrammatic cross-section illustration showing thermal convection airflow in Derinkuyu: cool fresh air descending through the deep primary shaft, warm stale air exhausting upward through secondary hidden vents in the beige rock strata --ar 16:9
+Japanese scientific infographic diagram cross-section of Derinkuyu underground ventilation: layered beige rock chambers on a dark grid backdrop, top-left large heading 自然熱対流, vertical main air shaft annotated 深度55m 主通気孔, glowing cyan descending arrow labeled 新鮮な冷気, glowing orange ascending arrows through secondary vents labeled 排気 (暖気), left side depth scale 地下1階 to 地下10階, strictly Japanese Kanji Katakana typography, absolute zero English words, clean minimalist vector graphics --ar 16:9
 
 Macro close-up of a rustic terracotta oil lamp burning with a steady, peaceful yellow flame resting on a hand-carved beige stone ledge beside a small ventilation flue, serene underground atmosphere, 8k --ar 16:9
 
@@ -61,7 +61,7 @@ Cinematic shot of an ancient stone well shaft opening solely into a deep lower-l
 
 Wide exterior shot of the arid, rocky Cappadocia surface landscape: barren desert plateau of pale volcanic rock and fairy chimneys, completely concealing the solid stone underground well cap, deceptive natural camouflage under harsh sunlight --ar 16:9
 
-First-person POV advancing down a sinister, narrow, zigzagging corridor hand-carved out of porous beige volcanic tuff with sharp 90-degree corners and low ceilings, disorienting subterranean military defense labyrinth, casting eerie shadows --ar 16:9
+First-person POV advancing down an ominous, narrow ancient stone tunnel with sharp zigzagging corners, holding a flaming wooden torch casting frantic flickering shadows against hand-chiseled porous beige volcanic rock walls, ancient historical warfare era, strictly no modern lightbulbs, no electric wires, pitch-black abyss ahead, claustrophobic subterranean defense maze, 35mm film photography, 8k --ar 16:9
 
 Cinematic shot of an ancient invading soldier in iron armor painfully crouching inside a cramped 1-meter-wide beige stone tunnel, unable to raise his shield, restricted and vulnerable in the dark corridor --ar 16:9
 
@@ -99,7 +99,7 @@ Macro close-up of a single clear water droplet falling from a beige stone stalac
 
 Macro close-up of an antique terracotta oil lamp mounted on a hand-carved stone alcove: olive oil pool nearly exhausted, tiny fragile flame flickering faintly against the textured porous beige volcanic rock wall --ar 16:9
 
-Atmospheric dark cinematic shot: a rough human hand reaching outward into pitch-black subterranean darkness, feeling along cold porous beige rock, total sensory deprivation, suspenseful --ar 16:9
+Dramatic macro shot of a weathered human hand groping blindly along a cold porous beige cave wall, an extinguished clay lamp in foreground smoking faintly, very subtle amber rim lighting catching the fingers and textured rock edges emerging from deep shadows, total subterranean isolation, 35mm film grain, 8k --ar 16:9
 
 Emotional silhouette shot: an ancient mother in coarse linen tunic holding her young child tightly in a shadowy beige stone room, both gazing upward toward a distant tiny ceiling air shaft, longing for sunlight, warm rim lighting --ar 16:9
 
@@ -123,7 +123,7 @@ Atmospheric wide shot of a bustling underground cavern crossroads carved in poro
 
 Dramatic cinematic shot from inside an ancient cave entrance: an ancient Cappadocian observer peering out through a narrow stone slit at the vast, stormy, sunless sky of the outside world, mystery and awe --ar 16:9
 
-Historical documentary montage frame: juxtaposition of ancient invading armies, an ice-age polar blizzard over Anatolian rock spires, and apocalyptic meteor trails over ancient earth, dramatic lighting --ar 16:9
+Japanese historical documentary 3-panel montage: juxtaposition of ancient invading armies on the left, an ice-age blizzard over frozen fairy chimneys in the center, and blazing apocalyptic meteors on the right, top header annotated with accurate Japanese typography 古代の黙示録: 3つの大仮説, strictly Japanese Kanji Katakana, zero English words, bottom-right corner completely empty and free of any text or graphics, dramatic cinematic lighting --ar 16:9
 
 Cinematic wide shot of ancient hostile cavalry soldiers in rugged leather and iron armor patrolling an arid, sun-scorched Cappadocia plateau of pale volcanic rock under harsh midday sun, completely oblivious to the vast subterranean city hidden beneath --ar 16:9
 
@@ -133,7 +133,7 @@ Cinematic split elevation view: top half shows a deserted, dust-blown ruined vil
 
 Cinematic shot of an ancient mason’s worn chisel and hammer resting on a colossal beige volcanic stone pillar deep in the 8th underground level, emphasizing centuries of grueling labor beyond mere temporary hiding --ar 16:9
 
-Wide shot looking down into a breathtaking, dizzying multi-story underground rock atrium carved in porous beige tuff, colossal engineering scale defying ancient warfare logic, moody amber lighting --ar 16:9
+Vertiginous wide shot looking down into a colossal dizzying multi-story underground rock atrium carved deep into porous beige volcanic tuff, ancient stone bridges and cascading rock-cut stairs spiraling down into the deep abyss, flickering torchlight and oil braziers casting dramatic chiaroscuro shadows across monumental tiers, strictly ancient architecture, no modern metal railings, no modern tourists, raw hand-chiseled stone ledges, epic subterranean scale, 35mm film photography, 8k --ar 16:9
 
 Epic cinematic shot of ancient Cappadocia landscape during the Younger Dryas epoch: howling polar blizzards and fierce ice storms sweeping across frozen pale volcanic rock formations and fairy chimneys, desolate frozen wasteland, cold blue and slate-gray palette --ar 16:9
 
