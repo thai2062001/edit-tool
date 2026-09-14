@@ -85,7 +85,7 @@
 > **Prompt 25:** Macro close-up of a rustic terracotta oil lamp burning with a steady, peaceful yellow flame resting on a hand-carved beige stone ledge beside a small ventilation flue, serene underground atmosphere, 8k --ar 16:9
 
 **Câu 26:** Bên cạnh không khí, nguồn nước uống cũng được bảo vệ bằng một cơ chế phòng thủ sinh học và chống đầu độc vô cùng tinh vi.
-> **Prompt 26:** Cinematic medium shot of a deep underground stone well basin fed by a pure subterranean natural spring, hand-carved inside porous beige rock, stone bucket with hemp rope sitting on the carved rock rim, oil lamp reflection rippling on crystal-clear dark water --ar 16:9
+> **Prompt 26:** Cinematic medium shot of an ancient stone well basin cut deep into porous beige bedrock, tapping into a pure crystal-clear subterranean spring, a rustic hollowed wooden bucket with coiled hemp rope resting on the rough stone rim, a primitive terracotta oil dish burning with a soft golden flame on a nearby rock ledge casting ripples of warm light on the dark untouched water, strictly ancient Iron Age era, no glass lanterns, no metal lamps, archaeological documentary realism, 8k --ar 16:9
 
 **Câu 27:** Nguồn nước tại Derinkuyu không lấy từ các dòng suối hay nước mưa trên bề mặt, mà được khai thác trực tiếp từ mạch nước ngầm sâu trong lòng đá qua các giếng ngầm khoét thẳng đứng.
 > **Prompt 27:** Low-angle shot looking into the natural rock basin of the subterranean aquifer, pure pristine groundwater welling up from deep porous beige bedrock fissures, illuminated by a warm handheld amber torch --ar 16:9
@@ -213,7 +213,7 @@
 > **Prompt 65:** Cinematic shot of an ancient mason’s worn chisel and hammer resting on a colossal beige volcanic stone pillar deep in the 8th underground level, emphasizing centuries of grueling labor beyond mere temporary hiding --ar 16:9
 
 **Câu 66:** Liệu động lực chiến tranh thông thường giữa người với người có đủ lớn để tạo ra một cỗ máy sinh tồn vượt xa mọi giới hạn công trình quân sự cùng thời?
-> **Prompt 66:** Vertiginous wide shot looking down into a colossal dizzying multi-story underground rock atrium carved deep into porous beige volcanic tuff, ancient stone bridges and cascading rock-cut stairs spiraling down into the deep abyss, flickering torchlight and oil braziers casting dramatic chiaroscuro shadows across monumental tiers, strictly ancient architecture, no modern metal railings, no modern tourists, raw hand-chiseled stone ledges, epic subterranean scale, 35mm film photography, 8k --ar 16:9
+> **Prompt 66:** Vertiginous wide-angle shot peering down into a massive 8-story underground rock-hewn abyss carved directly from raw porous beige volcanic bedrock: sheer cliff-like subterranean rock galleries with natural rough-carved parapets, winding rock-cut stairways spiraling into pitch-black depths, flickering warm oil braziers casting long shadows across monolithic stone vaults, strictly monolithic cave architecture, no decorative balusters, no Roman columns, no European railings, no tourists, primordial subterranean mega-structure, 35mm photography, 8k --ar 16:9
 
 **Câu 67:** Chính sự nghi vấn đó đã dẫn các nhà địa chất học đến với Giả thuyết thứ hai: Cuộc trốn chạy khỏi thảm họa Kỷ Băng Hà Dryas Trẻ cách đây khoảng 12.000 năm.
 > **Prompt 67:** Epic cinematic shot of ancient Cappadocia landscape during the Younger Dryas epoch: howling polar blizzards and fierce ice storms sweeping across frozen pale volcanic rock formations and fairy chimneys, desolate frozen wasteland, cold blue and slate-gray palette --ar 16:9
