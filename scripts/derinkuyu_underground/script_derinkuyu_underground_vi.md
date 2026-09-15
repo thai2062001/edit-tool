@@ -8,13 +8,13 @@ Người đàn ông không hề hay biết rằng mình vừa đánh thức Thà
 
 Thế nhưng, điều khiến các nhà khảo cổ học quốc tế rùng mình khi tiến sâu vào bóng tối không chỉ là quy mô choáng ngợp, mà là một cơ chế phòng thủ kỳ quái chắn ngang đường hầm.
 
-Đó là một khối đá tròn nguyên khối nặng hơn nửa tấn, có đường kính gần 2 mét và dày tới nửa mét, nằm khít khao trong một rãnh đá khoét sẵn.
+Đó là một khối đá tròn nguyên khối nặng từ vài trăm cân đến hơn một tấn, có đường kính gần 2 mét và dày tới nửa mét, nằm khít khao trong một rãnh đá khoét sẵn.
 
 Cánh cửa đá này chỉ có thể được lăn và cài then chốt từ bên trong; toàn bộ mặt ngoài phẳng lì, hoàn toàn không có điểm tựa đòn bẩy nào để kẻ bên ngoài có thể cạy mở.
 
 Ngay giữa tâm đĩa đá là một lỗ tròn khoét thủng kỳ dị — một "lỗ tử thần" lạnh lùng.
 
-Từ bên trong, các chiến binh có thể quan sát bóng tối bên ngoài trong đường hầm hẹp và bất ngờ phóng những ngọn giáo đồng sắc nhọn đâm xuyên qua ngực bất kỳ kẻ thù nào đang loay hoay tìm cách phá cửa.
+Từ bên trong, các chiến binh có thể quan sát bóng tối bên ngoài trong đường hầm hẹp và bất ngờ phóng những ngọn giáo bịt sắt sắc nhọn đâm xuyên qua ngực bất kỳ kẻ thù nào đang loay hoay tìm cách phá cửa.
 
 Một khi chốt đá đã hạ xuống và khóa chặt hoàn toàn, không một ai bên ngoài có thể đột nhập, và những người bên trong chấp nhận tự giam mình vào ngục tối tạm thời, sẵn sàng bám trụ nhiều tháng ròng hoặc rút lui qua những lối thoát ngầm bí mật được ngụy trang cách xa hàng trăm mét giữa hoang mạc.
 
@@ -26,7 +26,7 @@ Thế lực tàn bạo nào trên mặt đất đã gieo rắc nỗi khiếp s�
 
 Để hiểu được mức độ kỳ vĩ của Derinkuyu, bạn phải hình dung độ sâu 85 mét tương đương với chiều cao của một tòa nhà chọc trời gần 30 tầng, nhưng thay vì vươn lên bầu trời xanh, nó lại cắm thẳng xuống lòng đất tăm tối.
 
-Toàn bộ công trình ngầm này được đục đẽo hoàn toàn thủ công bằng búa đồng, rìu đá và đục sắt, khoét sâu qua các tầng đá núi lửa tuff mềm nhưng có độ liên kết dẻo dai phi thường.
+Toàn bộ công trình ngầm này được đục đẽo hoàn toàn thủ công bằng đục sắt, búa nêm và dụng cụ thô sơ, khoét sâu qua các tầng đá núi lửa tuff mềm nhưng có độ liên kết dẻo dai phi thường.
 
 Để tạo ra không gian sinh tồn cho hàng vạn sinh mạng, người xưa đã phải đục đẽo và vận chuyển ra ngoài hàng triệu tấn đất đá qua những lối đi dốc hẹp chỉ vừa một người lọt qua.
 
@@ -74,7 +74,7 @@ Hãy thử nhắm mắt lại và tưởng tượng: Hàng vạn con người c�
 
 Mùi hôi thối từ phân động vật và chất bài tiết của đám đông chính là mầm mống dịch bệnh chết người trong không gian kín.
 
-Để giải quyết bài toán sinh tử này, các kỹ sư cổ đại đã bố trí toàn bộ chuồng trại gia súc ở tầng trên cùng sát mặt đất, nơi gần các cửa xả khí nhất để mùi xú uế nhanh chóng thoát ra ngoài mà không chìm xuống các tầng sinh hoạt phía dưới.
+Để giải quyết bài toán sinh tử này, các kỹ sư cổ đại đã bố trí chuồng trại gia súc ở các tầng ngầm trên cùng sát mặt đất, nơi gần các cửa xả khí nhất để mùi xú uế nhanh chóng thoát ra ngoài mà không chìm xuống các tầng sinh hoạt phía dưới.
 
 Chất thải sinh hoạt của cư dân được gom vào những hầm chứa kín riêng biệt, sau đó được phủ dày bằng tro núi lửa và đất khô để hút ẩm, trung hòa khí độc amoniac và triệt tiêu vi khuẩn.
 
@@ -104,7 +104,7 @@ Và khi có người kiệt sức hoặc ngã bệnh qua đời trong thời gia
 
 Họ không thể mang thi thể lên mặt đất để chôn cất vì sợ lộ dấu vết, nhưng cũng không thể để thi thể phân hủy trong hầm ngầm gây bùng phát đại dịch thảm khốc.
 
-Giải pháp tàn nhẫn duy nhất là khoét các hốc đá hình người ngay trên vách đường hầm hẹp, đặt thi thể người thân vào bên trong rồi dùng vôi vữa và tro núi lửa trát kín hoàn toàn miệng hốc.
+Giải pháp tàn nhẫn duy nhất là khoét các hốc đá kín trong các ngách mộ cạnh nhà nguyện ngầm, đặt thi thể người thân vào bên trong rồi dùng vôi vữa và tro núi lửa trát kín hoàn toàn miệng hốc.
 
 Những vách đá chứa đầy thi thể ấy trở thành người bạn đồng hành câm lặng cùng những kẻ sống sót, ngày đêm nhắc nhở họ về ranh giới mong manh giữa sự sống và cái chết.
 
@@ -130,7 +130,7 @@ Thế nhưng, nhiều nhà sử học đã đặt ra một câu hỏi phản bi�
 
 Liệu động lực chiến tranh thông thường giữa người với người có đủ lớn để tạo ra một cỗ máy sinh tồn vượt xa mọi giới hạn công trình quân sự cùng thời?
 
-Chính sự nghi vấn đó đã dẫn các nhà địa chất học đến với Giả thuyết thứ hai: Cuộc trốn chạy khỏi thảm họa Kỷ Băng Hà Dryas Trẻ cách đây khoảng 12.000 năm.
+Chính sự nghi vấn đó đã dẫn nhiều nhà nghiên cứu đến với Giả thuyết thứ hai: Cuộc trốn chạy khỏi thảm họa Kỷ Băng Hà Dryas Trẻ cách đây khoảng 12.000 năm.
 
 Các dữ liệu cổ khí hậu học cho thấy, trong thời kỳ Dryas Trẻ, bề mặt Trái Đất đã trải qua một đợt tụt giảm nhiệt độ kinh hoàng chỉ trong vài năm ngắn ngủi, biến mặt đất thành vùng hoang mạc băng giá với bão tuyết gầm rú khiến con người không thể tồn tại lộ thiên.
 
