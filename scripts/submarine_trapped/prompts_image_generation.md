@@ -1,9 +1,3 @@
-# STYLE GUIDE: SCIENTIFIC INFOGRAPHIC & CINEMATIC REALISM (JAPANESE TEXT & WATERMARK CLEARANCE)
-`Style: Cinematic documentary realism mixed with high-precision 3D scientific infographics. Photorealistic lighting, deep-sea abyss cinematography, moody cold cyan, warning amber and emergency red lighting. Strictly NO humans, NO stick figures, NO cartoon characters. Typography & Placement Rule: Any technical labels, HUD callouts, or scientific annotations MUST strictly be accurate Japanese (Kanji/Katakana) without spelling errors. Never render literal quotation marks around words. Safe Layout Rule: Keep the bottom-right corner completely empty and free of text, numbers, HUD elements, or indicators (strict safety margin for watermark clearance). Position all infographics, data readouts, and labels on the left side or top corners.`
-
----
-
-
 Cinematic wide shot of a compact industrial deep-sea research mini-submarine resting motionless on the flat sediment of the ocean floor, 600 meters deep, surrounded by total blackness, cold murky water, 8k, bottom-right corner empty --ar 16:9
 
 Cinematic shot of deep abyssal ocean water mass pressing relentlessly against the metallic hull of a mini-submarine, glowing translucent blue underwater volumetric lighting, suffocating scale, photorealistic, bottom-right corner empty --ar 16:9
@@ -185,4 +179,3 @@ Cinematic interior close-up shot: warm golden morning sunlight streaming through
 Closing channel outro composition: sleek naval compass and clean minimalist Like & Subscribe graphic emblems embedded with Japanese text on left side 高評価 & チャンネル登録, dark ocean-blue backdrop, bottom-right corner strictly empty --ar 16:9
 
 Closing outro screen for educational documentary: peaceful calm ocean horizon at dusk with starry sky, elegant Japanese typography centered on left side reading ご視聴、ありがとうございました。, cinematic, clean modern layout, no people, bottom-right corner strictly empty --ar 16:9
-
