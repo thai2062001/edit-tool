@@ -236,5 +236,9 @@
 **Câu 73:** Một cuộc xâm lăng tàn khốc của các đế chế, cái lạnh chết người của Kỷ Băng Hà, hay một thảm họa hủy diệt từ bầu trời cổ đại?
 > **Prompt 73:** Cinematic wide upward shot from the deep shadows of a steep ascending beige stone cave tunnel: blinding golden sunlight bursting through the arched exit portal, silhouette of rocky tunnel frame, floating dust particles glowing --ar 16:9
 
-**Câu 74:** Ai thực sự là những người đầu tiên đục nhát cuốc khai sinh ra kỳ quan ngầm này: Người Hittite, người Phrygian, hay một nền văn minh tiền sử đã bị thời gian xóa sổ? Theo bạn, đâu là lý do thực sự đã đẩy những con người cổ đại chấp nhận từ bỏ ánh sáng mặt trời để bước vào bóng tối 18 tầng ngầm của Derinkuyu? Hãy để lại suy nghĩ của bạn bên dưới phần bình luận để cùng thảo luận nhé!
-> **Prompt 74:** Masterwork final shot: The vast volcanic landscape of Cappadocia bathed in deep twilight, solitary stars emerging above while warm amber light subtly glimmers from deep underground fissures in the pale rock, mysterious open-ended conclusion, photorealistic 8k --ar 16:9
+**Câu 74:** Ai thực sự là những người đầu tiên đục nhát cuốc khai sinh ra kỳ quan ngầm này: Người Hittite, người Phrygian, hay một nền văn minh tiền sử đã bị thời gian xóa sổ?
+> **Prompt 74:** Masterwork cinematic shot: The vast volcanic landscape of Cappadocia bathed in deep twilight, solitary stars emerging above while warm amber light subtly glimmers from deep underground fissures in the pale rock, mysterious open-ended conclusion, photorealistic 8k --ar 16:9
+
+**Câu 75:** Theo bạn, đâu là lý do thực sự đã đẩy những con người cổ đại chấp nhận từ bỏ ánh sáng mặt trời để bước vào bóng tối 18 tầng ngầm của Derinkuyu? Hãy để lại suy nghĩ của bạn bên dưới phần bình luận để cùng thảo luận nhé!
+> **Prompt 75:** Poetic cinematic closing shot: An ancient rough stone staircase winding down from the bright golden sunlight of an arched portal into the mysterious multi-tiered underground city illuminated by warm amber torches and ancient carved chambers, atmospheric dust motes floating in the air, deep shadows, thought-provoking and awe-inspiring historical documentary finale, 35mm photography, photorealistic 8k --ar 16:9
+
