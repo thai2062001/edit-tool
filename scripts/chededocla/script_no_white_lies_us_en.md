@@ -6,7 +6,7 @@ Little do you know, a bizarre supernatural phenomenon silently swept across the 
 
 Every single human being on Earth has been completely stripped of their ability to tell white lies for the next 24 hours.
 
-And it comes with one terrifying, non-negotiable rule: Whenever someone asks you a question, your brain instantly forces your mouth to blur out your rawest, unfiltered thoughts!
+And it comes with one terrifying, non-negotiable rule: Whenever someone asks you a question, your brain instantly forces your mouth to blurt out your rawest, unfiltered thoughts!
 
 No dodging the question, no awkward subject changes, and zero polite social buffers.
 
